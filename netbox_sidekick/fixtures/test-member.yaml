@@ -1,0 +1,110 @@
+- model: tenancy.TenantGroup
+  pk: 1
+  fields:
+    name: "Members"
+    slug: "members"
+    level: 0
+    lft: 1
+    rght: 2
+    tree_id: 2
+
+- model: tenancy.Tenant
+  pk: 1
+  fields:
+    name: "East University"
+    description: "East University"
+    slug: "east-university"
+    group: 1
+
+- model: tenancy.Tenant
+  pk: 2
+  fields:
+    name: "Central School"
+    description: "Central School"
+    slug: "central-school"
+    group: 1
+
+- model: tenancy.Tenant
+  pk: 3
+  fields:
+    name: "South Not For Profit"
+    description: "South Not For Profit"
+    slug: "south-not-for-profit"
+    group: 1
+
+- model: tenancy.Tenant
+  pk: 4
+  fields:
+    name: "Cybera"
+    description: "Cybera"
+    slug: "cybera"
+
+- model: netbox_sidekick.MemberType
+  pk: 1
+  fields:
+    name: 'Post-Secondary Institution'
+    slug: 'post-secondary-institution'
+
+- model: netbox_sidekick.MemberType
+  pk: 2
+  fields:
+    name: 'K-12 School Districts'
+    slug: 'k-12-school-districts'
+
+- model: netbox_sidekick.Member
+  pk: 1
+  fields:
+    tenant: 1
+    member_type: 1
+    start_date: '2020-09-01'
+    invoice_period_start: 'April'
+    number_of_users: 1000
+    active: True
+    billing_contact_first_name: 'John'
+    billing_contact_last_name: 'Doe'
+    billing_contact_title: 'Superintendent'
+    billing_contact_phone_number: '403-555-5555'
+    billing_contact_email_address: 'john.doe@example.com'
+    technical_contact_first_name: 'Jane'
+    technical_contact_last_name: 'Doe'
+    technical_contact_title: 'Network Administrator'
+    technical_contact_phone_number: '403-555-1212'
+    technical_contact_email_address: 'jane.doe@example.com'
+    billing_address_1: '123 Some St'
+    billing_city: 'Calgary'
+    billing_province: 'AB'
+    billing_postal_code: 'T2L 2A6'
+    billing_country: 'Canada'
+    supernet: True
+    url: "https://example.com"
+    latitude: "51.083960"
+    longitude: "114.133294"
+
+- model: netbox_sidekick.Member
+  pk: 2
+  fields:
+    tenant: 2
+    member_type: 2
+    start_date: '2020-09-01'
+    invoice_period_start: 'April'
+    number_of_users: 1000
+    active: True
+    billing_contact_first_name: 'Joe'
+    billing_contact_last_name: 'Smith'
+    billing_contact_title: 'Principal'
+    billing_contact_phone_number: '403-555-1234'
+    billing_contact_email_address: 'joe.smith@example.com'
+    technical_contact_first_name: 'John'
+    technical_contact_last_name: 'Brown'
+    technical_contact_title: 'Network Administrator'
+    technical_contact_phone_number: '403-555-1212'
+    technical_contact_email_address: 'john.brown@example.com'
+    billing_address_1: '456 Another Ave'
+    billing_city: 'Calgary'
+    billing_province: 'AB'
+    billing_postal_code: 'T2L 2A6'
+    billing_country: 'Canada'
+    supernet: True
+    url: "https://example.org"
+    latitude: "50.093960"
+    longitude: "113.134294"

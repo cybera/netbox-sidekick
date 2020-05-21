@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block title %}{{ member }}{% endblock %}
+
+{% block header %}
+<div class="row noprint">
+  <div class="col-sm-8 col-md-9">
+    <ol class="breadcrumb">
+      <li><a href="{% url 'plugins:netbox_sidekick:member_index' %}">Members</a></li>
+      <li>{{ member }}</li>
+    </ol>
+  </div>
+  <div class="col-sm-4 col-md-3">
+    <form action="{% url 'plugins:netbox_sidekick:member_index' %}" method="get">
+      <div class="input-group">
+        <input type="text" name="q" class="form-control" />
+        <span class="input-group-btn">
+          <button type="submit" class="btn btn-primary">
+            <span class="fa fa-search" aria-hidden="true"></span>
+          </button>
+        </span>
+      </div>
+    </form>
+  </div>
+</div>
+<h1>{{ member.name }}</h1>
+{% include 'inc/created_updated.html' with obj=member %}
+
+<ul class="nav nav-tabs">
+  <li role="presentation"{% if not active_tab %} class="active"{% endif %}>
+    <a href="{{ member.get_absolute_url }}">Member</a>
+  </li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <strong>Member</strong>
+      </div>
+      <table class="table table-hover panel-body attr-table">
+        <tr>
+          <td>Tenant</td>
+          <td>{{ member.tenant }}</td>
+        </tr>
+        <tr>
+          <td>User</td>
+          <td>{{ member.user }}</td>
+        </tr>
+        <tr>
+          <td>Type</td>
+          <td>{{ member.type }}</td>
+        </tr>
+        <tr>
+          <td>Active</td>
+          <td>{{ member.active }}</td>
+        </tr>
+        <tr>
+          <td>Billing Exempt</td>
+          <td>{{ member.billing_exempt }}</td>
+        </tr>
+        <tr>
+          <td>Start Date</td>
+          <td>{{ member.start_date }}</td>
+        </tr>
+        <tr>
+          <td>Invoice Period Start</td>
+          <td>{{ member.invoice_period_start }}</td>
+        </tr>
+        <tr>
+          <td>Number of Users</td>
+          <td>{{ member.number_of_users }}</td>
+        </tr>
+        <tr>
+          <td>Billing Contact First Name</td>
+          <td>{{ member.billing_contact_first_name }}</td>
+        </tr>
+        <tr>
+          <td>Billing Contact Last Name</td>
+          <td>{{ member.billing_contact_last_name }}</td>
+        </tr>
+        <tr>
+          <td>Billing Contact Title</td>
+          <td>{{ member.billing_contact_title }}</td>
+        </tr>
+        <tr>
+          <td>Billing Contact Phone Number</td>
+          <td>{{ member.billing_contact_phone_number }}</td>
+        </tr>
+        <tr>
+          <td>Billing Contact Email Address</td>
+          <td>{{ member.billing_contact_email_address }}</td>
+        </tr>
+        <tr>
+          <td>Billing Address 1</td>
+          <td>{{ member.billing_address_1 }}</td>
+        </tr>
+        <tr>
+          <td>Billing Address 2</td>
+          <td>{{ member.billing_address_2 }}</td>
+        </tr>
+        <tr>
+          <td>Billing City</td>
+          <td>{{ member.billing_city }}</td>
+        </tr>
+        <tr>
+          <td>Billing Postal Code</td>
+          <td>{{ member.billing_postal_code }}</td>
+        </tr>
+        <tr>
+          <td>Billing Province</td>
+          <td>{{ member.billing_province }}</td>
+        </tr>
+        <tr>
+          <td>Billing Country</td>
+          <td>{{ member.billing_country }}</td>
+        </tr>
+        <tr>
+          <td>Technical Contact First Name</td>
+          <td>{{ member.technical_contact_first_name }}</td>
+        </tr>
+        <tr>
+          <td>Technical Contact Last Name</td>
+          <td>{{ member.technical_contact_last_name }}</td>
+        </tr>
+        <tr>
+          <td>Technical Contact Title</td>
+          <td>{{ member.technical_contact_title }}</td>
+        </tr>
+        <tr>
+          <td>Technical Contact Phone Number</td>
+          <td>{{ member.technical_contact_phone_number }}</td>
+        </tr>
+        <tr>
+          <td>Technical Contact Email Address</td>
+          <td>{{ member.technical_contact_email_address }}</td>
+        </tr>
+        <tr>
+          <td>URL</td>
+          <td>{{ member.url }}</td>
+        </tr>
+        <tr>
+          <td>Connected via Supernet?</td>
+          <td>{{ member.supernet }}</td>
+        </tr>
+        <tr>
+          <td>Latitude</td>
+          <td>{{ member.latitude }}</td>
+        </tr>
+        <tr>
+          <td>Longitude</td>
+          <td>{{ member.longitude }}</td>
+        </tr>
+        <tr>
+          <td>Comments</td>
+          <td>{{ member.comments }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      {% render_table table %}
+    </div>
+  </div>
+</div>
+{% endblock %}

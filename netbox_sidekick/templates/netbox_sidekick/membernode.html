@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block title %}{{ object }}{% endblock %}
+
+{% block header %}
+<div class="row noprint">
+  <div class="col-sm-8 col-md-9">
+    <ol class="breadcrumb">
+      <li><a href="{% url 'plugins:netbox_sidekick:membernode_index' %}">Member Nodes</a></li>
+      <li>{{ object.name }}</li>
+    </ol>
+  </div>
+  <div class="col-sm-4 col-md-3">
+    <form action="{% url 'plugins:netbox_sidekick:membernode_index' %}" method="get">
+      <div class="input-group">
+        <input type="text" name="q" class="form-control" />
+        <span class="input-group-btn">
+          <button type="submit" class="btn btn-primary">
+            <span class="fa fa-search" aria-hidden="true"></span>
+          </button>
+        </span>
+      </div>
+    </form>
+  </div>
+</div>
+<h1>{{ object.name }}</h1>
+{% include 'inc/created_updated.html' with obj=object %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <strong>Member Node</strong>
+      </div>
+      <table class="table table-hover panel-body attr-table">
+        <tr>
+          <td>Name</td>
+          <td>{{ object.name }}</td>
+        </tr>
+        <tr>
+          <td>Label</td>
+          <td>{{ object.label }}</td>
+        </tr>
+        <tr>
+          <td>Type</td>
+          <td>{{ object.node_type }}</td>
+        </tr>
+        <tr>
+          <td>Internal ID</td>
+          <td>{{ object.internal_id }}</td>
+        </tr>
+        <tr>
+          <td>Address</td>
+          <td>{{ object.address }}</td>
+        </tr>
+        <tr>
+          <td>Latitude</td>
+          <td>{{ object.latitude }}</td>
+        </tr>
+        <tr>
+          <td>Longitude</td>
+          <td>{{ object.longitude }}</td>
+        </tr>
+        <tr>
+          <td>Altitude</td>
+          <td>{{ object.altitude }}</td>
+        </tr>
+        <tr>
+          <td>Owner</td>
+          <td>{{ object.owner }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

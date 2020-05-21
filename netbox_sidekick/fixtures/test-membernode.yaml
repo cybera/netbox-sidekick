@@ -1,0 +1,43 @@
+- model: netbox_sidekick.MemberNodeType
+  pk: 1
+  fields:
+    name: 'Core'
+    slug: 'core'
+
+- model: netbox_sidekick.MemberNode
+  pk: 1
+  fields:
+    name: "Some NREN Calgary Core Node"
+    label: "Some NREN Cgy"
+    latitude: 1.0
+    longitude: -11.1
+    address: "Calgary, AB, Canada"
+    node_type: 1
+    owner: 4
+
+- model: netbox_sidekick.MemberNode
+  pk: 2
+  fields:
+    name: "Some NREN Edmonton Core Node"
+    label: "Some NREN Edm"
+    latitude: 3.5
+    longitude: -13.0
+    address: "Edmonton, AB, Canada"
+    node_type: 1
+    owner: 4
+
+- model: netbox_sidekick.MemberNodeLinkType
+  pk: 1
+  fields:
+    name: "Terrestrial fiber"
+    slug: "terrestrial-fiber"
+
+- model: netbox_sidekick.MemberNodeLink
+  pk: 1
+  fields:
+    owner: 4
+    name: "Some NREN Calgary to Some NREN Edmonton"
+    link_type: 1
+    a_endpoint: 1
+    z_endpoint: 2
+    throughput: 30.0

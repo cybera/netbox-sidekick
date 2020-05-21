@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block title %}{{ member }}{% endblock %}
+
+{% block header %}
+<div class="row noprint">
+  <div class="col-sm-8 col-md-9">
+    <ol class="breadcrumb">
+      <li><a href="{% url 'plugins:netbox_sidekick:member_index' %}">Members</a></li>
+      <li>{{ member }}</li>
+    </ol>
+  </div>
+  <div class="col-sm-4 col-md-3">
+    <form action="{% url 'plugins:netbox_sidekick:member_index' %}" method="get">
+      <div class="input-group">
+        <input type="text" name="q" class="form-control" />
+        <span class="input-group-btn">
+          <button type="submit" class="btn btn-primary">
+            <span class="fa fa-search" aria-hidden="true"></span>
+          </button>
+        </span>
+      </div>
+    </form>
+  </div>
+</div>
+<h1>{{ member }}</h1>
+{% include 'inc/created_updated.html' with obj=member %}
+
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <strong>Member</strong>
+      </div>
+      <table class="table table-hover panel-body attr-table">
+        <tr>
+          <td>Name</td>
+          <td>{{ member.tenant.description }}</td>
+        </tr>
+        <tr>
+          <td>User</td>
+          <td>{{ member.user }}</td>
+        </tr>
+        <tr>
+          <td>Type</td>
+          <td>{{ member.type }}</td>
+        </tr>
+        <tr>
+          <td>Active</td>
+          <td>{{ member.active }}</td>
+        </tr>
+        <tr>
+          <td>Billing Exempt</td>
+          <td>{{ member.billing_exempt }}</td>
+        </tr>
+        <tr>
+          <td>Start Date</td>
+          <td>{{ member.start_date }}</td>
+        </tr>
+        <tr>
+          <td>Invoice Period Start</td>
+          <td>{{ member.invoice_period_start }}</td>
+        </tr>
+        <tr>
+          <td>Number of Users</td>
+          <td>{{ member.number_of_users }}</td>
+        </tr>
+        <tr>
+          <td>Billing Address 1</td>
+          <td>{{ member.billing_address_1 }}</td>
+        </tr>
+        <tr>
+          <td>Billing Address 2</td>
+          <td>{{ member.billing_address_2 }}</td>
+        </tr>
+        <tr>
+          <td>Billing City</td>
+          <td>{{ member.billing_city }}</td>
+        </tr>
+        <tr>
+          <td>Billing Postal Code</td>
+          <td>{{ member.billing_postal_code }}</td>
+        </tr>
+        <tr>
+          <td>Billing Province</td>
+          <td>{{ member.billing_province }}</td>
+        </tr>
+        <tr>
+          <td>Billing Country</td>
+          <td>{{ member.billing_country }}</td>
+        </tr>
+        <tr>
+          <td>URL</td>
+          <td><a href="{{ member.url }}">{{ member.url }}</a></td>
+        </tr>
+        <tr>
+          <td>Connected via Supernet?</td>
+          <td>{{ member.supernet }}</td>
+        </tr>
+        <tr>
+          <td>Latitude</td>
+          <td>{{ member.latitude }}</td>
+        </tr>
+        <tr>
+          <td>Longitude</td>
+          <td>{{ member.longitude }}</td>
+        </tr>
+        <tr>
+          <td>Comments</td>
+          <td>{{ member.comments }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <h3>Contacts</h3>
+    <div class="panel panel-default">
+      {% render_table contacts_table %}
+    </div>
+
+    <h3>Services</h3>
+    <div class="panel panel-default">
+      {% render_table services_table %}
+    </div>
+
+    <h3>Nodes</h3>
+    <div class="panel panel-default">
+      {% render_table nodes_table %}
+    </div>
+
+    <h3>Links</h3>
+    <div class="panel panel-default">
+      {% render_table links_table %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

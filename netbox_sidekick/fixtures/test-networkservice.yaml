@@ -1,0 +1,14 @@
+- model: netbox_sidekick.NetworkServiceType
+  pk: 1
+  fields:
+    name: "Peering"
+    slug: "peering"
+    description: "Peering for members"
+
+- model: netbox_sidekick.NetworkService
+  pk: 1
+  fields:
+    name: "East University's peering service"
+    network_service_type: 1
+    member: 1
+    asn: 12345

@@ -61,7 +61,7 @@ class MemberTests(utils.BaseTest):
     def test_view_membernodelink_index(self):
         resp = self.client.get(
             reverse('plugins:netbox_sidekick:membernodelink_index'))
-        self.assertContains(resp, 'Some NREN Calgary to Some NREN Edmonton')
+        self.assertContains(resp, 'Some NRENNNN Calgary to Some NREN Edmonton')
 
     def test_view_membernodelink_detail(self):
         v = MemberNodeLink.objects.get(owner__name='Cybera')

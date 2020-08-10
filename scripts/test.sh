@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-NETBOX_VERSION="v2.8.4"
+NETBOX_VERSION="v2.8.7"
 
 EXIT=0
 
@@ -37,7 +37,7 @@ cd ../..
 # Install netbox_sidekick
 python setup.py develop
 
-cp testing/configuration.testing.py build/netbox/netbox/netbox/configuration.py
+cp scripts/configuration.testing.py build/netbox/netbox/netbox/configuration.py
 
 # Run netbox_sidekick unit tests
 cd build/netbox

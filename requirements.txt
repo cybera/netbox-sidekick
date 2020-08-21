@@ -1,4 +1,5 @@
 backports.weakref
+django-extensions
 flake8
 python-dateutil
 git+https://code.canarie.ca/gren_map/grenml.git

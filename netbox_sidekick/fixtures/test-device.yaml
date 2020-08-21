@@ -1,0 +1,39 @@
+- model: dcim.Site
+  pk: 1
+  fields:
+    name: "Site 1"
+    slug: "site-1"
+
+- model: dcim.Manufacturer
+  pk: 1
+  fields:
+    name: "Manufacturer 1"
+    slug: "manufactuer-1"
+
+- model: dcim.DeviceType
+  pk: 1
+  fields:
+    manufacturer: 1
+    model: "Device Type 1"
+    slug: "device-type-1"
+
+- model: dcim.DeviceRole
+  pk: 1
+  fields:
+    name: "Device Role 1"
+    slug: "device-role-1"
+
+- model: dcim.Device
+  pk: 1
+  fields:
+    device_type: 1
+    device_role: 1
+    site: 1
+    name: "Router 1"
+
+- model: dcim.Interface
+  pk: 1
+  fields:
+    device: 1
+    name: "Interface 1"
+    type: "1000base-t"

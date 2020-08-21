@@ -10,6 +10,10 @@ menu_items = (
         link_text='Contact Types',
     ),
     PluginMenuItem(
+        link='plugins:netbox_sidekick:logicalsystem_index',
+        link_text='Logical Systems',
+    ),
+    PluginMenuItem(
         link='plugins:netbox_sidekick:member_index',
         link_text='Members',
     ),
@@ -40,5 +44,9 @@ menu_items = (
     PluginMenuItem(
         link='plugins:netbox_sidekick:networkservicetype_index',
         link_text='Service Types',
+    ),
+    PluginMenuItem(
+        link='plugins:netbox_sidekick:routingtype_index',
+        link_text='Routing Types',
     ),
 )

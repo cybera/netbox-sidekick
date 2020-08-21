@@ -2,4 +2,5 @@ from .contact import ContactTypeTable, ContactTable                       # noqa
 from .member import MemberTypeTable, MemberTable                          # noqa: F401
 from .membernode import MemberNodeTypeTable, MemberNodeTable              # noqa: F401
 from .membernodelink import MemberNodeLinkTypeTable, MemberNodeLinkTable  # noqa: F401
+from .networkservice import LogicalSystemTable, RoutingTypeTable          # noqa: F401
 from .networkservice import NetworkServiceTypeTable, NetworkServiceTable  # noqa: F401

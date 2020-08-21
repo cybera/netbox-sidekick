@@ -15,6 +15,12 @@ urlpatterns = [
     # Contact Details
     path('contacts/<int:pk>/', views.ContactDetailView.as_view(), name='contact_detail'),
 
+    # Logical System Index
+    path('logical_systems/', views.LogicalSystemIndexView.as_view(), name='logicalsystem_index'),
+
+    # Logical System Details
+    path('logical_systems/<slug:slug>/', views.LogicalSystemDetailView.as_view(), name='logicalsystem_detail'),
+
     # Member Type Index
     path('member_types/', views.MemberTypeIndexView.as_view(), name='membertype_index'),
 
@@ -62,4 +68,10 @@ urlpatterns = [
 
     # Network Service Details
     path('network_services/<int:pk>/', views.NetworkServiceDetailView.as_view(), name='networkservice_detail'),
+
+    # Routing Type Index
+    path('routing_types/', views.RoutingTypeIndexView.as_view(), name='routingtype_index'),
+
+    # Routing Type Details
+    path('routing_types/<slug:slug>/', views.RoutingTypeDetailView.as_view(), name='routingtype_detail'),
 ]

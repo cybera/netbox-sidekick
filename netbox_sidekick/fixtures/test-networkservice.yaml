@@ -1,3 +1,21 @@
+- model: netbox_sidekick.LogicalSystem
+  pk: 1
+  fields:
+    name: "Peering"
+    slug: "peering"
+
+- model: netbox_sidekick.LogicalSystem
+  pk: 2
+  fields:
+    name: "Transit"
+    slug: "transit"
+
+- model: netbox_sidekick.RoutingType
+  pk: 1
+  fields:
+    name: "BGP"
+    slug: "bgp"
+
 - model: netbox_sidekick.NetworkServiceType
   pk: 1
   fields:
@@ -9,6 +27,16 @@
   pk: 1
   fields:
     name: "East University's peering service"
+    description: "Peering service for East University"
+    active: True
     network_service_type: 1
     member: 1
+    logical_system: 1
+    routing_type: 1
+    device: 1
+    interface: 1
     asn: 12345
+    ipv4_unicast: True
+    ipv4_multicast: True
+    provider_router_address_ipv4: "192.168.1.1"
+    member_router_address_ipv4: "192.168.1.2"

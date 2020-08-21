@@ -7,7 +7,7 @@ from utilities.tables import BaseTable, ToggleColumn
 
 from netbox_sidekick.models import MemberNodeType, MemberNode
 
-MEMBER_LINK = """
+OWNER_LINK = """
     <a href="{{ record.owner.get_absolute_url }}">{{ record.owner.tenant.description }}</a>
 """
 
@@ -40,7 +40,7 @@ class MemberNodeTable(BaseTable):
     name = tables.LinkColumn()
 
     owner = tables.TemplateColumn(
-        template_code=MEMBER_LINK,
+        template_code=OWNER_LINK,
         verbose_name='Owner',
     )
     node_type = tables.LinkColumn()

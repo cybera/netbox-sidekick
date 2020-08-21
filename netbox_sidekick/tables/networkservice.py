@@ -2,10 +2,34 @@ import django_tables2 as tables
 
 from django_tables2.utils import Accessor
 
-from tenancy.tables import COL_TENANT
 from utilities.tables import BaseTable, ToggleColumn
 
-from netbox_sidekick.models import NetworkServiceType, NetworkService
+from netbox_sidekick.models import (
+    LogicalSystem, NetworkServiceType,
+    NetworkService, RoutingType,
+)
+
+MEMBER_LINK = """
+    <a href="{{ record.member.get_absolute_url }}">{{ record.member.tenant.description }}</a>
+"""
+
+
+class LogicalSystemTable(BaseTable):
+    pk = ToggleColumn()
+    name = tables.LinkColumn()
+
+    class Meta(BaseTable.Meta):
+        model = LogicalSystem
+        fields = ('pk', 'name', 'description')
+
+
+class RoutingTypeTable(BaseTable):
+    pk = ToggleColumn()
+    name = tables.LinkColumn()
+
+    class Meta(BaseTable.Meta):
+        model = RoutingType
+        fields = ('pk', 'name', 'description')
 
 
 class NetworkServiceTypeTable(BaseTable):
@@ -28,7 +52,10 @@ class NetworkServiceTable(BaseTable):
         'plugins:netbox_sidekick:networkservicetype_detail',
         args=[Accessor('network_service_type.slug')])
 
-    tenant = tables.TemplateColumn(template_code=COL_TENANT)
+    member = tables.TemplateColumn(
+        template_code=MEMBER_LINK,
+        verbose_name='Member',
+    )
 
     class Meta(BaseTable.Meta):
         model = NetworkService

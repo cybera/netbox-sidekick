@@ -5,7 +5,8 @@ from .models import (
     MemberType, Member, MemberContact,
     MemberNodeType, MemberNode,
     MemberNodeLinkType, MemberNodeLink,
-    NetworkServiceType, NetworkService
+    NetworkServiceType, NetworkService,
+    LogicalSystem, RoutingType,
 )
 
 
@@ -20,6 +21,11 @@ class ContactAdmin(admin.ModelAdmin):
         'first_name', 'last_name', 'title',
         'email', 'phone', 'comments'
     )
+
+
+@admin.register(LogicalSystem)
+class LogicalSystemADmin(admin.ModelAdmin):
+    list_display = ('name', 'slug')
 
 
 @admin.register(MemberType)
@@ -90,4 +96,37 @@ class NetworkServiceTypeAdmin(admin.ModelAdmin):
 
 @admin.register(NetworkService)
 class NetworkServiceAdmin(admin.ModelAdmin):
-    list_display = ('member', 'network_service_type', 'asn', 'comments')
+    fieldsets = (
+        ('Member', {
+            'fields': ('member',),
+        }),
+
+        ('General', {
+            'fields': (
+                'name', 'network_service_type', 'description',
+                'comments', 'active',),
+        }),
+
+        ('Configuration', {
+            'fields': (
+                'device', 'interface', 'vlan_number', 'logical_system',
+                'routing_type', 'asn'),
+        }),
+
+        ('IPv4 Information', {
+            'fields': (
+                'ipv4_unicast', 'ipv4_multicast',
+                'provider_router_address_ipv4', 'member_router_address_ipv4'),
+        }),
+
+        ('IPv6 Information', {
+            'fields': (
+                'ipv6_unicast', 'ipv6_multicast',
+                'provider_router_address_ipv6', 'member_router_address_ipv6'),
+        }),
+    )
+
+
+@admin.register(RoutingType)
+class RoutingTypeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug')

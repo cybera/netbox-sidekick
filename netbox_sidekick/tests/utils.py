@@ -13,6 +13,7 @@ from netbox.urls import _patterns
 class BaseTest(TestCase):
     fixtures = [
         'test-contact.yaml',
+        'test-device.yaml',
         'test-member.yaml',
         'test-membernode.yaml',
         'test-networkservice.yaml',

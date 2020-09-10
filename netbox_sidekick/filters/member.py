@@ -34,7 +34,7 @@ class MemberFilterSet(django_filters.FilterSet):
         fields = ['member_type']
 
     def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
-        super(MemberFilterSet, self).__init__(
+        super().__init__(
             data=data, queryset=queryset, request=request, prefix=prefix)
         self.filters['member_type'].field.widget.attrs.update(
             {'class': 'netbox-select2-static'})

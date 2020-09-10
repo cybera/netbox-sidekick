@@ -1,4 +1,5 @@
 backports.weakref
+backports-datetime-fromisoformat
 django-extensions
 flake8
 python-dateutil

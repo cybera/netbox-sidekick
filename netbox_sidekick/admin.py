@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin
 
 from .models import (
@@ -5,7 +6,7 @@ from .models import (
     MemberType, Member, MemberContact,
     MemberNodeType, MemberNode,
     MemberNodeLinkType, MemberNodeLink,
-    NetworkServiceType, NetworkService,
+    NetworkServiceConnectionType, NetworkServiceConnection,
     LogicalSystem, RoutingType,
 )
 
@@ -89,13 +90,28 @@ class MemberNodeLinkAdmin(admin.ModelAdmin):
         'a_endpoint', 'z_endpoint', 'throughput',)
 
 
-@admin.register(NetworkServiceType)
-class NetworkServiceTypeAdmin(admin.ModelAdmin):
+@admin.register(NetworkServiceConnectionType)
+class NetworkServiceConnectionTypeAdmin(admin.ModelAdmin):
     list_display = ('name', 'description')
 
 
-@admin.register(NetworkService)
-class NetworkServiceAdmin(admin.ModelAdmin):
+class NetworkServiceConnectionAdminForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['interface'].widget = forms.TextInput()
+        self.fields['provider_router_address_ipv4'].widget = forms.TextInput()
+        self.fields['member_router_address_ipv4'].widget = forms.TextInput()
+        self.fields['provider_router_address_ipv6'].widget = forms.TextInput()
+        self.fields['member_router_address_ipv6'].widget = forms.TextInput()
+
+    class Meta:
+        model = NetworkServiceConnection
+        fields = []
+
+
+@admin.register(NetworkServiceConnection)
+class NetworkServiceAdminConnection(admin.ModelAdmin):
+    form = NetworkServiceConnectionAdminForm
     fieldsets = (
         ('Member', {
             'fields': ('member',),
@@ -103,26 +119,28 @@ class NetworkServiceAdmin(admin.ModelAdmin):
 
         ('General', {
             'fields': (
-                'name', 'network_service_type', 'description',
-                'comments', 'active',),
+                'name', 'network_service_connection_type', 'description',
+                'comments', 'active', 'start_date', 'end_date',),
         }),
 
         ('Configuration', {
             'fields': (
-                'device', 'interface', 'vlan_number', 'logical_system',
+                'device', 'interface', 'logical_system',
                 'routing_type', 'asn'),
         }),
 
         ('IPv4 Information', {
             'fields': (
                 'ipv4_unicast', 'ipv4_multicast',
-                'provider_router_address_ipv4', 'member_router_address_ipv4'),
+                'provider_router_address_ipv4', 'member_router_address_ipv4',
+                'ipv4_prefixes',),
         }),
 
         ('IPv6 Information', {
             'fields': (
                 'ipv6_unicast', 'ipv6_multicast',
-                'provider_router_address_ipv6', 'member_router_address_ipv6'),
+                'provider_router_address_ipv6', 'member_router_address_ipv6',
+                'ipv6_prefixes',),
         }),
     )
 

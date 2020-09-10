@@ -3,4 +3,5 @@ from .member import MemberTypeTable, MemberTable                          # noqa
 from .membernode import MemberNodeTypeTable, MemberNodeTable              # noqa: F401
 from .membernodelink import MemberNodeLinkTypeTable, MemberNodeLinkTable  # noqa: F401
 from .networkservice import LogicalSystemTable, RoutingTypeTable          # noqa: F401
-from .networkservice import NetworkServiceTypeTable, NetworkServiceTable  # noqa: F401
+from .networkservice import NetworkServiceConnectionTypeTable             # noqa: F401
+from .networkservice import NetworkServiceConnectionTable                 # noqa: F401

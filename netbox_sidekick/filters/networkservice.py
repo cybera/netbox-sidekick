@@ -3,8 +3,8 @@ import django_filters
 from django.db.models import Q
 
 from netbox_sidekick.models import (
-    LogicalSystem, NetworkServiceType,
-    NetworkService, RoutingType
+    RoutingType, LogicalSystem,
+    NetworkServiceConnectionType, NetworkServiceConnection,
 )
 
 
@@ -44,14 +44,14 @@ class RoutingTypeFilterSet(django_filters.FilterSet):
         ).distinct()
 
 
-class NetworkServiceTypeFilterSet(django_filters.FilterSet):
+class NetworkServiceConnectionTypeFilterSet(django_filters.FilterSet):
     q = django_filters.CharFilter(
         method='search',
         label='Search',
     )
 
     class Meta:
-        model = NetworkServiceType
+        model = NetworkServiceConnectionType
         fields = []
 
     def search(self, queryset, name, value):
@@ -63,18 +63,18 @@ class NetworkServiceTypeFilterSet(django_filters.FilterSet):
         ).distinct()
 
 
-class NetworkServiceFilterSet(django_filters.FilterSet):
+class NetworkServiceConnectionFilterSet(django_filters.FilterSet):
     q = django_filters.CharFilter(
         method='search',
         label='Search',
     )
 
     class Meta:
-        model = NetworkService
-        fields = ['device', 'logical_system', 'member', 'network_service_type']
+        model = NetworkServiceConnection
+        fields = ['device', 'logical_system', 'member', 'network_service_connection_type']
 
     def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
-        super(NetworkServiceFilterSet, self).__init__(
+        super().__init__(
             data=data, queryset=queryset, request=request, prefix=prefix)
         self.filters['device'].field.widget.attrs.update(
             {'class': 'netbox-select2-static'})
@@ -82,7 +82,7 @@ class NetworkServiceFilterSet(django_filters.FilterSet):
             {'class': 'netbox-select2-static'})
         self.filters['member'].field.widget.attrs.update(
             {'class': 'netbox-select2-static'})
-        self.filters['network_service_type'].field.widget.attrs.update(
+        self.filters['network_service_connection_type'].field.widget.attrs.update(
             {'class': 'netbox-select2-static'})
 
     def search(self, queryset, name, value):

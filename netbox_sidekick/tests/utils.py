@@ -14,6 +14,7 @@ class BaseTest(TestCase):
     fixtures = [
         'test-contact.yaml',
         'test-device.yaml',
+        'test-ipam.yaml',
         'test-member.yaml',
         'test-membernode.yaml',
         'test-networkservice.yaml',

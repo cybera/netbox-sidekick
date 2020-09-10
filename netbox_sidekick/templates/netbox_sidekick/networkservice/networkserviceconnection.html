@@ -6,12 +6,12 @@
 <div class="row noprint">
   <div class="col-sm-8 col-md-9">
     <ol class="breadcrumb">
-      <li><a href="{% url 'plugins:netbox_sidekick:networkservice_index' %}">Network Services</a></li>
+      <li><a href="{% url 'plugins:netbox_sidekick:networkserviceconnection_index' %}">Network Service Connections</a></li>
       <li>{{ object }}</li>
     </ol>
   </div>
   <div class="col-sm-4 col-md-3">
-    <form action="{% url 'plugins:netbox_sidekick:networkservice_index' %}" method="get">
+    <form action="{% url 'plugins:netbox_sidekick:networkserviceconnection_index' %}" method="get">
       <div class="input-group">
         <input type="text" name="q" class="form-control" />
         <span class="input-group-btn">

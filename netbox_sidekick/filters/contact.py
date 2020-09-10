@@ -43,7 +43,7 @@ class ContactFilterSet(django_filters.FilterSet):
         fields = ['member']
 
     def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
-        super(ContactFilterSet, self).__init__(
+        super().__init__(
             data=data, queryset=queryset, request=request, prefix=prefix)
         self.filters['member'].field.widget.attrs.update(
             {'class': 'netbox-select2-static'})

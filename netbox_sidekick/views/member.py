@@ -13,7 +13,7 @@ from netbox_sidekick.models import (
     MemberType, Member,
     MemberNode,
     MemberNodeLink,
-    NetworkService
+    NetworkServiceConnection,
 )
 
 from netbox_sidekick.tables import (
@@ -21,7 +21,7 @@ from netbox_sidekick.tables import (
     MemberTypeTable, MemberTable,
     MemberNodeTable,
     MemberNodeLinkTable,
-    NetworkServiceTable,
+    NetworkServiceConnectionTable,
 )
 
 
@@ -82,7 +82,7 @@ class MemberDetailView(PermissionRequiredMixin, DetailView):
         context['contacts_table'] = contacts_table
 
         # Build a table of all services that the member has.
-        services_table = NetworkServiceTable(NetworkService.objects.filter(
+        services_table = NetworkServiceConnectionTable(NetworkServiceConnection.objects.filter(
             member=member.id))
         context['services_table'] = services_table
 

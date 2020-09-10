@@ -34,7 +34,7 @@ class MemberNodeLinkFilterSet(django_filters.FilterSet):
         fields = ['owner', 'link_type', 'a_endpoint', 'z_endpoint']
 
     def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
-        super(MemberNodeLinkFilterSet, self).__init__(
+        super().__init__(
             data=data, queryset=queryset, request=request, prefix=prefix)
         self.filters['owner'].field.widget.attrs.update(
             {'class': 'netbox-select2-static'})

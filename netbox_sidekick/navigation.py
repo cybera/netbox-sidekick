@@ -38,15 +38,19 @@ menu_items = (
         link_text='Member Node Link Types',
     ),
     PluginMenuItem(
-        link='plugins:netbox_sidekick:networkservice_index',
-        link_text='Services',
-    ),
-    PluginMenuItem(
-        link='plugins:netbox_sidekick:networkservicetype_index',
-        link_text='Service Types',
+        link='plugins:netbox_sidekick:logicalsystem_index',
+        link_text='Logical Systems',
     ),
     PluginMenuItem(
         link='plugins:netbox_sidekick:routingtype_index',
         link_text='Routing Types',
+    ),
+    PluginMenuItem(
+        link='plugins:netbox_sidekick:networkserviceconnection_index',
+        link_text='Service Connections',
+    ),
+    PluginMenuItem(
+        link='plugins:netbox_sidekick:networkserviceconnectiontype_index',
+        link_text='Service Connection Types',
     ),
 )

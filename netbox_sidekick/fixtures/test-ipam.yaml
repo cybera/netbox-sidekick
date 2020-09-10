@@ -1,0 +1,9 @@
+- model: ipam.IPAddress
+  pk: 1
+  fields:
+    address: "192.168.1.1"
+
+- model: ipam.IPAddress
+  pk: 2
+  fields:
+    address: "192.168.1.2"

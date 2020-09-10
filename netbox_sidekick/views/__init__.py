@@ -20,7 +20,7 @@ from .membernodelink import (  # noqa: F401
 
 from .networkservice import (  # noqa: F401
     LogicalSystemIndexView, LogicalSystemDetailView,
-    NetworkServiceTypeIndexView, NetworkServiceTypeDetailView,
-    NetworkServiceIndexView, NetworkServiceDetailView,
+    NetworkServiceConnectionTypeIndexView, NetworkServiceConnectionTypeDetailView,
+    NetworkServiceConnectionIndexView, NetworkServiceConnectionDetailView,
     RoutingTypeIndexView, RoutingTypeDetailView,
 )

@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block title %}{{ nic }}{% endblock %}
+
+{% block header %}
+<div class="row noprint">
+  <div class="col-sm-8 col-md-9">
+    <ol class="breadcrumb">
+      <li><a href="{% url 'plugins:netbox_sidekick:nic_index' %}">NICs</a></li>
+      <li>{{ nic.interface.name }}</li>
+    </ol>
+  </div>
+  <div class="col-sm-4 col-md-3">
+    <form action="{% url 'plugins:netbox_sidekick:nic_index' %}" method="get">
+      <div class="input-group">
+        <input type="text" name="q" class="form-control" />
+        <span class="input-group-btn">
+          <button type="submit" class="btn btn-primary">
+            <span class="fa fa-search" aria-hidden="true"></span>
+          </button>
+        </span>
+      </div>
+    </form>
+  </div>
+</div>
+<h1>{{ nic.interface.name }}</h1>
+{% include 'inc/created_updated.html' with obj=routingtype %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <strong>NIC</strong>
+      </div>
+      <table class="table table-hover panel-body attr-table">
+        <tr>
+          <td>Interface Name</td>
+          <td>{{ nic.interface.name }}</td>
+        </tr>
+        <tr>
+          <td>Is Up?</td>
+          <td>{{ nic.is_up }}</td>
+        </tr>
+        <tr>
+          <td>Is Enabled?</td>
+          <td>{{ nic.is_enabled }}</td>
+        </tr>
+        <tr>
+          <td>tx_octets</td>
+          <td>{{ nic.tx_octets }}</td>
+        </tr>
+        <tr>
+          <td>rx_octets</td>
+          <td>{{ nic.rx_octets }}</td>
+        </tr>
+        <tr>
+          <td>tx_unicast_packets</td>
+          <td>{{ nic.tx_unicast_packets }}</td>
+        </tr>
+        <tr>
+          <td>rx_unicast_packets</td>
+          <td>{{ nic.rx_unicast_packets }}</td>
+        </tr>
+        <tr>
+          <td>tx_multicast_packets</td>
+          <td>{{ nic.tx_multicast_packets }}</td>
+        </tr>
+        <tr>
+          <td>rx_multicast_packets</td>
+          <td>{{ nic.rx_multicast_packets }}</td>
+        </tr>
+        <tr>
+          <td>tx_broadcast_packets</td>
+          <td>{{ nic.tx_broadcast_packets }}</td>
+        </tr>
+        <tr>
+          <td>rx_broadcast_packets</td>
+          <td>{{ nic.rx_broadcast_packets }}</td>
+        </tr>
+        <tr>
+          <td>tx_discards</td>
+          <td>{{ nic.tx_discards }}</td>
+        </tr>
+        <tr>
+          <td>rx_discards</td>
+          <td>{{ nic.rx_discards }}</td>
+        </tr>
+        <tr>
+          <td>tx_errors</td>
+          <td>{{ nic.tx_errors }}</td>
+        </tr>
+        <tr>
+          <td>rx_errors</td>
+          <td>{{ nic.rx_errors }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -18,6 +18,7 @@ class BaseTest(TestCase):
         'test-member.yaml',
         'test-membernode.yaml',
         'test-networkservice.yaml',
+        'test-nic.yaml',
     ]
 
     def setUp(self):

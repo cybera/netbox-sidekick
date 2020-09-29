@@ -3,11 +3,15 @@ from django.contrib import admin
 
 from .models import (
     ContactType, Contact,
+
     MemberType, Member, MemberContact,
     MemberNodeType, MemberNode,
     MemberNodeLinkType, MemberNodeLink,
-    NetworkServiceConnectionType, NetworkServiceConnection,
+
     LogicalSystem, RoutingType,
+    NetworkServiceConnectionType, NetworkServiceConnection,
+
+    NIC,
 )
 
 
@@ -141,6 +145,29 @@ class NetworkServiceAdminConnection(admin.ModelAdmin):
                 'ipv6_unicast', 'ipv6_multicast',
                 'provider_router_address_ipv6', 'member_router_address_ipv6',
                 'ipv6_prefixes',),
+        }),
+    )
+
+
+@admin.register(NIC)
+class NICAdmin(admin.ModelAdmin):
+    fieldsets = (
+        ('Interface', {
+            'fields': ('interface',),
+        }),
+
+        ('Status', {
+            'fields': ('is_up', 'is_enabled',),
+        }),
+
+        ('Counters', {
+            'fields': (
+                'tx_octets', 'rx_octets', 'tx_unicast_packets', 'rx_unicast_packets',
+                'tx_multicast_packets', 'rx_multicast_packets',
+                'tx_broadcast_packets', 'rx_broadcast_packets',
+                'tx_discards', 'rx_discards',
+                'tx_errors', 'rx_errors',
+            ),
         }),
     )
 

@@ -1,0 +1,18 @@
+- model: netbox_sidekick.NIC
+  pk: 1
+  fields:
+    interface: 1
+    is_up: True
+    is_enabled: True
+    tx_octets: 1
+    rx_octets: 2
+    tx_unicast_packets: 3
+    rx_unicast_packets: 4
+    tx_multicast_packets: 5
+    rx_multicast_packets: 6
+    tx_broadcast_packets: 7
+    rx_broadcast_packets: 8
+    tx_discards: 9
+    rx_discards: 10
+    tx_errors: 11
+    rx_errors: 12

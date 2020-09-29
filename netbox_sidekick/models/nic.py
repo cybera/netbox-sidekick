@@ -1,7 +1,7 @@
 from django.db import models
 from django.urls import reverse
 
-from utilities.models import ChangeLoggedModel
+from extras.models import ChangeLoggedModel
 
 
 # NIC represents a Network Card / Interface of a device.
@@ -98,10 +98,10 @@ class NIC(ChangeLoggedModel):
     )
 
     class Meta:
-        ordering = ['interface']
+        ordering = ['interface__device__name', 'interface__name']
 
     def __str__(self):
-        return self.interface.name
+        return f"{self.interface.device.name} {self.interface.name}"
 
     def get_absolute_url(self):
-        return reverse('plugins:netbox_sidekick:interface_detail', args=[self.pk])
+        return reverse('plugins:netbox_sidekick:nic_detail', args=[self.pk])

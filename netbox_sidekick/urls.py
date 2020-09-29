@@ -69,6 +69,12 @@ urlpatterns = [
     # Network Service Connection Details
     path('network_service_connections/<int:pk>/', views.NetworkServiceConnectionDetailView.as_view(), name='networkserviceconnection_detail'),
 
+    # NIC Index
+    path('nics/', views.NICIndexView.as_view(), name='nic_index'),
+
+    # NIC Details
+    path('nics/<int:pk>/', views.NICDetailView.as_view(), name='nic_detail'),
+
     # Routing Type Index
     path('routing_types/', views.RoutingTypeIndexView.as_view(), name='routingtype_index'),
 

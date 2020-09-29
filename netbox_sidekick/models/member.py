@@ -3,7 +3,7 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
-from utilities.models import ChangeLoggedModel
+from extras.models import ChangeLoggedModel
 
 
 # MemberType represents different types of a Member.

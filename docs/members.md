@@ -46,7 +46,7 @@ listed in your CSV file match existing tenants in NetBox.
 To perform an import, run:
 
 ```
-cd /opt/netboox/netbox
+cd /opt/netbox/netbox
 python manage.py import_members --file /path/to/members.csv --reconcile
 python manage.py import_members --file /path/to/members.csv --dry-run
 python manage.py import_members --file /path/to/members.csv

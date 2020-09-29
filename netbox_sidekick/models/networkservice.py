@@ -2,7 +2,7 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
-from utilities.models import ChangeLoggedModel
+from extras.models import ChangeLoggedModel
 
 
 # LogicalSystem represents a logical system in a network device.

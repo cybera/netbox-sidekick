@@ -38,5 +38,6 @@ the following reasons:
 
 # Sidekick Resources
 
+* [Devices](./devices.md)
 * [Members](./members.md)
 * [Contacts](./contacts.md)

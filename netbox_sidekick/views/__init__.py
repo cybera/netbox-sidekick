@@ -24,3 +24,7 @@ from .networkservice import (  # noqa: F401
     NetworkServiceConnectionIndexView, NetworkServiceConnectionDetailView,
     RoutingTypeIndexView, RoutingTypeDetailView,
 )
+
+from .nic import (  # noqa: F401
+    NICIndexView, NICDetailView,
+)

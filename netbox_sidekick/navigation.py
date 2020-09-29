@@ -38,8 +38,8 @@ menu_items = (
         link_text='Member Node Link Types',
     ),
     PluginMenuItem(
-        link='plugins:netbox_sidekick:logicalsystem_index',
-        link_text='Logical Systems',
+        link='plugins:netbox_sidekick:nic_index',
+        link_text='NICs',
     ),
     PluginMenuItem(
         link='plugins:netbox_sidekick:routingtype_index',

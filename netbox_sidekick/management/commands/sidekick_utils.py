@@ -8,7 +8,7 @@ VALID_INTERFACE_NAMES = [
     'Ethernet', 'Vlan',
 
     # Juniper
-    'ae', 'ge', 'lt', 'xe',
+    'ae', 'et', 'ge', 'lt', 'xe',
 ]
 
 
@@ -39,7 +39,3 @@ def decrypt_secret(device, name, user, private_key_path):
         s = secret[0]
         s.decrypt(master_key)
         return s.plaintext
-
-
-# NAPALM Customizations
-

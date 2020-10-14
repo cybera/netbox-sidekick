@@ -6,7 +6,7 @@ from django.core.management.base import BaseCommand
 from dcim.choices import InterfaceModeChoices, InterfaceTypeChoices
 from dcim.models import Device, Interface
 
-from ipam.models import IPAddress, VLAN
+from ipam.models import IPAddress
 
 from napalm import get_network_driver
 
@@ -147,25 +147,26 @@ class Command(BaseCommand):
                 if 'lt' in iface_name:
                     iface_type = InterfaceTypeChoices.TYPE_VIRTUAL
 
-                _vlan = None
+                # TODO: VLAN management is incomplete right now.
+                # _vlan = None
                 iface_mode = InterfaceModeChoices.MODE_TAGGED
                 if '.' in iface_name:
                     iface_mode = InterfaceModeChoices.MODE_ACCESS
-                    _vlan = iface_name.split('.')[1]
+                    # _vlan = iface_name.split('.')[1]
                 if 'Vlan' in iface_name:
                     iface_mode = InterfaceModeChoices.MODE_ACCESS
-                    m = RE_ARISTA_VLAN.search(iface_name)
-                    if m:
-                        _vlan = m.group(1)
+                #     m = RE_ARISTA_VLAN.search(iface_name)
+                #     if m:
+                #         _vlan = m.group(1)
 
                 iface_untagged_vlan = None
-                #if _vlan is not None:
-                #    try:
-                #        iface_untagged_vlan = VLAN.objects.get(vid=_vlan)
-                #    except VLAN.MultipleObjectsReturned:
-                #        self.stdout.write(f"WARNING: Multiple results found for VLAN {_vlan}. Not setting VLAN.")
-                #    except VLAN.DoesNotExist:
-                #        self.stdout.write(f"WARNING: No results found for VLAN {_vlan}. Not setting VLAN.")
+                # if _vlan is not None:
+                #     try:
+                #         iface_untagged_vlan = VLAN.objects.get(vid=_vlan)
+                #     except VLAN.MultipleObjectsReturned:
+                #         self.stdout.write(f"WARNING: Multiple results found for VLAN {_vlan}. Not setting VLAN.")
+                #     except VLAN.DoesNotExist:
+                #         self.stdout.write(f"WARNING: No results found for VLAN {_vlan}. Not setting VLAN.")
 
                 # If the interface already exists, update a few fields.
                 # We do not update the interface type because that could have

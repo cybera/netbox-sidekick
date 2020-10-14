@@ -6,7 +6,7 @@ addons:
   postgresql: "9.6"
 language: python
 python:
-  - "3.7"
+  - "3.6.9"
 install:
   - pip install python-dateutil
   - pip install backports.weakref

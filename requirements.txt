@@ -3,4 +3,5 @@ backports-datetime-fromisoformat
 django-extensions
 flake8
 python-dateutil
+napalm
 git+https://code.canarie.ca/gren_map/grenml.git

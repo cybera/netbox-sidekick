@@ -11,9 +11,9 @@ install:
   - pip install python-dateutil
   - pip install backports.weakref
   - pip install backports-datetime-fromisoformat
-  - pip install -r requirements.txt
   - pip install pycodestyle
   - pip install coverage
+  - pip install -r requirements.txt
 before_script:
   - psql --version
   - psql -U postgres -c 'SELECT version();'

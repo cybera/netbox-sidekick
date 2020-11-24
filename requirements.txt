@@ -2,6 +2,7 @@ backports.weakref
 backports-datetime-fromisoformat
 django-extensions
 flake8
+pysnmp
 python-dateutil
 napalm
 git+https://code.canarie.ca/gren_map/grenml.git

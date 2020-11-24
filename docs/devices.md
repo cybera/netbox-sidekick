@@ -59,7 +59,7 @@ To add a device, do the following:
      "snmp" and data of the SNMP community that can be used to connect to the
      device using SNMP.
 
-## Importing Device Details
+## Configuring a Device
 
 You should now have a device with some basic information and some Secrets. You
 can now use a built-in Sidekick management command that will do the following:
@@ -67,22 +67,22 @@ can now use a built-in Sidekick management command that will do the following:
 * Create an interface called "mgmt" and assign it an IP address used to connect
   to the device for API and SNMP communication.
 * Assign that IP address as the Primary IPv4 address of the device.
-* Import all detected interfaces of the device.
-* Import all detected IP Addresses of each interface.
+
+You can do this through the web interface, but this may be a little faster.
 
 To run this command, do the following:
 
 ```
 cd /opt/netbox/netbox
-python manage.py import_device --name "Main Router" --ip 192.168.1.1/24 --dry-run
-python manage.py import_device --name "Main Router" --ip 192.168.1.1/24
+python manage.py configure_device --name "Main Router" --ip 192.168.1.1/24 --dry-run
+python manage.py configure_device --name "Main Router" --ip 192.168.1.1/24
 ```
 
 The `--dry-run` argument will perform a dry run / no-op and report some of
 the actions that will happen.
 
 > Note: The code for this command can be found at
-> `netbox_sidekick/management/commands/import_device.py` if you need to
+> `netbox_sidekick/management/commands/configure_device.py` if you need to
 > customize it.
 
 # NICs
@@ -99,9 +99,8 @@ Importing this information is done via NAPALM and requires a device to have
 some key "Secrets" configured. See the above section on Devices for how to
 do this.
 
-Once these secrets have been added to a device, you can run the same
-`import_device` command described above to import the operational data about
-an interface.
+Once these secrets have been added to a device, you can run a command called
+`update_interfaces` to import the operational data about an interface.
 
 This data is meant to be imported periodically, such as every 5 or 10 minutes.
 The data will only be recorded in NetBox/Sidekick once. Each time more data
@@ -116,7 +115,7 @@ following commands:
 
 ```
 cd /opt/netbox/netbox
-python manage.py import_device --name "Main Router"
+python manage.py update_interfaces --device-name "Main Router"
 ```
 
 "Main Router" is the unique name of the device in NetBox.

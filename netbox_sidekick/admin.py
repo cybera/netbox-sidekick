@@ -135,14 +135,14 @@ class NetworkServiceAdminConnection(admin.ModelAdmin):
 
         ('IPv4 Information', {
             'fields': (
-                'ipv4_unicast', 'ipv4_multicast',
+                'ipv4_unicast', 'ipv4_nunicast',
                 'provider_router_address_ipv4', 'member_router_address_ipv4',
                 'ipv4_prefixes',),
         }),
 
         ('IPv6 Information', {
             'fields': (
-                'ipv6_unicast', 'ipv6_multicast',
+                'ipv6_unicast', 'ipv6_nunicast',
                 'provider_router_address_ipv6', 'member_router_address_ipv6',
                 'ipv6_prefixes',),
         }),
@@ -157,16 +157,14 @@ class NICAdmin(admin.ModelAdmin):
         }),
 
         ('Status', {
-            'fields': ('is_up', 'is_enabled',),
+            'fields': ('admin_status', 'oper_status',),
         }),
 
         ('Counters', {
             'fields': (
-                'tx_octets', 'rx_octets', 'tx_unicast_packets', 'rx_unicast_packets',
-                'tx_multicast_packets', 'rx_multicast_packets',
-                'tx_broadcast_packets', 'rx_broadcast_packets',
-                'tx_discards', 'rx_discards',
-                'tx_errors', 'rx_errors',
+                'out_octets', 'in_octets', 'out_unicast_packets', 'in_unicast_packets',
+                'out_nunicast_packets', 'in_nunicast_packets',
+                'out_errors', 'in_errors',
             ),
         }),
     )

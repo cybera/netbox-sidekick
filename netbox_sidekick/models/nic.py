@@ -13,87 +13,63 @@ class NIC(ChangeLoggedModel):
         on_delete=models.PROTECT,
     )
 
-    is_up = models.BooleanField(
-        verbose_name='Is Up?',
-        help_text='Is the interface up?',
+    admin_status = models.IntegerField(
+        verbose_name='Admin Status',
+        help_text='Admin status of the interface',
         default=True,
     )
 
-    is_enabled = models.BooleanField(
-        verbose_name='Is Enabled?',
-        help_text='Is the interface administratively enabled?',
+    oper_status = models.IntegerField(
+        verbose_name='Oper Status',
+        help_text='Oper status of the interface',
         default=True,
     )
 
-    tx_octets = models.BigIntegerField(
-        verbose_name="TX Octets",
-        help_text="TX Octets",
+    out_octets = models.BigIntegerField(
+        verbose_name="Out Octets",
+        help_text="Out Octets",
         default=0,
     )
 
-    rx_octets = models.BigIntegerField(
-        verbose_name="RX Octets",
-        help_text="RX Octets",
+    in_octets = models.BigIntegerField(
+        verbose_name="In Octets",
+        help_text="In Octets",
         default=0,
     )
 
-    tx_unicast_packets = models.BigIntegerField(
-        verbose_name="TX Unicast Packets",
-        help_text="TX Unicast Packets",
+    out_unicast_packets = models.BigIntegerField(
+        verbose_name="Out Unicast Packets",
+        help_text="Out Unicast Packets",
         default=0,
     )
 
-    rx_unicast_packets = models.BigIntegerField(
-        verbose_name="RX Unicast Packets",
-        help_text="RX Unicast Packets",
+    in_unicast_packets = models.BigIntegerField(
+        verbose_name="In Unicast Packets",
+        help_text="In Unicast Packets",
         default=0,
     )
 
-    tx_multicast_packets = models.BigIntegerField(
-        verbose_name="TX Multicast Packets",
-        help_text="TX Multicast Packets",
+    out_nunicast_packets = models.BigIntegerField(
+        verbose_name="Out Non Unicast Packets",
+        help_text="Out Non Unicast Packets",
         default=0,
     )
 
-    rx_multicast_packets = models.BigIntegerField(
-        verbose_name="RX Multicast Packets",
-        help_text="RX Multicast Packets",
+    in_nunicast_packets = models.BigIntegerField(
+        verbose_name="In Non Unicast Packets",
+        help_text="In Non Unicast Packets",
         default=0,
     )
 
-    tx_broadcast_packets = models.BigIntegerField(
-        verbose_name="TX Broadcast Packets",
-        help_text="TX Broadcast Packets",
+    out_errors = models.BigIntegerField(
+        verbose_name="Out Errors",
+        help_text="Out Errors",
         default=0,
     )
 
-    rx_broadcast_packets = models.BigIntegerField(
-        verbose_name="RX Broadcast Packets",
-        help_text="RX Broadcast Packets",
-        default=0,
-    )
-
-    tx_discards = models.BigIntegerField(
-        verbose_name="TX Discards",
-        help_text="TX Discards",
-        default=0,
-    )
-
-    rx_discards = models.BigIntegerField(
-        verbose_name="RX Discards",
-        help_text="RX Discards",
-        default=0,
-    )
-
-    tx_errors = models.BigIntegerField(
-        verbose_name="TX Errors",
-        help_text="TX Errors",
-        default=0,
-    )
-
-    rx_errors = models.BigIntegerField(
-        verbose_name="RX Errors",
-        help_text="RX Errors",
+    in_errors = models.BigIntegerField(
+        verbose_name="In Errors",
+        help_text="In Errors",
         default=0,
     )
 

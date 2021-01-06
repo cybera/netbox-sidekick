@@ -13,11 +13,16 @@ from netbox_sidekick.models import NIC
 from .sidekick_utils import (
     VALID_INTERFACE_NAMES,
     decrypt_secret,
-    get_device_info_via_snmp,
+    snmpwalk_bulk,
 )
 
 
 RE_ARISTA_VLAN = re.compile(r'^Vlan(\d+)$')
+
+IP_VERSIONS = {
+    'ipv4': 4,
+    'ipv6': 6,
+}
 
 
 class Command(BaseCommand):
@@ -63,7 +68,8 @@ class Command(BaseCommand):
                 return
 
             try:
-                device_info = get_device_info_via_snmp(_mgmt_ip, snmp)
+                device_info = snmpwalk_bulk(_mgmt_ip, snmp)
+                # device_info = get_device_info_via_snmp(_mgmt_ip, snmp)
             except Exception as e:
                 self.stdout.write(f"Error querying device {device}: {e}")
                 return
@@ -78,19 +84,19 @@ class Command(BaseCommand):
             # For each device that is not supposed to be ignored,
             # add that interface to the device if it doesn't already exist.
             for iface_index, iface_details in device_info.items():
-                iface_name = iface_details['name']
+                iface_name = iface_details['ifName']
                 # self.stdout.write(f"{iface_details['name']}: {iface_details['oper_status']}")
                 # continue
 
-                if not any(i in iface_details['name'] for i in VALID_INTERFACE_NAMES):
+                if not any(i in iface_details['ifName'] for i in VALID_INTERFACE_NAMES):
                     continue
 
                 iface_type = InterfaceTypeChoices.TYPE_VIRTUAL
-                if iface_details['speed'] == 1000:
+                if iface_details['ifHighSpeed'] == 1000:
                     iface_type = InterfaceTypeChoices.TYPE_1GE_FIXED
-                if iface_details['speed'] == 10000:
+                if iface_details['ifHighSpeed'] == 10000:
                     iface_type = InterfaceTypeChoices.TYPE_10GE_FIXED
-                if iface_details['type'] == 'ieee8023adLag':
+                if iface_details['ifHighSpeed'] == 'ieee8023adLag':
                     iface_type = InterfaceTypeChoices.TYPE_LAG
 
                 # TODO: VLAN management is incomplete right now.
@@ -122,17 +128,18 @@ class Command(BaseCommand):
                     existing_interface = existing_interfaces[iface_name]
 
                     changed = False
-                    if existing_interface.description != iface_details['alias']:
-                        existing_interface.description = iface_details['description']
+                    _descr = iface_details['ifAlias'].strip()
+                    if existing_interface.description != _descr:
+                        existing_interface.description = _descr
                         changed = True
 
                     iface_status = False
-                    admin_status = iface_details['admin_status']
-                    oper_status = iface_details['oper_status']
+                    admin_status = iface_details['ifAdminStatus']
+                    oper_status = iface_details['ifOperStatus']
                     if admin_status == 1 and oper_status == 1:
                         iface_status = True
                     if existing_interface.connection_status != iface_status:
-                        existing_interface.connection_status = admin_status
+                        existing_interface.connection_status = iface_status
                         changed = True
 
                     if existing_interface.untagged_vlan != iface_untagged_vlan:
@@ -151,13 +158,12 @@ class Command(BaseCommand):
                     else:
                         iface = Interface(
                             device=device,
-                            description=iface_details['description'],
+                            description=iface_details['ifDescr'],
                             name=iface_name,
                             type=iface_type,
-                            admin_status=iface_details['admin_status'],
-                            oper_status=iface_details['oper_status'],
-                            mac_address=iface_details['mac_address'],
-                            mtu=iface_details['mtu'],
+                            enabled=iface_details['ifAdminStatus'],
+                            mac_address=iface_details['ifPhysAddress'],
+                            mtu=iface_details['ifMtu'],
                             mode=iface_mode,
                             untagged_vlan=iface_untagged_vlan,
                         )
@@ -173,7 +179,7 @@ class Command(BaseCommand):
             # For each interface that is not supposed to be ignored,
             # add the IP address to the interface if it doesn't already exist.
             for iface_index, iface_details in device_info.items():
-                iface_name = iface_details['name']
+                iface_name = iface_details['ifName']
 
                 if not any(i in iface_name for i in VALID_INTERFACE_NAMES):
                     continue
@@ -182,71 +188,86 @@ class Command(BaseCommand):
                     continue
 
                 existing_interface = existing_interfaces[iface_name]
+                existing_ip_addresses = existing_interface.ip_addresses.all()
 
-                for version in ['ipv4', 'ipv6']:
+                for version, family in IP_VERSIONS.items():
                     if version not in iface_details.keys():
                         continue
 
                     if iface_details[version] is None:
                         continue
 
-                    for _ip in iface_details[version]:
-                        try:
-                            ip = IPAddress.objects.get(address=_ip)
-                            if ip.assigned_object is not None and ip.assigned_object.id == existing_interface.id:
-                                continue
-
-                            if ip.assigned_object is not None and ip.assigned_object.id != existing_interface.id:
-                                # If the IP being reported is the management IP, then ignore.
-                                # This is because we want to standardize on the name of the
-                                # management interface, even if the IP address is on a different
-                                # interface. This isn't ideal and should be improved in the future.
-                                #
-                                # This also ignores private IP addresses since they can be reused
-                                # in different locations. Again, this isn't ideal and should be
-                                # improved in the future.
-                                if ip != mgmt_ip and \
-                                   not f"{ip}".startswith("10.") and \
-                                   not f"{ip}".startswith("192.") and \
-                                   not f"{ip}".startswith("172."):
+                    # Check if an IP was removed from the device.
+                    # If so, then delete it from NetBox.
+                    for existing_ip in existing_ip_addresses:
+                        if existing_ip.family == family:
+                            if f"{existing_ip}" not in iface_details[version]:
+                                if options['dry_run']:
                                     self.stdout.write(
-                                        f"IP Address {_ip} is already assigned to " +
+                                        f"Would have removed {existing_ip} from {iface_name}")
+                                else:
+                                    existing_ip.assigned_object = None
+                                    existing_ip.description = f"Previously assigned to {options['device_name']} on interface {iface_name}"
+                                    existing_ip.save()
+
+                    # Check if an IP needs to be added to NetBox.
+                    for interface_ip in iface_details[version]:
+                        # If the IP polled from the device is not in the NetBox device interface...
+                        if not any(interface_ip == f"{_ip}" for _ip in existing_ip_addresses):
+                            try:
+                                ip = IPAddress.objects.get(address=interface_ip)
+                                if ip.assigned_object is not None and ip.assigned_object.id != existing_interface.id:
+                                    # If the IP being reported is the management IP, then ignore.
+                                    # This is because we want to standardize on the name of the
+                                    # management interface, even if the IP address is on a different
+                                    # interface. This isn't ideal and should be improved in the
+                                    # future.
+                                    if ip == mgmt_ip:
+                                        continue
+
+                                    # Also ignore private IP addresses since they can be
+                                    # reused in different locations. Again, this isn't ideal and
+                                    # should be improved in the future.
+                                    if f"{ip}".startswith("10.") or f"{ip}".startswith("172.") or f"{ip}".startswith("192."):
+                                        continue
+
+                                    self.stdout.write(
+                                        f"IP Address {interface_ip} is already assigned to " +
                                         f"{ip.assigned_object.name} on {ip.assigned_object.device.name}. " +
                                         f"Will not assign to {existing_interface.name}.")
                                     continue
-                            # Otherwise, add the IP to the interface.
-                            else:
+                                # Otherwise, add the IP to the interface.
+                                else:
+                                    if options['dry_run']:
+                                        self.stdout.write(
+                                            f"Would have added {interface_ip} to {existing_interface.name}")
+                                    else:
+                                        if ip.description != existing_interface.description:
+                                            ip.description = existing_interface.description
+                                        ip.assigned_object = existing_interface
+                                        ip.save()
+                            except IPAddress.MultipleObjectsReturned:
+                                self.stdout.write(f"WARNING: Multiple results found for IP {interface_ip}. Skipping.")
+                                continue
+                            except IPAddress.DoesNotExist:
                                 if options['dry_run']:
                                     self.stdout.write(
-                                        f"Would have added {_ip} to {existing_interface.name}")
-
+                                        f"Would have created IP address {interface_ip} and added it to " +
+                                        f"{existing_interface.name}")
                                 else:
-                                    if ip.description != existing_interface.description:
-                                        ip.description = existing_interface.description
-                                    ip.assigned_object = existing_interface
+                                    ip = IPAddress(
+                                        address=interface_ip,
+                                        description=existing_interface.description)
                                     ip.save()
-                        except IPAddress.MultipleObjectsReturned:
-                            self.stdout.write(f"WARNING: Multiple results found for IP {_ip}. Skipping.")
-                            continue
-                        except IPAddress.DoesNotExist:
-                            if options['dry_run']:
-                                self.stdout.write(
-                                    f"Would have created IP address {_ip} and added it to " +
-                                    f"{existing_interface.name}")
-                            else:
-                                ip = IPAddress(
-                                    address=_ip,
-                                    description=existing_interface.description)
-                                ip.save()
 
-                                existing_interface.ip_address = ip
-                                existing_interface.save()
+                                    existing_interface.ip_address = ip
+                                    existing_interface.save()
 
             # Obtain the counters on each interface.
             # For each interface that is not supposed to be ignored,
             # store the counters as a NIC object.
             for iface_index, iface_details in device_info.items():
-                iface_name = iface_details['name']
+                iface_name = iface_details['ifName']
                 if not any(i in iface_name for i in VALID_INTERFACE_NAMES):
                     continue
 
@@ -261,15 +282,15 @@ class Command(BaseCommand):
                         interface=existing_interface,
                         defaults={
                             'interface_id': existing_interface.id,
-                            'admin_status': existing_interface.admin_status,
-                            'oper_status': existing_interface.oper_status,
-                            'out_octets': iface_details['out_octets'],
-                            'in_octets': iface_details['in_octets'],
-                            'out_unicast_packets': iface_details['out_unicast_packets'],
-                            'in_unicast_packets': iface_details['in_unicast_packets'],
-                            'out_nunicast_packets': iface_details['out_nunicast_packets'],
-                            'in_nunicast_packets': iface_details['in_nunicast_packets'],
-                            'out_errors': iface_details['out_errors'],
-                            'in_errors': iface_details['in_errors'],
+                            'admin_status': iface_details['ifAdminStatus'],
+                            'oper_status': iface_details['ifOperStatus'],
+                            'out_octets': iface_details['ifHCOutOctets'],
+                            'in_octets': iface_details['ifHCInOctets'],
+                            'out_unicast_packets': iface_details['ifHCOutUcastPkts'],
+                            'in_unicast_packets': iface_details['ifHCInUcastPkts'],
+                            'out_nunicast_packets': iface_details['ifOutNUcastPkts'],
+                            'in_nunicast_packets': iface_details['ifInNUcastPkts'],
+                            'out_errors': iface_details['ifOutErrors'],
+                            'in_errors': iface_details['ifInErrors'],
                         }
                     )

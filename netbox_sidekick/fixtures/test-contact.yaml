@@ -39,3 +39,31 @@
     phone: '403-555-1234'
     email: 'joe.smith@example.com'
     comments: Foo bar
+
+- model: netbox_sidekick.MemberContact
+  pk: 1
+  fields:
+    member: 1
+    contact: 1
+    type: 1
+
+- model: netbox_sidekick.MemberContact
+  pk: 2
+  fields:
+    member: 1
+    contact: 2
+    type: 2
+
+- model: netbox_sidekick.MemberContact
+  pk: 3
+  fields:
+    member: 2
+    contact: 3
+    type: 1
+
+- model: netbox_sidekick.MemberContact
+  pk: 4
+  fields:
+    member: 2
+    contact: 2
+    type: 2

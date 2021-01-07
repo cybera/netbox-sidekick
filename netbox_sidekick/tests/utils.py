@@ -13,12 +13,12 @@ from netbox.urls import _patterns
 class BaseTest(TestCase):
     fixtures = [
         'test-contact.yaml',
+        'test-customfield.yaml',
         'test-device.yaml',
         'test-ipam.yaml',
-        'test-member.yaml',
-        'test-membernode.yaml',
         'test-networkservice.yaml',
         'test-nic.yaml',
+        'test-tenant.yaml',
     ]
 
     def setUp(self):

@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 
 from napalm import get_network_driver
 
-from netbox.api import TokenAuthentication
+from netbox.api.authentication import TokenAuthentication
 
 from netbox_sidekick.management.commands.sidekick_utils import decrypt_secret
 

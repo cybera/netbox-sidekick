@@ -49,7 +49,10 @@ class ContactFilterSet(django_filters.FilterSet):
             {'class': 'netbox-select2-static'})
 
     def filter_member(self, queryset, name, value):
-        return queryset.filter(membercontact__member__tenant__description=value)
+        return queryset.filter(
+            Q(membercontact__member__name__icontains=value) |
+            Q(membercontact__member__description__icontains=value)
+        ).distinct()
 
     def search(self, queryset, name, value):
         if not value.strip():

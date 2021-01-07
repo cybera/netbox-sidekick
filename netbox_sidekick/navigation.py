@@ -14,30 +14,6 @@ menu_items = (
         link_text='Logical Systems',
     ),
     PluginMenuItem(
-        link='plugins:netbox_sidekick:member_index',
-        link_text='Members',
-    ),
-    PluginMenuItem(
-        link='plugins:netbox_sidekick:membertype_index',
-        link_text='Member Types',
-    ),
-    PluginMenuItem(
-        link='plugins:netbox_sidekick:membernode_index',
-        link_text='Member Nodes',
-    ),
-    PluginMenuItem(
-        link='plugins:netbox_sidekick:membernodetype_index',
-        link_text='Member Node Types',
-    ),
-    PluginMenuItem(
-        link='plugins:netbox_sidekick:membernodelink_index',
-        link_text='Member Node Links',
-    ),
-    PluginMenuItem(
-        link='plugins:netbox_sidekick:membernodelinktype_index',
-        link_text='Member Node Link Types',
-    ),
-    PluginMenuItem(
         link='plugins:netbox_sidekick:nic_index',
         link_text='NICs',
     ),

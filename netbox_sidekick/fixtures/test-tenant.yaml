@@ -1,0 +1,36 @@
+- model: tenancy.TenantGroup
+  pk: 1
+  fields:
+    name: "Members"
+    slug: "members"
+    level: 0
+    lft: 1
+    rght: 2
+    tree_id: 2
+
+- model: tenancy.Tenant
+  pk: 1
+  fields:
+    name: "East University"
+    slug: "east-university"
+    group: 1
+
+- model: tenancy.Tenant
+  pk: 2
+  fields:
+    name: "Central School"
+    slug: "central-school"
+    group: 1
+
+- model: tenancy.Tenant
+  pk: 3
+  fields:
+    name: "South Not For Profit"
+    slug: "south-not-for-profit"
+    group: 1
+
+- model: tenancy.Tenant
+  pk: 4
+  fields:
+    name: "Cybera"
+    slug: "cybera"

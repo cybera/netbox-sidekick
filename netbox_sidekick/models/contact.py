@@ -81,3 +81,29 @@ class Contact(ChangeLoggedModel):
 
     def get_absolute_url(self):
         return reverse('plugins:netbox_sidekick:contact_detail', args=[self.pk])
+
+
+class MemberContact(ChangeLoggedModel):
+    member = models.ForeignKey(
+        'tenancy.Tenant',
+        on_delete=models.PROTECT,
+    )
+
+    contact = models.ForeignKey(
+        'netbox_sidekick.Contact',
+        on_delete=models.PROTECT,
+    )
+
+    type = models.ForeignKey(
+        'netbox_sidekick.ContactType',
+        on_delete=models.PROTECT,
+    )
+
+    class Meta:
+        ordering = ['member', 'contact', 'type']
+
+    def __str__(self):
+        return f"{self.member} {self.type}: {self.contact}"
+
+    def get_absolute_url(self):
+        return reverse('plugins:netbox_sidekick:membercontact_detail', args=[self.pk])

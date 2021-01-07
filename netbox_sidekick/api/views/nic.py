@@ -1,7 +1,7 @@
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import ListAPIView
 
-from netbox.api import TokenAuthentication
+from netbox.api.authentication import TokenAuthentication
 
 from netbox_sidekick.api.serializers import NICSerializer
 from netbox_sidekick.models import NIC

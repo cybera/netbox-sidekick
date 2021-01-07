@@ -43,7 +43,7 @@ class NetworkServiceConnectionTest(BaseTest):
 
     # Network Service
     def test_networkserviceconnection_basic(self):
-        v = NetworkServiceConnection.objects.get(member__tenant__name='East University')
+        v = NetworkServiceConnection.objects.get(member__name='East University')
         self.assertEqual(v.name, "East University's peering service")
 
     def test_view_networkserviceconnection_index(self):

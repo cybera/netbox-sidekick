@@ -9,8 +9,8 @@ from netbox_sidekick.models import (
     NetworkServiceConnectionType, NetworkServiceConnection,
 )
 
-MEMBER_LINK = """
-    <a href="{{ record.member.get_absolute_url }}">{{ record.member.tenant.description }}</a>
+TENANT_LINK = """
+    <a href="{{ record.tenant.get_absolute_url }}">{{ record.tenant.description }}</a>
 """
 
 
@@ -53,7 +53,7 @@ class NetworkServiceConnectionTable(BaseTable):
         args=[Accessor('network_service_connection_type.slug')])
 
     member = tables.TemplateColumn(
-        template_code=MEMBER_LINK,
+        template_code=TENANT_LINK,
         verbose_name='Member',
     )
 

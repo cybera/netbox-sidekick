@@ -6,8 +6,11 @@ from django_filters.views import FilterView
 from django_tables2.views import SingleTableView
 
 from netbox_sidekick.filters import ContactTypeFilterSet, ContactFilterSet
-from netbox_sidekick.models import ContactType, Contact, Member
-from netbox_sidekick.tables import ContactTypeTable, ContactTable, MemberTable
+from netbox_sidekick.models import ContactType, Contact
+from netbox_sidekick.tables import ContactTypeTable, ContactTable
+
+from tenancy.models import Tenant
+from tenancy.tables import TenantTable
 
 
 # Contact Type Index
@@ -62,7 +65,7 @@ class ContactDetailView(PermissionRequiredMixin, DetailView):
         context['contact'] = contact
 
         # Build a table of all members that the contact is part of.
-        table = MemberTable(Member.objects.filter(
+        table = TenantTable(Tenant.objects.filter(
             membercontact__contact=contact.id))
         context['table'] = table
 

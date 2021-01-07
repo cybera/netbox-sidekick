@@ -103,7 +103,7 @@ class NetworkServiceConnection(ChangeLoggedModel):
     )
 
     member = models.ForeignKey(
-        'netbox_sidekick.Member',
+        'tenancy.Tenant',
         on_delete=models.PROTECT,
     )
 
@@ -257,7 +257,7 @@ class NetworkServiceConnection(ChangeLoggedModel):
         ordering = ['member', 'network_service_connection_type']
 
     def __str__(self):
-        return f"{self.tenant.description}: {self.name}"
+        return f"{self.member.name}: {self.name}"
 
     def get_absolute_url(self):
         return reverse('plugins:netbox_sidekick:networkserviceconnection_detail', args=[self.pk])

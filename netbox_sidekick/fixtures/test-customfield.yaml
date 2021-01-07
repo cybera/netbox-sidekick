@@ -1,0 +1,28 @@
+- model: extras.CustomField
+  pk: 1
+  fields:
+    name: 'member_type'
+    type: 'select'
+    required: false
+    choices:
+      - 'Enterprise'
+      - 'Government/Not For Profit'
+      - 'K-12 School Districts'
+      - 'Post-Secondary Institution'
+
+- model: extras.CustomField
+  pk: 2
+  fields:
+    name: 'latitude'
+    type: 'text'
+    required: false
+    default: ''
+
+- model: extras.CustomField
+  pk: 2
+  fields:
+    name: 'longitude'
+    type: 'text'
+    required: false
+    default: ''
+

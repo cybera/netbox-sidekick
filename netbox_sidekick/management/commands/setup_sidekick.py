@@ -71,7 +71,7 @@ class Command(BaseCommand):
             if options['dry_run']:
                 self.stdout.write('Would have created a Custom Field called longitude')
             else:
-                latitude = CustomField(
+                longitude = CustomField(
                     type=CustomFieldTypeChoices.TYPE_TEXT,
                     name='longitude',
                     required=False,

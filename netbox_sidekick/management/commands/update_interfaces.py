@@ -138,8 +138,8 @@ class Command(BaseCommand):
                     oper_status = iface_details['ifOperStatus']
                     if admin_status == 1 and oper_status == 1:
                         iface_status = True
-                    if existing_interface.connection_status != iface_status:
-                        existing_interface.connection_status = iface_status
+                    if existing_interface.enabled != iface_status:
+                        existing_interface.enabled = iface_status
                         changed = True
 
                     if existing_interface.untagged_vlan != iface_untagged_vlan:

@@ -16,27 +16,43 @@
     name: "BGP"
     slug: "bgp"
 
-- model: netbox_sidekick.NetworkServiceConnectionType
+- model: netbox_sidekick.NetworkServiceType
   pk: 1
   fields:
     name: "Peering"
     slug: "peering"
     description: "Peering for members"
 
-- model: netbox_sidekick.NetworkServiceConnection
+- model: netbox_sidekick.NetworkService
   pk: 1
   fields:
     name: "East University's peering service"
     description: "Peering service for East University"
     active: True
-    network_service_connection_type: 1
+    network_service_type: 1
     member: 1
-    logical_system: 1
-    routing_type: 1
+    legacy_id: 1
+
+- model: netbox_sidekick.NetworkServiceDevice
+  pk: 1
+  fields:
+    network_service: 1
     device: 1
     interface: 1
+    vlan: 300
+    legacy_id: 1
+
+- model: netbox_sidekick.NetworkServiceL3
+  pk: 1
+  fields:
+    network_service_device: 1
+    logical_system: 1
+    routing_type: 1
+    ipv4_unicast: 1
+    ipv4_multicast: 0
+    ipv6_unicast: 1
+    ipv6_multicast: 0
+    provider_router_address_ipv4: '192.168.1.1/31'
+    member_router_address_ipv4: '192.168.1.2/31'
     asn: 12345
-    ipv4_unicast: True
-    ipv4_multicast: True
-    provider_router_address_ipv4: 1
-    member_router_address_ipv4: 2
+    legacy_id: 1

@@ -101,7 +101,7 @@ Then generate the image:
 
 ```
 $ cd /opt/netbox/netbox
-$ python manage.py graph_models netbox_sidekick > ~/output.png
+$ python manage.py graph_models netbox_sidekick > ~/output.dot
 $ dot -Tpng ~/output.dot -o /opt/netbox-sidekick/docs/img/models.png
 ```
 

@@ -4,7 +4,8 @@ from django.db.models import Q
 
 from netbox_sidekick.models import (
     RoutingType, LogicalSystem,
-    NetworkServiceConnectionType, NetworkServiceConnection,
+    NetworkServiceType,
+    NetworkService,
 )
 
 
@@ -44,14 +45,14 @@ class RoutingTypeFilterSet(django_filters.FilterSet):
         ).distinct()
 
 
-class NetworkServiceConnectionTypeFilterSet(django_filters.FilterSet):
+class NetworkServiceTypeFilterSet(django_filters.FilterSet):
     q = django_filters.CharFilter(
         method='search',
         label='Search',
     )
 
     class Meta:
-        model = NetworkServiceConnectionType
+        model = NetworkServiceType
         fields = []
 
     def search(self, queryset, name, value):
@@ -63,26 +64,22 @@ class NetworkServiceConnectionTypeFilterSet(django_filters.FilterSet):
         ).distinct()
 
 
-class NetworkServiceConnectionFilterSet(django_filters.FilterSet):
+class NetworkServiceFilterSet(django_filters.FilterSet):
     q = django_filters.CharFilter(
         method='search',
         label='Search',
     )
 
     class Meta:
-        model = NetworkServiceConnection
-        fields = ['device', 'logical_system', 'member', 'network_service_connection_type']
+        model = NetworkService
+        fields = ['member', 'network_service_type']
 
     def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
         super().__init__(
             data=data, queryset=queryset, request=request, prefix=prefix)
-        self.filters['device'].field.widget.attrs.update(
-            {'class': 'netbox-select2-static'})
-        self.filters['logical_system'].field.widget.attrs.update(
-            {'class': 'netbox-select2-static'})
         self.filters['member'].field.widget.attrs.update(
             {'class': 'netbox-select2-static'})
-        self.filters['network_service_connection_type'].field.widget.attrs.update(
+        self.filters['network_service_type'].field.widget.attrs.update(
             {'class': 'netbox-select2-static'})
 
     def search(self, queryset, name, value):

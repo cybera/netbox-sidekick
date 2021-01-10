@@ -7,17 +7,18 @@ from django_tables2.views import SingleTableView
 
 from netbox_sidekick.filters import (
     LogicalSystemFilterSet, RoutingTypeFilterSet,
-    NetworkServiceConnectionTypeFilterSet, NetworkServiceConnectionFilterSet,
+    NetworkServiceTypeFilterSet, NetworkServiceFilterSet,
 )
 
 from netbox_sidekick.tables import (
     LogicalSystemTable, RoutingTypeTable,
-    NetworkServiceConnectionTypeTable, NetworkServiceConnectionTable,
+    NetworkServiceTypeTable, NetworkServiceTable,
 )
 
 from netbox_sidekick.models import (
     LogicalSystem, RoutingType,
-    NetworkServiceConnectionType, NetworkServiceConnection,
+    NetworkServiceType,
+    NetworkService,
 )
 
 
@@ -42,8 +43,8 @@ class LogicalSystemDetailView(PermissionRequiredMixin, DetailView):
         logical_system = get_object_or_404(LogicalSystem, slug=self.kwargs['slug'])
         context['logical_system'] = logical_system
 
-        table = NetworkServiceConnectionTable(NetworkServiceConnection.objects.filter(
-            logical_system=logical_system.id))
+        table = NetworkServiceTable(NetworkService.objects.filter(
+            network_service_devices__network_service_l3__logical_system=logical_system.id))
         context['table'] = table
 
         return context
@@ -70,53 +71,53 @@ class RoutingTypeDetailView(PermissionRequiredMixin, DetailView):
         routing_type = get_object_or_404(RoutingType, slug=self.kwargs['slug'])
         context['routing_type'] = routing_type
 
-        table = NetworkServiceConnectionTable(NetworkServiceConnection.objects.filter(
-            routing_type=routing_type.id))
+        table = NetworkServiceTable(NetworkService.objects.filter(
+            network_service_devices__network_service_l3__routing_type=routing_type.id))
         context['table'] = table
 
         return context
 
 
-# Network Service Connection Type Index
-class NetworkServiceConnectionTypeIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
-    permission_required = 'netbox_sidekick.view_networkserviceconnectiontype'
-    model = NetworkServiceConnectionType
-    table_class = NetworkServiceConnectionTypeTable
-    filterset_class = NetworkServiceConnectionTypeFilterSet
-    template_name = 'netbox_sidekick/networkservice/networkserviceconnectiontype_index.html'
+# Network Service Type Index
+class NetworkServiceTypeIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
+    permission_required = 'netbox_sidekick.view_networkservicetype'
+    model = NetworkServiceType
+    table_class = NetworkServiceTypeTable
+    filterset_class = NetworkServiceTypeFilterSet
+    template_name = 'netbox_sidekick/networkservice/networkservicetype_index.html'
 
 
-# Network Service Connection Type Details
-class NetworkServiceConnectionTypeDetailView(PermissionRequiredMixin, DetailView):
-    permission_required = 'netbox_sidekick.view_networkserviceconnectiontype'
-    model = NetworkServiceConnectionType
-    template_name = 'netbox_sidekick/networkservice/networkserviceconnectiontype.html'
+# Network Service Type Details
+class NetworkServiceTypeDetailView(PermissionRequiredMixin, DetailView):
+    permission_required = 'netbox_sidekick.view_networkservicetype'
+    model = NetworkServiceType
+    template_name = 'netbox_sidekick/networkservice/networkservicetype.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        nst = get_object_or_404(NetworkServiceConnectionType, slug=self.kwargs['slug'])
+        nst = get_object_or_404(NetworkServiceType, slug=self.kwargs['slug'])
         context['nst'] = nst
 
-        table = NetworkServiceConnectionTable(NetworkServiceConnection.objects.filter(
-            network_service_connection_type=nst.id))
+        table = NetworkServiceTable(NetworkService.objects.filter(
+            network_service_type=nst.id))
         context['table'] = table
 
         return context
 
 
-# Network Service Connection Index
-class NetworkServiceConnectionIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
-    permission_required = 'netbox_sidekick.view_networkserviceconnection'
-    model = NetworkServiceConnection
-    table_class = NetworkServiceConnectionTable
-    filterset_class = NetworkServiceConnectionFilterSet
-    template_name = 'netbox_sidekick/networkservice/networkserviceconnection_index.html'
+# Network Service Index
+class NetworkServiceIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
+    permission_required = 'netbox_sidekick.view_networkservice'
+    model = NetworkService
+    table_class = NetworkServiceTable
+    filterset_class = NetworkServiceFilterSet
+    template_name = 'netbox_sidekick/networkservice/networkservice_index.html'
 
 
-# Network Service Connection Details
-class NetworkServiceConnectionDetailView(PermissionRequiredMixin, DetailView):
-    permission_required = 'netbox_sidekick.view_networkserviceconnection'
-    model = NetworkServiceConnection
+# Network Service Details
+class NetworkServiceDetailView(PermissionRequiredMixin, DetailView):
+    permission_required = 'netbox_sidekick.view_networkservice'
+    model = NetworkService
     context_object_name = 'ns'
-    template_name = 'netbox_sidekick/networkservice/networkserviceconnection.html'
+    template_name = 'netbox_sidekick/networkservice/networkservice.html'

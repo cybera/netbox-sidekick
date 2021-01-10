@@ -41,3 +41,4 @@ the following reasons:
 * [Devices](./devices.md)
 * [Members](./members.md)
 * [Contacts](./contacts.md)
+* [Network Services](./network_services.md)

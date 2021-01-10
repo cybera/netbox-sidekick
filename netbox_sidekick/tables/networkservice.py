@@ -6,7 +6,7 @@ from utilities.tables import BaseTable, ToggleColumn
 
 from netbox_sidekick.models import (
     LogicalSystem, RoutingType,
-    NetworkServiceConnectionType, NetworkServiceConnection,
+    NetworkServiceType, NetworkService,
 )
 
 TENANT_LINK = """
@@ -32,25 +32,25 @@ class RoutingTypeTable(BaseTable):
         fields = ('pk', 'name', 'description')
 
 
-class NetworkServiceConnectionTypeTable(BaseTable):
+class NetworkServiceTypeTable(BaseTable):
     pk = ToggleColumn()
     name = tables.LinkColumn()
 
     class Meta(BaseTable.Meta):
-        model = NetworkServiceConnectionType
+        model = NetworkServiceType
         fields = ('pk', 'name', 'description')
 
 
-class NetworkServiceConnectionTable(BaseTable):
+class NetworkServiceTable(BaseTable):
     pk = ToggleColumn()
 
     name = tables.LinkColumn(
-        'plugins:netbox_sidekick:networkserviceconnection_detail',
+        'plugins:netbox_sidekick:networkservice_detail',
         args=[Accessor('pk')])
 
     network_service_type = tables.LinkColumn(
-        'plugins:netbox_sidekick:networkservicetypeconnection_detail',
-        args=[Accessor('network_service_connection_type.slug')])
+        'plugins:netbox_sidekick:networkservicetype_detail',
+        args=[Accessor('network_service_type.slug')])
 
     member = tables.TemplateColumn(
         template_code=TENANT_LINK,
@@ -58,5 +58,5 @@ class NetworkServiceConnectionTable(BaseTable):
     )
 
     class Meta(BaseTable.Meta):
-        model = NetworkServiceConnection
-        fields = ('pk', 'name', 'network_service_connection_type', 'tenant')
+        model = NetworkService
+        fields = ('pk', 'name', 'network_service_type', 'tenant')

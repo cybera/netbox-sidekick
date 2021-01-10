@@ -2,13 +2,13 @@ from django.urls import reverse
 
 from netbox_sidekick.models import (
     LogicalSystem, RoutingType,
-    NetworkServiceConnectionType, NetworkServiceConnection,
+    NetworkServiceType, NetworkService,
 )
 
 from .utils import BaseTest
 
 
-class NetworkServiceConnectionTest(BaseTest):
+class NetworkServiceTest(BaseTest):
     # Logical System
     def test_logicalsystem_basic(self):
         v = LogicalSystem.objects.get(name="Peering")
@@ -26,29 +26,29 @@ class NetworkServiceConnectionTest(BaseTest):
         self.assertContains(resp, "East University&#x27;s peering service")
 
     # Network Service Type
-    def test_networkserviceconnectiontype_basic(self):
-        v = NetworkServiceConnectionType.objects.get(name="Peering")
+    def test_networkservicectype_basic(self):
+        v = NetworkServiceType.objects.get(name="Peering")
         self.assertEqual(v.slug, "peering")
 
-    def test_view_networkserviceconnectiontype_index(self):
+    def test_view_networkservicetype_index(self):
         resp = self.client.get(
-            reverse('plugins:netbox_sidekick:networkserviceconnectiontype_index'))
+            reverse('plugins:netbox_sidekick:networkservicetype_index'))
         self.assertContains(resp, 'Peering')
 
-    def test_view_networkserviceconnectiontype_detail(self):
-        v = NetworkServiceConnectionType.objects.get(id=1)
+    def test_view_networkservicetype_detail(self):
+        v = NetworkServiceType.objects.get(id=1)
         resp = self.client.get(v.get_absolute_url())
         self.assertContains(resp, 'Peering')
         self.assertContains(resp, "East University&#x27;s peering service")
 
     # Network Service
-    def test_networkserviceconnection_basic(self):
-        v = NetworkServiceConnection.objects.get(member__name='East University')
+    def test_networkservice_basic(self):
+        v = NetworkService.objects.get(member__name='East University')
         self.assertEqual(v.name, "East University's peering service")
 
-    def test_view_networkserviceconnection_index(self):
+    def test_view_networkservice_index(self):
         resp = self.client.get(
-            reverse('plugins:netbox_sidekick:networkserviceconnection_index'))
+            reverse('plugins:netbox_sidekick:networkservice_index'))
         self.assertContains(resp, "East University&#x27;s peering service")
 
     # Routing Type

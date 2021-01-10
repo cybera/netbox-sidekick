@@ -1,11 +1,12 @@
-from django import forms
 from django.contrib import admin
 
 from .models import (
     ContactType, Contact,
 
-    LogicalSystem, RoutingType,
-    NetworkServiceConnectionType, NetworkServiceConnection,
+    LogicalSystem, RoutingType, NetworkServiceType,
+    NetworkService,
+    NetworkServiceDevice,
+    NetworkServiceL2, NetworkServiceL3,
 
     MemberContact,
 
@@ -38,57 +39,86 @@ class MemberContactAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(NetworkServiceConnectionType)
-class NetworkServiceConnectionTypeAdmin(admin.ModelAdmin):
+@admin.register(NetworkServiceType)
+class NetworkServiceTypeAdmin(admin.ModelAdmin):
     list_display = ('name', 'description')
 
 
-class NetworkServiceConnectionAdminForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['interface'].widget = forms.TextInput()
-        self.fields['provider_router_address_ipv4'].widget = forms.TextInput()
-        self.fields['member_router_address_ipv4'].widget = forms.TextInput()
-        self.fields['provider_router_address_ipv6'].widget = forms.TextInput()
-        self.fields['member_router_address_ipv6'].widget = forms.TextInput()
-
-    class Meta:
-        model = NetworkServiceConnection
-        fields = []
-
-
-@admin.register(NetworkServiceConnection)
-class NetworkServiceAdminConnection(admin.ModelAdmin):
-    form = NetworkServiceConnectionAdminForm
+@admin.register(NetworkService)
+class NetworkServiceAdmin(admin.ModelAdmin):
     fieldsets = (
-        ('Tenant', {
-            'fields': ('tenant',),
+        ('Member', {
+            'fields': ('member',),
         }),
 
         ('General', {
             'fields': (
-                'name', 'network_service_connection_type', 'description',
-                'comments', 'active', 'start_date', 'end_date',),
+                'name', 'network_service_type', 'description',
+                'comments', 'active', 'start_date', 'end_date',
+                'legacy_id',),
+        }),
+    )
+
+
+@admin.register(NetworkServiceDevice)
+class NetworkServiceDeviceAdmin(admin.ModelAdmin):
+    fieldsets = (
+        (None, {
+            'fields': ('network_service',),
         }),
 
         ('Configuration', {
             'fields': (
-                'device', 'interface', 'logical_system',
-                'routing_type', 'asn'),
+                'device', 'interface', 'vlan', 'comments'),
+        }),
+
+    )
+
+
+@admin.register(NetworkServiceL2)
+class NetworkServiceL2Admin(admin.ModelAdmin):
+    fieldsets = (
+        (None, {
+            'fields': (
+                'network_service_device',),
+        }),
+
+        ('Configuration', {
+            'fields': (
+                'vlan', 'comments',),
+        }),
+    )
+
+
+@admin.register(NetworkServiceL3)
+class NetworkServiceL3Admin(admin.ModelAdmin):
+    fieldsets = (
+        (None, {
+            'fields': (
+                'network_service_device',),
+        }),
+
+        ('Configuration', {
+            'fields': (
+                'logical_system', 'routing_type', 'asn'),
         }),
 
         ('IPv4 Information', {
             'fields': (
-                'ipv4_unicast', 'ipv4_nunicast',
+                'ipv4_unicast', 'ipv4_multicast',
                 'provider_router_address_ipv4', 'member_router_address_ipv4',
                 'ipv4_prefixes',),
         }),
 
         ('IPv6 Information', {
             'fields': (
-                'ipv6_unicast', 'ipv6_nunicast',
+                'ipv6_unicast', 'ipv6_multicast',
                 'provider_router_address_ipv6', 'member_router_address_ipv6',
                 'ipv6_prefixes',),
+        }),
+
+        (None, {
+            'fields': ('comments',),
         }),
     )
 

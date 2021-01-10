@@ -51,15 +51,15 @@ class RoutingType(ChangeLoggedModel):
         return reverse('plugins:netbox_sidekick:routingtype_detail', args=[self.slug])
 
 
-# NetworkServiceConnectionType is a Type of Network Connection Service
+# NetworkServiceType is a Type of Network Service
 # provided to members.
 # For example: Upstream, SuperNet, DWDM.
-class NetworkServiceConnectionType(ChangeLoggedModel):
+class NetworkServiceType(ChangeLoggedModel):
     name = models.CharField(
         max_length=50,
         unique=True,
         verbose_name='Name',
-        help_text='The name of the network service connection type',
+        help_text='The name of the network service type',
     )
 
     slug = models.SlugField(
@@ -69,7 +69,7 @@ class NetworkServiceConnectionType(ChangeLoggedModel):
     description = models.CharField(
         max_length=255,
         verbose_name='Description',
-        help_text='A description of the network service connection type',
+        help_text='A description of the network service type',
         blank=True,
         default='',
     )
@@ -81,25 +81,24 @@ class NetworkServiceConnectionType(ChangeLoggedModel):
         return self.name
 
     def get_absolute_url(self):
-        return reverse('plugins:netbox_sidekick:networkserviceconnectiontype_detail', args=[self.slug])
+        return reverse('plugins:netbox_sidekick:networkservicetype_detail', args=[self.slug])
 
 
-# NetworkServiceConnection represents a network service connection
-# that connects a member.
+# NetworkService represents a network service for of a member.
 # A member can then be subscribed to one or more services that
-# are related to a network service connection.
-class NetworkServiceConnection(ChangeLoggedModel):
+# are related to a network service.
+class NetworkService(ChangeLoggedModel):
     name = models.CharField(
         max_length=255,
         verbose_name='Name',
-        help_text='A descriptive name for the network service connection',
+        help_text='A descriptive name for the network service',
     )
 
-    network_service_connection_type = models.ForeignKey(
-        to='netbox_sidekick.NetworkServiceConnectionType',
+    network_service_type = models.ForeignKey(
+        to='netbox_sidekick.NetworkServiceType',
         on_delete=models.PROTECT,
-        verbose_name='Service Connection Type',
-        related_name='network_service_connection',
+        verbose_name='Service Type',
+        related_name='network_service_type',
     )
 
     member = models.ForeignKey(
@@ -107,42 +106,73 @@ class NetworkServiceConnection(ChangeLoggedModel):
         on_delete=models.PROTECT,
     )
 
+    legacy_id = models.CharField(
+        max_length=255,
+        verbose_name='Old ID for migrations',
+        help_text='The ID of the service in an old system',
+        blank=True,
+        default='',
+    )
+
     start_date = models.DateField(
         verbose_name='Start Date',
-        help_text='The date the service connection started',
+        help_text='The date the service started',
         blank=True,
+        null=True,
         default=timezone.now,
     )
 
     end_date = models.DateField(
         verbose_name='End Date',
-        help_text='The date the service connection ended',
+        help_text='The date the service ended',
         blank=True,
         null=True,
     )
 
     description = models.TextField(
         verbose_name='Description',
-        help_text='A description of the service connection',
+        help_text='A description of the service',
         blank=True,
     )
 
     comments = models.TextField(
         verbose_name='Comments',
-        help_text='Additional comments about the service connection',
+        help_text='Additional comments about the service',
         blank=True,
     )
 
     active = models.BooleanField(
         verbose_name='Active',
-        help_text='The active/inactive status of the service connection',
+        help_text='The active/inactive status of the service',
         default=True,
+    )
+
+    class Meta:
+        ordering = ['member', 'network_service_type']
+
+    def __str__(self):
+        return f"{self.member.name}: {self.name}"
+
+    def get_absolute_url(self):
+        return reverse('plugins:netbox_sidekick:networkservice_detail', args=[self.pk])
+
+
+# NetworkServiceDevice represents a device that is part
+# of a member's network service.
+# One or more devices may compose a member's service.
+class NetworkServiceDevice(ChangeLoggedModel):
+    network_service = models.ForeignKey(
+        to='netbox_sidekick.NetworkService',
+        on_delete=models.PROTECT,
+        related_name='network_service_devices',
+        null=True,
+        blank=True,
     )
 
     device = models.ForeignKey(
         to='dcim.Device',
         on_delete=models.PROTECT,
-        related_name='network_services',
+        related_name='network_service_devices',
         null=True,
         blank=True,
     )
@@ -150,7 +180,87 @@ class NetworkServiceConnection(ChangeLoggedModel):
     interface = models.ForeignKey(
         to='dcim.Interface',
         on_delete=models.PROTECT,
-        related_name='network_services',
+        related_name='network_service_devices',
+        null=True,
+        blank=True,
+    )
+
+    vlan = models.IntegerField(
+        verbose_name='VLAN of the service',
+        help_text='VLAN of the service',
+        null=True,
+        blank=True,
+    )
+
+    comments = models.TextField(
+        verbose_name='Comments',
+        help_text='Additional comments about the service',
+        blank=True,
+    )
+
+    legacy_id = models.CharField(
+        max_length=255,
+        verbose_name='Old ID for migrations',
+        help_text='The ID of the service device in an old system',
+        blank=True,
+        default='',
+    )
+
+    def __str__(self):
+        return f"{self.network_service.name} on {self.device.name} {self.interface.name}"
+
+    def get_absolute_url(self):
+        return reverse('plugins:netbox_sidekick:networkservicedevice_detail', args=[self.pk])
+
+
+# NetworkServiceL2 represents an L2 component of a member's
+# network service. A network service may have one or more
+# L2 components.
+class NetworkServiceL2(ChangeLoggedModel):
+    network_service_device = models.ForeignKey(
+        to='netbox_sidekick.NetworkServiceDevice',
+        on_delete=models.PROTECT,
+        related_name='network_service_l2',
+        null=True,
+        blank=True,
+    )
+
+    vlan = models.IntegerField(
+        verbose_name='VLAN of the L2 service',
+        help_text='VLAN of the L2 service',
+        null=True,
+        blank=True,
+    )
+
+    comments = models.TextField(
+        verbose_name='Comments',
+        help_text='Additional comments about the service',
+        blank=True,
+    )
+
+    legacy_id = models.CharField(
+        max_length=255,
+        verbose_name='Old ID for migrations',
+        help_text='The ID of the L2 service in an old system',
+        blank=True,
+        default='',
+    )
+
+    def __str__(self):
+        return f"{self.network_service_device} L2 Service"
+
+    def get_absolute_url(self):
+        return reverse('plugins:netbox_sidekick:networkservicel2_detail', args=[self.pk])
+
+
+# NetworkServiceL3 represents an L3 component of a member's
+# network service. A network service may have one or more
+# L3 components.
+class NetworkServiceL3(ChangeLoggedModel):
+    network_service_device = models.ForeignKey(
+        to='netbox_sidekick.NetworkServiceDevice',
+        on_delete=models.PROTECT,
+        related_name='network_service_l3',
         null=True,
         blank=True,
     )
@@ -158,7 +268,7 @@ class NetworkServiceConnection(ChangeLoggedModel):
     logical_system = models.ForeignKey(
         to='netbox_sidekick.LogicalSystem',
         on_delete=models.PROTECT,
-        related_name='network_service_connections',
+        related_name='network_service_l3',
         null=True,
         blank=True,
     )
@@ -166,7 +276,7 @@ class NetworkServiceConnection(ChangeLoggedModel):
     routing_type = models.ForeignKey(
         to='netbox_sidekick.RoutingType',
         on_delete=models.PROTECT,
-        related_name='network_service_connections',
+        related_name='network_service_l3',
         null=True,
         blank=True,
     )
@@ -174,20 +284,20 @@ class NetworkServiceConnection(ChangeLoggedModel):
     asn = models.CharField(
         max_length=255,
         verbose_name='ASN',
-        help_text="The AS Number of the Member's service connection",
+        help_text="The AS Number of the Member's service",
         blank=True,
         default='',
     )
 
     ipv4_unicast = models.BooleanField(
         verbose_name='IPv4 Unicast',
-        help_text='Does the service connection support IPv4 Unicast?',
+        help_text='Does the service support IPv4 Unicast?',
         default=True,
     )
 
     ipv4_multicast = models.BooleanField(
         verbose_name='IPv4 Multicast',
-        help_text='Does the service connection support IPv4 Multicast?',
+        help_text='Does the service support IPv4 Multicast?',
         default=True,
     )
 
@@ -198,33 +308,31 @@ class NetworkServiceConnection(ChangeLoggedModel):
         blank=True,
     )
 
-    provider_router_address_ipv4 = models.ForeignKey(
-        to='ipam.IPAddress',
-        on_delete=models.PROTECT,
-        verbose_name='Provider IPv4 Router Address',
-        related_name='provider_router_address_ipv4',
-        null=True,
+    provider_router_address_ipv4 = models.CharField(
+        max_length=255,
+        verbose_name='Provider Router Address IPv4',
+        help_text='The IPv4 Address of the NREN/Provider',
         blank=True,
+        default='',
     )
 
-    member_router_address_ipv4 = models.ForeignKey(
-        to='ipam.IPAddress',
-        on_delete=models.PROTECT,
-        verbose_name='Member IPv4 Router Address',
-        related_name='member_router_address_ipv4',
-        null=True,
+    member_router_address_ipv4 = models.CharField(
+        max_length=255,
+        verbose_name='Member Router Address IPv4',
+        help_text='The IPv4 Address of the Member',
         blank=True,
+        default='',
     )
 
     ipv6_unicast = models.BooleanField(
         verbose_name='IPv6 Unicast',
-        help_text='Does the service connection support IPv6 Unicast?',
+        help_text='Does the service support IPv6 Unicast?',
         default=False,
     )
 
     ipv6_multicast = models.BooleanField(
         verbose_name='IPv6 Multicast',
-        help_text='Does the service connection support IPv6 Multicast?',
+        help_text='Does the service support IPv6 Multicast?',
         default=False,
     )
 
@@ -235,29 +343,38 @@ class NetworkServiceConnection(ChangeLoggedModel):
         blank=True,
     )
 
-    provider_router_address_ipv6 = models.ForeignKey(
-        to='ipam.IPAddress',
-        on_delete=models.PROTECT,
-        verbose_name='Provider IPv6 Router Address',
-        related_name='provider_router_address_ipv6',
-        null=True,
+    provider_router_address_ipv6 = models.CharField(
+        max_length=255,
+        verbose_name='Provider Router Address IPv6',
+        help_text='The IPv6 Address of the NREN/Provider',
+        blank=True,
+        default='',
+    )
+
+    member_router_address_ipv6 = models.CharField(
+        max_length=255,
+        verbose_name='Member Router Address IPv6',
+        help_text='The IPv6 Address of the Member',
+        blank=True,
+        default='',
+    )
+
+    comments = models.TextField(
+        verbose_name='Comments',
+        help_text='Additional comments about the service',
         blank=True,
     )
 
-    member_router_address_ipv6 = models.ForeignKey(
-        to='ipam.IPAddress',
-        on_delete=models.PROTECT,
-        verbose_name='Member IPv6 Router Address',
-        related_name='member_router_address_ipv6',
-        null=True,
+    legacy_id = models.CharField(
+        max_length=255,
+        verbose_name='Old ID for migrations',
+        help_text='The ID of the l3 service in an old system',
         blank=True,
+        default='',
     )
-
-    class Meta:
-        ordering = ['member', 'network_service_connection_type']
 
     def __str__(self):
-        return f"{self.member.name}: {self.name}"
+        return f"{self.network_service_device} L3 Service"
 
     def get_absolute_url(self):
-        return reverse('plugins:netbox_sidekick:networkserviceconnection_detail', args=[self.pk])
+        return reverse('plugins:netbox_sidekick:networkservicel3_detail', args=[self.pk])

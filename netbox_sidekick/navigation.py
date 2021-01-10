@@ -22,11 +22,11 @@ menu_items = (
         link_text='Routing Types',
     ),
     PluginMenuItem(
-        link='plugins:netbox_sidekick:networkserviceconnection_index',
-        link_text='Service Connections',
+        link='plugins:netbox_sidekick:networkservice_index',
+        link_text='Network Services',
     ),
     PluginMenuItem(
-        link='plugins:netbox_sidekick:networkserviceconnectiontype_index',
-        link_text='Service Connection Types',
+        link='plugins:netbox_sidekick:networkservicetype_index',
+        link_text='Service Types',
     ),
 )

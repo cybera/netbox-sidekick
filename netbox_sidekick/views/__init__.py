@@ -5,8 +5,8 @@ from .contact import (  # noqa: F401
 
 from .networkservice import (  # noqa: F401
     LogicalSystemIndexView, LogicalSystemDetailView,
-    NetworkServiceConnectionTypeIndexView, NetworkServiceConnectionTypeDetailView,
-    NetworkServiceConnectionIndexView, NetworkServiceConnectionDetailView,
+    NetworkServiceTypeIndexView, NetworkServiceTypeDetailView,
+    NetworkServiceIndexView, NetworkServiceDetailView,
     RoutingTypeIndexView, RoutingTypeDetailView,
 )
 

@@ -52,7 +52,14 @@ $ cd /opt/netbox/netbox
 $ python manage.py migrate netbox_sidekick
 ```
 
-3. Restart NetBox:
+3. Run the setup script:
+
+```shell
+$ cd /opt/netbox/netbox
+$ python manage.py migrate setup_sidekick
+```
+
+4. Restart NetBox:
 
 ```shell
 $ sudo service netbox restart

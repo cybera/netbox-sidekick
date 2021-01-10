@@ -21,17 +21,17 @@ urlpatterns = [
     # Logical System Details
     path('logical_systems/<slug:slug>/', views.LogicalSystemDetailView.as_view(), name='logicalsystem_detail'),
 
-    # Network Service Connection Type Index
-    path('network_service_connection_types/', views.NetworkServiceConnectionTypeIndexView.as_view(), name='networkserviceconnectiontype_index'),
+    # Network Service Type Index
+    path('network_service_types/', views.NetworkServiceTypeIndexView.as_view(), name='networkservicetype_index'),
 
-    # Network Service Connection Type Details
-    path('network_service_connection_types/<slug:slug>/', views.NetworkServiceConnectionTypeDetailView.as_view(), name='networkserviceconnectiontype_detail'),
+    # Network Service Type Details
+    path('network_service_types/<slug:slug>/', views.NetworkServiceTypeDetailView.as_view(), name='networkservicetype_detail'),
 
-    # Network Service Connection Index
-    path('network_service_connections/', views.NetworkServiceConnectionIndexView.as_view(), name='networkserviceconnection_index'),
+    # Network Service Index
+    path('network_services/', views.NetworkServiceIndexView.as_view(), name='networkservice_index'),
 
-    # Network Service Connection Details
-    path('network_service_connections/<int:pk>/', views.NetworkServiceConnectionDetailView.as_view(), name='networkserviceconnection_detail'),
+    # Network Service Details
+    path('network_services/<int:pk>/', views.NetworkServiceDetailView.as_view(), name='networkservice_detail'),
 
     # NIC Index
     path('nics/', views.NICIndexView.as_view(), name='nic_index'),

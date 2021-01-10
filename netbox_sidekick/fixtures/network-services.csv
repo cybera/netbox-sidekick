@@ -1,0 +1,2 @@
+1	East University's peering service	123	1	"NULL"			1	0	"2020-11-12 10:00:59"	"NULL"	"2020-11-12 10:42:35"	In Production	150	1	East University			0	East University		2	Peering	peering	3	0
+2	Another Service Name	123	2	"NULL"			1	0	"2020-11-12 10:00:59"	"2020-12-12 10:00:59"	"2020-12-12 10:00:59"	In Production	151	1	Central School			0	Central School		3	Transit	transit	3	0

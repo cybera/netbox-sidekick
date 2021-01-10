@@ -11,6 +11,8 @@ the following custom fields attached to the Tenant model:
 * member_type
 * latitude
 * longitude
+* crm_id
+* active
 
 These requirements can be created automatically by running the `setup_sidekick`
 command:

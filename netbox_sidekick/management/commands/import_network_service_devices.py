@@ -104,7 +104,7 @@ class Command(BaseCommand):
                     if dry_run:
                         self.stdout.write(f"Would have updated {service_device}: {changed}")
                     else:
-                        network_service.save()
+                        service_device.save()
                         if not quiet:
                             self.stdout.write(f"Updated {service_device}: {changed}")
 
@@ -120,6 +120,6 @@ class Command(BaseCommand):
                 if dry_run:
                     self.stdout.write(f"Would have created {service_device}")
                 else:
-                    network_service.save()
+                    service_device.save()
                     if not quiet:
                         self.stdout.write(f"Created {service_device}")

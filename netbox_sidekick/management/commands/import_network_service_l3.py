@@ -55,6 +55,9 @@ class Command(BaseCommand):
                 provider_ipv6 = provider_ipv6.replace(i, '')
                 member_ipv6 = member_ipv6.replace(i, '')
 
+            ipv4_prefixes = ipv4_prefixes.replace('\\n', '\n')
+            ipv6_prefixes = ipv6_prefixes.replace('\\n', '\n')
+
             ipv4_unicast = bool(ipv4_unicast)
             ipv4_multicast = bool(ipv4_multicast)
             ipv6_unicast = bool(ipv6_unicast)
@@ -64,7 +67,7 @@ class Command(BaseCommand):
             # If one isn't found, skip.
             try:
                 network_service_device = NetworkServiceDevice.objects.get(
-                    legacy_id=device_id,
+                    network_service__legacy_id=service_id,
                 )
             except NetworkServiceDevice.MultipleObjectsReturned:
                 self.stdout.write(f"WARNING: Multiple results found for Service {service_id}. Skipping.")
@@ -99,7 +102,7 @@ class Command(BaseCommand):
             # If one isn't found, create one.
             try:
                 logical_system = LogicalSystem.objects.get(
-                    name=logical_system_name,
+                    slug=slugify(logical_system_name),
                 )
             except LogicalSystem.MultipleObjectsReturned:
                 self.stdout.write(

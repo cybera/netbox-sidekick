@@ -4,28 +4,15 @@
 
 {% block header %}
 <div class="row noprint">
-  <div class="col-sm-8 col-md-9">
+  <div class="col-sm-12 col-md-12">
     <ol class="breadcrumb">
       <li><a href="{% url 'plugins:netbox_sidekick:networkservice_index' %}">Network Services</a></li>
       <li>{{ object }}</li>
     </ol>
   </div>
-  <div class="col-sm-4 col-md-3">
-    <form action="{% url 'plugins:netbox_sidekick:networkservice_index' %}" method="get">
-      <div class="input-group">
-        <input type="text" name="q" class="form-control" />
-        <span class="input-group-btn">
-          <button type="submit" class="btn btn-primary">
-            <span class="fa fa-search" aria-hidden="true"></span>
-          </button>
-        </span>
-      </div>
-    </form>
-  </div>
 </div>
 <h1>{{ object }}</h1>
 {% include 'inc/created_updated.html' with obj=object %}
-
 {% endblock %}
 
 {% block content %}
@@ -41,12 +28,33 @@
           <td>{{ object.name }}</td>
         </tr>
         <tr>
+          <td>Description</td>
+          <td>{{ object.description }}</td>
+        </tr>
+        <tr>
           <td>Service Type</td>
-          <td>{{ object.network_service_type }}</td>
+          <td><a href="{{ object.network_service_type.get_absolute_url }}">{{ object.network_service_type }}</a></td>
         </tr>
         <tr>
           <td>Member</td>
-          <td>{{ object.tenant }}</td>
+          <td><a href="{{ object.member.get_absolute_url }}">{{ object.member }}</a></td>
+        </tr>
+        <tr>
+          <td>Active</td>
+          <td>
+            {% if object.active %}
+            <i class="mdi mdi-check-bold"></i>
+            {% else %}
+            <i class="mdi mdi-close-thick"></i>
+            {% endif %}
+        </tr>
+        <tr>
+          <td>Start Date</td>
+          <td>{{ object.start_date }}</td>
+        </tr>
+        <tr>
+          <td>End Date</td>
+          <td>{{ object.end_date }}</td>
         </tr>
         <tr>
           <td>Comments</td>
@@ -56,4 +64,160 @@
     </div>
   </div>
 </div>
+
+<h2>Service Details</h2>
+
+{% for service_device in object.network_service_devices.all %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <strong>{{ service_device.device.name }}</strong>
+      </div>
+      <table class="table table-hover panel-body attr-table">
+        <tr>
+          <td>Device</td>
+          <td>
+            <a href="{{ service_device.device.get_absolute.url }}">
+              {{ service_device.device.name }}
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td>Interface</td>
+          <td>
+            <a href="{{ service_device.interface.get_absolute_url }}">
+              {{ service_device.interface.name }}</a>
+          </td>
+        </tr>
+        <tr>
+          <td>VLAN</td>
+          <td>{{ service_device.vlan }}</td>
+        </tr>
+        <tr>
+          <td>Comments</td>
+          <td>{{ service_device.comments }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if service_device.network_service_l2.all|length > 0 %}
+<h3>L2 Information</h3>
+{% for l2 in service_device.network_service_l2.all %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <table class="table table-hover panel-body attr-table">
+        <tr>
+          <td>VLAN</td>
+          <td>{{ l2.vlan }}</td>
+        </tr>
+        <tr>
+          <td>Comments</td>
+          <td>{{l2.comments}}</td>
+        </tr>
+      </table>
+      /div>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if service_device.network_service_l3.all|length > 0 %}
+<h3>L3 Information</h3>
+{% for l3 in service_device.network_service_l3.all %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <table class="table table-hover panel-body attr-table">
+        <tr>
+          <td>Logical System</td>
+          <td><a href="{{ l3.logical_system.get_absolute_url }}">{{ l3.logical_system }}</a></td>
+        </tr>
+        <tr>
+          <td>Routing Type</td>
+          <td>{{ l3.routing_type }}</td>
+        </tr>
+        <tr>
+          <td>AS Number</td>
+          <td>{{ l3.asn }}</td>
+        </tr>
+        <tr>
+          <td>IPv4 Unicast</td>
+          <td>
+            {% if l3.ipv4_unicast %}
+            <i class="mdi mdi-check-bold"></i>
+            {% else %}
+            <i class="mdi mdi-close-thick"></i>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td>IPv4 Multicast</td>
+          <td>
+            {% if l3.ipv4_multicast %}
+            <i class="mdi mdi-check-bold"></i>
+            {% else %}
+            <i class="mdi mdi-close-thick"></i>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td>IPv4 Prefixes</td>
+          <td>{{ l3.ipv4_prefixes }}</td>
+        </tr>
+        <tr>
+          <td>IPv4 Provider Router Address</td>
+          <td>{{ l3.provider_router_address_ipv4 }}</td>
+        </tr>
+        <tr>
+          <td>IPv4 Member Router Address</td>
+          <td>{{ l3.member_router_address_ipv4 }}</td>
+        </tr>
+        <tr>
+          <td>IPv6 Unicast</td>
+          <td>
+            {% if l3.ipv6_unicast %}
+            <i class="mdi mdi-check-bold"></i>
+            {% else %}
+            <i class="mdi mdi-close-thick"></i>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td>IPv6 Multicast</td>
+          <td>
+            {% if l3.ipv6_multicast %}
+            <i class="mdi mdi-check-bold"></i>
+            {% else %}
+            <i class="mdi mdi-close-thick"></i>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td>IPv6 Prefixes</td>
+          <td>{{ l3.ipv6_prefixes }}</td>
+        </tr>
+        <tr>
+          <td>IPv6 Provider Router Address</td>
+          <td>{{ l3.provider_router_address_ipv6 }}</td>
+        </tr>
+        <tr>
+          <td>IPv6 Member Router Address</td>
+          <td>{{ l3.member_router_address_ipv6 }}</td>
+        </tr>
+        <tr>
+          <td>Comments</td>
+          <td>{{ l3.comments }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% endfor %}
 {% endblock %}

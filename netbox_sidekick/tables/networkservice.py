@@ -10,7 +10,7 @@ from netbox_sidekick.models import (
 )
 
 TENANT_LINK = """
-    <a href="{{ record.tenant.get_absolute_url }}">{{ record.tenant.description }}</a>
+    <a href="{{ record.member.get_absolute_url }}">{{ record.member.name }}</a>
 """
 
 
@@ -59,4 +59,4 @@ class NetworkServiceTable(BaseTable):
 
     class Meta(BaseTable.Meta):
         model = NetworkService
-        fields = ('pk', 'name', 'network_service_type', 'tenant')
+        fields = ('pk', 'active', 'id', 'name', 'network_service_type', 'member')

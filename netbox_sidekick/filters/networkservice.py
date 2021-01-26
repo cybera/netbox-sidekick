@@ -72,12 +72,14 @@ class NetworkServiceFilterSet(django_filters.FilterSet):
 
     class Meta:
         model = NetworkService
-        fields = ['member', 'network_service_type']
+        fields = ['member', 'network_service_type', 'active']
 
     def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
         super().__init__(
             data=data, queryset=queryset, request=request, prefix=prefix)
         self.filters['member'].field.widget.attrs.update(
+            {'class': 'netbox-select2-static'})
+        self.filters['active'].field.widget.attrs.update(
             {'class': 'netbox-select2-static'})
         self.filters['network_service_type'].field.widget.attrs.update(
             {'class': 'netbox-select2-static'})
@@ -90,3 +92,13 @@ class NetworkServiceFilterSet(django_filters.FilterSet):
             Q(comments__icontains=value) |
             Q(description__icontains=value)
         ).distinct()
+
+    @property
+    def qs(self):
+        parent = super().qs
+        active = self.request.GET.get('active', 'true')
+        if active.lower() == 'false':
+            active = False
+        else:
+            active = True
+        return parent.filter(active=active)

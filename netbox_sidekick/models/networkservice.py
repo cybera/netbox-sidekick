@@ -249,8 +249,8 @@ class NetworkServiceL2(ChangeLoggedModel):
     def __str__(self):
         return f"{self.network_service_device} L2 Service"
 
-    def get_absolute_url(self):
-        return reverse('plugins:netbox_sidekick:networkservicel2_detail', args=[self.pk])
+    # def get_absolute_url(self):
+    #     return reverse('plugins:netbox_sidekick:networkservicel2_detail', args=[self.pk])
 
 
 # NetworkServiceL3 represents an L3 component of a member's
@@ -376,5 +376,5 @@ class NetworkServiceL3(ChangeLoggedModel):
     def __str__(self):
         return f"{self.network_service_device} L3 Service"
 
-    def get_absolute_url(self):
-        return reverse('plugins:netbox_sidekick:networkservicel3_detail', args=[self.pk])
+    # def get_absolute_url(self):
+    #     return reverse('plugins:netbox_sidekick:networkservicel3_detail', args=[self.pk])

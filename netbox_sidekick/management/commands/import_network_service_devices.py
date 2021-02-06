@@ -2,7 +2,7 @@ import csv
 
 from django.core.management.base import BaseCommand
 
-from dcim.models import Device, Interface
+from dcim.models import Device
 
 from netbox_sidekick.models import (
     NetworkService,
@@ -70,16 +70,6 @@ class Command(BaseCommand):
             if vlan != '0' and vlan != 0:
                 interface_name = f"{interface_name}.{vlan}"
 
-            try:
-                interface = Interface.objects.get(
-                    device=device,
-                    name=interface_name,
-                )
-            except Interface.DoesNotExist:
-                self.stdout.write(
-                    f"WARNING: Unable to find interface: {device} {interface_name}. Skipping.")
-                continue
-
             # Find an existing service device entry.
             # If one doesn't exist, create one.
             try:
@@ -92,9 +82,9 @@ class Command(BaseCommand):
                     changed.append(f"{service_device.device} => {device}")
                     service_device.device = device
 
-                if service_device.interface != interface:
-                    changed.append(f"{service_device.interface} => {interface}")
-                    service_device.interface = interface
+                if service_device.interface != interface_name:
+                    changed.append(f"{service_device.interface} => {interface_name}")
+                    service_device.interface = interface_name
 
                 if service_device.vlan != int(vlan):
                     changed.append(f"{service_device.vlan} => {vlan}")
@@ -112,7 +102,7 @@ class Command(BaseCommand):
                 service_device = NetworkServiceDevice(
                     network_service=network_service,
                     device=device,
-                    interface=interface,
+                    interface=interface_name,
                     vlan=int(vlan),
                     legacy_id=interface_id,
                 )

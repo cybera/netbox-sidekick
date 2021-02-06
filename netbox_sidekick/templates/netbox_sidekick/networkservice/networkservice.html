@@ -86,8 +86,12 @@
         <tr>
           <td>Interface</td>
           <td>
-            <a href="{{ service_device.interface.get_absolute_url }}">
-              {{ service_device.interface.name }}</a>
+            {% if service_device.get_interface_entry %}
+            <a href="{{ service_device.get_interface_entry.get_absolute_url }}">
+              {{ service_device.interface }}</a>
+            {% else %}
+              {{ service_device.interface }}
+            {% endif %}
           </td>
         </tr>
         <tr>

@@ -100,6 +100,12 @@ class Command(BaseCommand):
 
             # Find a matching logical system.
             # If one isn't found, create one.
+            if logical_system_name.strip() == "":
+                self.stdout.write(f"WARNING: logical system for legacy ID {service_id} is blank. Skipping.")
+                continue
+
+            logical_system_name = logical_system_name.title().strip()
+
             try:
                 logical_system = LogicalSystem.objects.get(
                     slug=slugify(logical_system_name),
@@ -116,7 +122,7 @@ class Command(BaseCommand):
                 )
 
                 if dry_run:
-                    self.stdout.write(f"Would have created logical system: {logical_system}")
+                    self.stdout.write(f"Would have created logical system: [{logical_system_name}]")
                 else:
                     logical_system.save()
                     if not quiet:

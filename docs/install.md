@@ -79,6 +79,17 @@ you can remove this plugin by:
 ```
 psql netbox
 \d
-drop table netbox_sidekick_<tablename>;
-delete from django_migrations where app_name = 'netbox_sidekick';
+drop table netbox_sidekick_nic;
+drop table netbox_sidekick_networkservicel3;
+drop table netbox_sidekick_networkservicel2;
+drop table netbox_sidekick_networkservicedevice;
+drop table netbox_sidekick_networkservice;
+drop table netbox_sidekick_logicalsystem;
+drop table netbox_sidekick_routingtype;
+drop table netbox_sidekick_networkservicetype;
+drop table netbox_sidekick_membercontact;
+drop table netbox_sidekick_contact;
+drop table netbox_sidekick_contacttype;
+
+delete from django_migrations where app = 'netbox_sidekick';
 ```

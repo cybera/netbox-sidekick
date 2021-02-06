@@ -2,6 +2,8 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
+from dcim.models import Interface
+
 from extras.models import ChangeLoggedModel
 
 
@@ -177,12 +179,12 @@ class NetworkServiceDevice(ChangeLoggedModel):
         blank=True,
     )
 
-    interface = models.ForeignKey(
-        to='dcim.Interface',
-        on_delete=models.PROTECT,
-        related_name='network_service_devices',
-        null=True,
+    interface = models.CharField(
+        max_length=255,
+        verbose_name='Interface',
+        help_text='The interface of the service',
         blank=True,
+        null=True,
     )
 
     vlan = models.IntegerField(
@@ -207,10 +209,16 @@ class NetworkServiceDevice(ChangeLoggedModel):
     )
 
     def __str__(self):
-        return f"{self.network_service.name} on {self.device.name} {self.interface.name}"
+        return f"{self.network_service.name} on {self.device.name} {self.interface}"
 
     def get_absolute_url(self):
         return reverse('plugins:netbox_sidekick:networkservicedevice_detail', args=[self.pk])
+
+    def get_interface_entry(self):
+        try:
+            return Interface.objects.get(device=self.device, name=self.interface)
+        except Interface.DoesNotExist:
+            return None
 
 
 # NetworkServiceL2 represents an L2 component of a member's

@@ -38,7 +38,7 @@
   fields:
     network_service: 1
     device: 1
-    interface: 1
+    interface: 'xe-3/3/3.300'
     vlan: 300
     legacy_id: 1
 

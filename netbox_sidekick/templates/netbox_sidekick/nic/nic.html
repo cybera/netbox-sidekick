@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 {% load render_table from django_tables2 %}
 
-{% block title %}{{ nic }}{% endblock %}
+{% block title %}Interface {{ nic.interface.name }} on {{ nic.device.name }}{% endblock %}
 
 {% block header %}
 <div class="row noprint">
   <div class="col-sm-8 col-md-9">
     <ol class="breadcrumb">
-      <li><a href="{% url 'plugins:netbox_sidekick:nic_index' %}">NICs</a></li>
+      <li><a href="{% url 'plugins:netbox_sidekick:nic_index' %}">Interfaces</a></li>
       <li>{{ nic.interface.name }}</li>
     </ol>
   </div>
@@ -80,6 +80,25 @@
           <td>in_errors</td>
           <td>{{ nic.in_errors }}</td>
         </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <strong>Graphs</strong>
+      </div>
+      <table class="table table-hover panel-body attr-table">
+        {% for period, pdata in graphs.items %}
+        <tr>
+          <td>
+            <center><h4>{{ pdata.title }}</h4></center>
+            <img src="data:image/png;base64,{{ pdata.in.graph }}"><br><br>
+            <img src="data:image/png;base64,{{ pdata.out.graph }}"><br>
+          </td>
+        </tr>
+        {% endfor %}
       </table>
     </div>
   </div>

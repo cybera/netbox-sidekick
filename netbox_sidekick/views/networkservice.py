@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView
@@ -19,6 +20,11 @@ from netbox_sidekick.models import (
     LogicalSystem, RoutingType,
     NetworkServiceType,
     NetworkService,
+    NIC,
+)
+
+from netbox_sidekick.management.commands.sidekick_utils import (
+    get_graphite_graphs
 )
 
 
@@ -121,3 +127,22 @@ class NetworkServiceDetailView(PermissionRequiredMixin, DetailView):
     model = NetworkService
     context_object_name = 'ns'
     template_name = 'netbox_sidekick/networkservice/networkservice.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        ns = NetworkService.objects.get(pk=self.kwargs['pk'])
+
+        # Only supports one service per interface right now.
+        service_devices = ns.network_service_devices.all()
+        if len(service_devices) > 0:
+            sd = service_devices[0]
+            iface = sd.get_interface_entry()
+            if iface is not None:
+                nics = NIC.objects.filter(interface__id=iface.id)
+                if len(nics) > 0:
+                    graphite_render_host = settings.PLUGINS_CONFIG['netbox_sidekick'].get('graphite_render_host', None)
+                    graphs = get_graphite_graphs(nics[0], graphite_render_host)
+                    context['graphs'] = graphs
+
+        return context

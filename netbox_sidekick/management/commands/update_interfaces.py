@@ -1,3 +1,4 @@
+import graphyte
 import re
 
 from django.conf import settings
@@ -23,6 +24,13 @@ IP_VERSIONS = {
     'ipv4': 4,
     'ipv6': 6,
 }
+
+METRIC_CATEGORIES = [
+    'in_octets', 'out_octets',
+    'in_unicast_packets', 'out_unicast_packets',
+    'in_nunicast_packets', 'out_nunicast_packets',
+    'in_errors', 'out_errors',
+]
 
 
 class Command(BaseCommand):
@@ -278,19 +286,51 @@ class Command(BaseCommand):
                 if options['dry_run']:
                     self.stdout.write(f"Would have updated counters for {existing_interface.name}")
                 else:
-                    NIC.objects.update_or_create(
+                    nic = NIC(
                         interface=existing_interface,
-                        defaults={
-                            'interface_id': existing_interface.id,
-                            'admin_status': iface_details['ifAdminStatus'],
-                            'oper_status': iface_details['ifOperStatus'],
-                            'out_octets': iface_details['ifHCOutOctets'],
-                            'in_octets': iface_details['ifHCInOctets'],
-                            'out_unicast_packets': iface_details['ifHCOutUcastPkts'],
-                            'in_unicast_packets': iface_details['ifHCInUcastPkts'],
-                            'out_nunicast_packets': iface_details['ifOutNUcastPkts'],
-                            'in_nunicast_packets': iface_details['ifInNUcastPkts'],
-                            'out_errors': iface_details['ifOutErrors'],
-                            'in_errors': iface_details['ifInErrors'],
-                        }
+                        interface_id=existing_interface.id,
+                        admin_status=iface_details['ifAdminStatus'],
+                        oper_status=iface_details['ifOperStatus'],
+                        out_octets=iface_details['ifHCOutOctets'],
+                        in_octets=iface_details['ifHCInOctets'],
+                        out_unicast_packets=iface_details['ifHCOutUcastPkts'],
+                        in_unicast_packets=iface_details['ifHCInUcastPkts'],
+                        out_nunicast_packets=iface_details['ifOutNUcastPkts'],
+                        in_nunicast_packets=iface_details['ifInNUcastPkts'],
+                        out_errors=iface_details['ifOutErrors'],
+                        in_errors=iface_details['ifInErrors'],
                     )
+                    nic.save()
+
+                # Send the metrics to Graphite if graphite_host has been set.
+                graphite_host = settings.PLUGINS_CONFIG['netbox_sidekick'].get('graphite_host', None)
+                if graphite_host is not None:
+                    graphyte.init(graphite_host)
+
+                    # Determine the difference between the last two updates.
+                    # This is because Cybera's metrics were previously stored in RRD
+                    # files which only retains the derivative and not what the actual
+                    # counters were.
+                    previous_entries = NIC.objects.filter(
+                        interface_id=existing_interface.id).order_by('-last_updated')
+                    if len(previous_entries) < 2:
+                        continue
+
+                    e1 = previous_entries[0]
+                    e2 = previous_entries[1]
+                    total_seconds = (e1.last_updated - e2.last_updated).total_seconds()
+
+                    graphite_prefix = "{}.{}".format(
+                        e1.device_name_graphite(), e1.interface_name_graphite())
+
+                    for cat in METRIC_CATEGORIES:
+                        m1 = getattr(e1, cat, None)
+                        m2 = getattr(e2, cat, None)
+                        if m1 is not None and m2 is not None:
+                            diff = (m1 - m2)
+
+                            if diff != 0:
+                                diff = diff / total_seconds
+                            graphite_name = f"{graphite_prefix}.{cat}"
+                            # self.stdout.write(f"{graphite_name} {diff} {total_seconds}")
+                            graphyte.send(graphite_name, diff)

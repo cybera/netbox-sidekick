@@ -30,3 +30,10 @@ class NICTable(BaseTable):
     class Meta(BaseTable.Meta):
         model = NIC
         fields = ('pk',)
+
+    def order_interface(self, queryset, is_descending):
+        field = 'interface__name'
+        if is_descending:
+            field = '-interface__name'
+        queryset = queryset.order_by(field, 'interface__id').distinct('interface__name', 'interface__id')
+        return (queryset, True)

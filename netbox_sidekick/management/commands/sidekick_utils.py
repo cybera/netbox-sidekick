@@ -1,5 +1,10 @@
 import netaddr
 import re
+import requests
+import rrdtool
+import time
+
+from base64 import b64encode
 
 from django.contrib.auth.models import User
 
@@ -13,6 +18,25 @@ from pysnmp.hlapi import (
 
 from secrets.models import UserKey
 
+
+GRAPHS = {
+    'last_day': {
+        'title': 'Last Day',
+        'from': '-1d',
+    },
+    'last_week': {
+        'title': 'Last Week',
+        'from': '-7d',
+    },
+    'last_month': {
+        'title': 'Last Month',
+        'from': '-4w',
+    },
+    'last_year': {
+        'title': 'Last Year',
+        'from': '-1y',
+    },
+}
 
 MEMBER_TYPES = [
     'Enterprise',
@@ -273,3 +297,112 @@ def snmpwalk_bulk(ipaddress, community):
                     results[k]['ipv4'].append(f"{ipv4}/{ip_addresses[ipv4]}")
 
     return results
+
+
+# Most of this was taken from
+# https://github.com/graphite-project/whisper/blob/master/bin/rrd2whisper.py
+def parse_rrd(rrd_file):
+    datasource_map = {
+        'OUTOCTETS': 'out_octets',
+        'OUTUCASTPKTS': 'out_unicast_packets',
+        'OUTNUCASTPKTS': 'out_nunicast_packets',
+        'INNUCASTPKTS': 'in_nunicast_packets',
+        'INERRORS': 'in_errors',
+        'OUTERRORS': 'out_errors',
+        'INUCASTPKTS': 'in_unicast_packets',
+        'INOCTETS': 'in_octets',
+    }
+
+    rra_indices = []
+    rrd_info = rrdtool.info(rrd_file)
+    seconds_per_pdp = rrd_info['step']
+    for key in rrd_info:
+        if key.startswith('rra['):
+            index = int(key.split('[')[1].split(']')[0])
+            rra_indices.append(index)
+
+    rra_count = max(rra_indices) + 1
+    rras = []
+    for i in range(rra_count):
+        rra_info = {}
+        rra_info['pdp_per_row'] = rrd_info['rra[%d].pdp_per_row' % i]
+        rra_info['rows'] = rrd_info['rra[%d].rows' % i]
+        rra_info['cf'] = rrd_info['rra[%d].cf' % i]
+        if 'xff' in rrd_info:
+            rra_info['xff'] = rrd_info['rra[%d].xff' % i]
+        rras.append(rra_info)
+
+    datasources = []
+    if 'ds' in rrd_info:
+        datasources = rrd_info['ds'].keys()
+    else:
+        ds_keys = [key for key in rrd_info if key.startswith('ds[')]
+        datasources = list(set(key[3:].split(']')[0] for key in ds_keys))
+
+    relevant_rras = []
+    for rra in rras:
+        if rra['cf'] == 'MAX':
+            relevant_rras.append(rra)
+
+    archives = []
+    for rra in relevant_rras:
+        precision = rra['pdp_per_row'] * seconds_per_pdp
+        points = rra['rows']
+        archives.append((precision, points))
+
+    results = {}
+    for datasource in datasources:
+        d = datasource_map[datasource]
+        results[d] = []
+        now = int(time.time())
+
+        datapoints = []
+        archiveNumber = len(archives) - 1
+        for precision, points in archives:
+            retention = precision * points
+            endTime = now - now % precision
+            startTime = endTime - retention
+            (time_info, columns, rows) = rrdtool.fetch(
+                rrd_file,
+                'MAX',
+                '-s', str(startTime),
+                '-e', str(endTime))
+            column_index = list(columns).index(datasource)
+            values = [row[column_index] for row in rows]
+            timestamps = list(range(*time_info))
+            datapoints.extend(
+                p for p in zip(timestamps, values) if p[1] is not None)
+            archiveNumber -= 1
+        results[d] = datapoints
+
+    return results
+
+
+def get_graphite_graphs(nic, graphite_render_host=None):
+    if graphite_render_host is None:
+        return None
+
+    carbon_name = "{}.{}".format(
+        nic.device_name_graphite(),
+        nic.interface_name_graphite()
+    )
+
+    query_base = f"{graphite_render_host}/render?width=550&fontName=FreeMono&areaMode=all"
+
+    graphs = {}
+    for period, pdata in GRAPHS.items():
+        graphs[period] = {}
+        graphs[period]['title'] = pdata['title']
+        for inout in ['in', 'out']:
+            graphs[period][inout] = {}
+
+            title = f"{nic.interface.name} - Bits Per Second {inout.title()}"
+            metric = f"{carbon_name}.{inout}_octets"
+            target = f'cactiStyle(alias(scale(keepLastValue({metric}),8),"{inout.title()}"),"si","gb")'
+            query = f"{query_base}&from={pdata['from']}&target={target}&title={title}"
+
+            r = requests.get(query)
+            graphs[period][inout]['graph'] = b64encode(r.content).decode('utf-8')
+            graphs[period][inout]['query'] = query
+
+    return graphs

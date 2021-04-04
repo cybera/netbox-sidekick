@@ -8,9 +8,11 @@ from extras.models import ChangeLoggedModel
 #
 # This model acts as an extension to a NetBox Interface.
 class NIC(ChangeLoggedModel):
-    interface = models.OneToOneField(
-        'dcim.Interface',
+    interface = models.ForeignKey(
+        to='dcim.Interface',
         on_delete=models.PROTECT,
+        verbose_name='NIC',
+        related_name='nic',
     )
 
     admin_status = models.IntegerField(
@@ -80,4 +82,20 @@ class NIC(ChangeLoggedModel):
         return f"{self.interface.device.name} {self.interface.name}"
 
     def get_absolute_url(self):
-        return reverse('plugins:netbox_sidekick:nic_detail', args=[self.pk])
+        return reverse('plugins:netbox_sidekick:nic_detail', args=[self.interface.id])
+
+    def device_name_graphite(self):
+        return self.interface.device.name.lower().replace(' ', '_')
+
+    def interface_name_graphite(self):
+        return self.interface.name.lower().replace('/', '-').replace('.', '_')
+
+    # If there are more than 5 entries for a NIC,
+    # delete older ones.
+    def save(self, *args, **kwargs):
+        previous_entries = NIC.objects.filter(
+            interface_id=self.interface_id).order_by('-last_updated')
+        for entry in previous_entries[4:]:
+            entry.delete()
+
+        super().save(*args, **kwargs)

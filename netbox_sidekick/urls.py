@@ -37,7 +37,7 @@ urlpatterns = [
     path('nics/', views.NICIndexView.as_view(), name='nic_index'),
 
     # NIC Details
-    path('nics/<int:pk>/', views.NICDetailView.as_view(), name='nic_detail'),
+    path('nics/<int:pk>', views.NICDetailView.as_view(), name='nic_detail'),
 
     # Routing Type Index
     path('routing_types/', views.RoutingTypeIndexView.as_view(), name='routingtype_index'),

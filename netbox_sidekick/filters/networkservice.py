@@ -78,11 +78,11 @@ class NetworkServiceFilterSet(django_filters.FilterSet):
         super().__init__(
             data=data, queryset=queryset, request=request, prefix=prefix)
         self.filters['member'].field.widget.attrs.update(
-            {'class': 'netbox-select2-static'})
+            {'class': 'netbox-select2-static form-control'})
         self.filters['active'].field.widget.attrs.update(
-            {'class': 'netbox-select2-static'})
+            {'class': 'netbox-select2-static form-control'})
         self.filters['network_service_type'].field.widget.attrs.update(
-            {'class': 'netbox-select2-static'})
+            {'class': 'netbox-select2-static form-control'})
 
     def search(self, queryset, name, value):
         if not value.strip():

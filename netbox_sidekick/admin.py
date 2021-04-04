@@ -44,8 +44,31 @@ class NetworkServiceTypeAdmin(admin.ModelAdmin):
     list_display = ('name', 'description')
 
 
+class NetworkServiceAdminActiveFilter(admin.SimpleListFilter):
+    title = 'Active'
+    parameter_name = 'active'
+
+    def lookups(self, request, model_admin):
+        return (
+            (True, 'Yes'),
+            (False, 'No'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'True':
+            return queryset.filter(active=True)
+        if self.value() == 'False':
+            return queryset.filter(active=False)
+        if self.value() == 'all':
+            return queryset
+        if self.value() is None:
+            return queryset.filter(active=True)
+
+
 @admin.register(NetworkService)
 class NetworkServiceAdmin(admin.ModelAdmin):
+    list_filter = (NetworkServiceAdminActiveFilter,)
+
     fieldsets = (
         ('Member', {
             'fields': ('member',),

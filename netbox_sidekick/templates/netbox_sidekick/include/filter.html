@@ -18,9 +18,9 @@
                                     </button>
                                 </span>
                             </div>
-                       {% elif field|widget_type == 'checkboxinput' %}
+                        {% elif field|widget_type == 'checkboxinput' %}
                             <label for="{{ field.id_for_label }}">{{ field }} {{ field.label }}</label>
-                       {% elif field|widget_type == 'selectmultiple' %}
+                        {% elif field|widget_type == 'selectmultiple' %}
                             {{ field.label_tag }}<br>
                             {{ field }}
                         {% else %}

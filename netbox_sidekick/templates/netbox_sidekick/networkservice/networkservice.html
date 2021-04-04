@@ -62,14 +62,9 @@
         </tr>
       </table>
     </div>
-  </div>
-</div>
 
-<h2>Service Details</h2>
-
-{% for service_device in object.network_service_devices.all %}
-<div class="row">
-  <div class="col-md-6">
+    <h2>Service Details</h2>
+    {% for service_device in object.network_service_devices.all %}
     <div class="panel panel-default">
       <div class="panel-heading">
         <strong>{{ service_device.device.name }}</strong>
@@ -78,7 +73,7 @@
         <tr>
           <td>Device</td>
           <td>
-            <a href="{{ service_device.device.get_absolute.url }}">
+            <a href="{{ service_device.device.get_absolute_url }}">
               {{ service_device.device.name }}
             </a>
           </td>
@@ -104,14 +99,10 @@
         </tr>
       </table>
     </div>
-  </div>
-</div>
 
-{% if service_device.network_service_l2.all|length > 0 %}
-<h3>L2 Information</h3>
-{% for l2 in service_device.network_service_l2.all %}
-<div class="row">
-  <div class="col-md-6">
+    {% if service_device.network_service_l2.all|length > 0 %}
+    <h3>L2 Information</h3>
+    {% for l2 in service_device.network_service_l2.all %}
     <div class="panel panel-default">
       <table class="table table-hover panel-body attr-table">
         <tr>
@@ -123,17 +114,13 @@
           <td>{{l2.comments}}</td>
         </tr>
       </table>
-      /div>
-  </div>
-</div>
-{% endfor %}
-{% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
 
-{% if service_device.network_service_l3.all|length > 0 %}
-<h3>L3 Information</h3>
-{% for l3 in service_device.network_service_l3.all %}
-<div class="row">
-  <div class="col-md-6">
+    {% if service_device.network_service_l3.all|length > 0 %}
+    <h3>L3 Information</h3>
+    {% for l3 in service_device.network_service_l3.all %}
     <div class="panel panel-default">
       <table class="table table-hover panel-body attr-table">
         <tr>
@@ -219,6 +206,28 @@
       </table>
     </div>
   </div>
+<div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <strong>Graphs</strong>
+      </div>
+      <table class="table table-hover panel-body attr-table">
+        {% for period, pdata in graphs.items %}
+        <tr>
+          <td>
+            <center><h4>{{ pdata.title }}</h4></center>
+            <img src="data:image/png;base64,{{ pdata.in.graph }}"><br><br>
+            <img src="data:image/png;base64,{{ pdata.out.graph }}"><br>
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
 </div>
 {% endfor %}
 {% endif %}

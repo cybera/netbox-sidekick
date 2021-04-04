@@ -46,7 +46,7 @@ class ContactFilterSet(django_filters.FilterSet):
         super().__init__(
             data=data, queryset=queryset, request=request, prefix=prefix)
         self.filters['member'].field.widget.attrs.update(
-            {'class': 'netbox-select2-static'})
+            {'class': 'netbox-select2-static form-control'})
 
     def filter_member(self, queryset, name, value):
         return queryset.filter(

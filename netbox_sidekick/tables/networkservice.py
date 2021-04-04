@@ -9,6 +9,10 @@ from netbox_sidekick.models import (
     NetworkServiceType, NetworkService,
 )
 
+NETWORK_SERVICE_LINK = """
+    <a href="{{ record.get_absolute_url }}">{{ record }}</a>
+"""
+
 TENANT_LINK = """
     <a href="{{ record.member.get_absolute_url }}">{{ record.member.name }}</a>
 """
@@ -44,9 +48,10 @@ class NetworkServiceTypeTable(BaseTable):
 class NetworkServiceTable(BaseTable):
     pk = ToggleColumn()
 
-    name = tables.LinkColumn(
-        'plugins:netbox_sidekick:networkservice_detail',
-        args=[Accessor('pk')])
+    name = tables.TemplateColumn(
+        template_code=NETWORK_SERVICE_LINK,
+        verbose_name='Network Service',
+    )
 
     network_service_type = tables.LinkColumn(
         'plugins:netbox_sidekick:networkservicetype_detail',
@@ -60,3 +65,12 @@ class NetworkServiceTable(BaseTable):
     class Meta(BaseTable.Meta):
         model = NetworkService
         fields = ('pk', 'active', 'id', 'name', 'network_service_type', 'member')
+
+    def order_name(self, queryset, is_descending):
+        member_field = 'member__name'
+        service_field = 'name'
+        if is_descending:
+            member_field = '-member_name'
+            service_field = '-name'
+        queryset = queryset.order_by(member_field, service_field)
+        return (queryset, True)

@@ -122,7 +122,7 @@ class Command(BaseCommand):
                 )
 
                 if dry_run:
-                    self.stdout.write(f"Would have created logical system: [{logical_system_name}]")
+                    self.stdout.write(f"Would have created logical system: {logical_system_name}")
                 else:
                     logical_system.save()
                     if not quiet:

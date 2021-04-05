@@ -32,8 +32,8 @@ class ImportNetworkServiceL3Test(utils.BaseTest):
         out = StringIO()
         call_command('import_network_service_l3', stdout=out, file=csv, dry_run=True)
 
-        self.assertIn("Would have created logical system: c-all", out.getvalue())
-        self.assertIn("Would have created logical system: research", out.getvalue())
+        self.assertIn("Would have created logical system: C-All", out.getvalue())
+        self.assertIn("Would have created logical system: Research", out.getvalue())
         self.assertIn("Would have updated East University's peering service on Router 1 xe-3/3/3.300 L3 Service", out.getvalue())
         self.assertIn("Would have created East University's peering service on Router 1 xe-3/3/3.300 L3 Service", out.getvalue())
 
@@ -43,7 +43,7 @@ class ImportNetworkServiceL3Test(utils.BaseTest):
         out = StringIO()
         call_command('import_network_service_l3', stdout=out, file=csv)
 
-        self.assertIn("Created logical system: c-all", out.getvalue())
-        self.assertIn("Created logical system: research", out.getvalue())
+        self.assertIn("Created logical system: C-All", out.getvalue())
+        self.assertIn("Created logical system: Research", out.getvalue())
         self.assertIn("Updated East University's peering service on Router 1 xe-3/3/3.300 L3 Service", out.getvalue())
         self.assertIn("Created East University's peering service on Router 1 xe-3/3/3.300 L3 Service", out.getvalue())

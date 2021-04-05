@@ -8,6 +8,7 @@ language: python
 python:
   - "3.7"
 install:
+  - sudo apt-get install -y librrd-dev
   - pip install python-dateutil
   - pip install backports.weakref
   - pip install backports-datetime-fromisoformat

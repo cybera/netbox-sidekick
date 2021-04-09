@@ -26,6 +26,10 @@ menu_items = (
         link_text='Network Services',
     ),
     PluginMenuItem(
+        link='plugins:netbox_sidekick:networkservicegroup_index',
+        link_text='Network Service Groups',
+    ),
+    PluginMenuItem(
         link='plugins:netbox_sidekick:networkservicetype_index',
         link_text='Service Types',
     ),

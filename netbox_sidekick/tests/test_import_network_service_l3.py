@@ -34,8 +34,8 @@ class ImportNetworkServiceL3Test(utils.BaseTest):
 
         self.assertIn("Would have created logical system: C-All", out.getvalue())
         self.assertIn("Would have created logical system: Research", out.getvalue())
-        self.assertIn("Would have updated East University's peering service on Router 1 xe-3/3/3.300 L3 Service", out.getvalue())
-        self.assertIn("Would have created East University's peering service on Router 1 xe-3/3/3.300 L3 Service", out.getvalue())
+        self.assertIn("Would have updated East University: East University's peering service on Router 1 xe-3/3/3.300 L3 Service", out.getvalue())
+        self.assertIn("Would have created East University: East University's peering service on Router 1 xe-3/3/3.300 L3 Service", out.getvalue())
 
     def test_import(self):
         dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -45,5 +45,5 @@ class ImportNetworkServiceL3Test(utils.BaseTest):
 
         self.assertIn("Created logical system: C-All", out.getvalue())
         self.assertIn("Created logical system: Research", out.getvalue())
-        self.assertIn("Updated East University's peering service on Router 1 xe-3/3/3.300 L3 Service", out.getvalue())
-        self.assertIn("Created East University's peering service on Router 1 xe-3/3/3.300 L3 Service", out.getvalue())
+        self.assertIn("Updated East University: East University's peering service on Router 1 xe-3/3/3.300 L3 Service", out.getvalue())
+        self.assertIn("Created East University: East University's peering service on Router 1 xe-3/3/3.300 L3 Service", out.getvalue())

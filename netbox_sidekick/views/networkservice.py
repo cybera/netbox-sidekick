@@ -9,17 +9,20 @@ from django_tables2.views import SingleTableView
 from netbox_sidekick.filters import (
     LogicalSystemFilterSet, RoutingTypeFilterSet,
     NetworkServiceTypeFilterSet, NetworkServiceFilterSet,
+    NetworkServiceGroupFilterSet,
 )
 
 from netbox_sidekick.tables import (
     LogicalSystemTable, RoutingTypeTable,
     NetworkServiceTypeTable, NetworkServiceTable,
+    NetworkServiceGroupTable,
 )
 
 from netbox_sidekick.models import (
     LogicalSystem, RoutingType,
     NetworkServiceType,
     NetworkService,
+    NetworkServiceGroup,
     NIC,
 )
 
@@ -144,5 +147,34 @@ class NetworkServiceDetailView(PermissionRequiredMixin, DetailView):
                     graphite_render_host = settings.PLUGINS_CONFIG['netbox_sidekick'].get('graphite_render_host', None)
                     graphs = get_graphite_graphs(nics[0], graphite_render_host)
                     context['graphs'] = graphs
+
+        return context
+
+
+# Network Service Group Index
+class NetworkServiceGroupIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
+    permission_required = 'netbox_sidekick.view_networkservicegroup'
+    model = NetworkServiceGroup
+    table_class = NetworkServiceGroupTable
+    filterset_class = NetworkServiceGroupFilterSet
+    template_name = 'netbox_sidekick/networkservice/networkservicegroup_index.html'
+
+
+# Network Service Group Details
+class NetworkServiceGroupDetailView(PermissionRequiredMixin, DetailView):
+    permission_required = 'netbox_sidekick.view_networkservicegroup'
+    model = NetworkServiceGroup
+    context_object_name = 'nsg'
+    template_name = 'netbox_sidekick/networkservice/networkservicegroup.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        nsg = get_object_or_404(NetworkServiceGroup, pk=self.kwargs['pk'])
+        context['nsg'] = nsg
+
+        table = NetworkServiceTable(NetworkService.objects.filter(
+            pk__in=nsg.network_services.all()))
+        context['table'] = table
 
         return context

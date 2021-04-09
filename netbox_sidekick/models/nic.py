@@ -77,6 +77,8 @@ class NIC(ChangeLoggedModel):
 
     class Meta:
         ordering = ['interface__device__name', 'interface__name']
+        verbose_name = 'NIC'
+        verbose_name_plural = 'NICs'
 
     def __str__(self):
         return f"{self.interface.device.name} {self.interface.name}"

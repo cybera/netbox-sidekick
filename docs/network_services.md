@@ -38,3 +38,9 @@ select service_id, L3_service_details.* from Services inner join L3_service_deta
 
 elect service_id, L2_service_details.* from Services inner join L2_service_details on Services.l2_service_id=L2_service_details.l2_service_id;
 ```
+
+## Service Groups
+
+Sidekick includes a model called `NetworkServiceGroup`. This can be used to group member services
+together in a common theme. For example, you can create a Group called `All Peering Members` and
+then add all Network Services of Peering subscriptions to this group.

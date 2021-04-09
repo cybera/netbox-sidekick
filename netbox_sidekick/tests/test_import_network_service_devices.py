@@ -28,7 +28,7 @@ class ImportNetworkServiceDevicesTest(utils.BaseTest):
         out = StringIO()
         call_command('import_network_service_devices', stdout=out, file=csv, dry_run=True)
 
-        self.assertIn("Would have created Another Service Name on Router 1 xe-3/3/4.300", out.getvalue())
+        self.assertIn("Would have created Central School: Another Service Name on Router 1 xe-3/3/4.300", out.getvalue())
 
     def test_import(self):
         dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -36,4 +36,4 @@ class ImportNetworkServiceDevicesTest(utils.BaseTest):
         out = StringIO()
         call_command('import_network_service_devices', stdout=out, file=csv)
 
-        self.assertIn("Created Another Service Name on Router 1 xe-3/3/4.300", out.getvalue())
+        self.assertIn("Created Central School: Another Service Name on Router 1 xe-3/3/4.300", out.getvalue())

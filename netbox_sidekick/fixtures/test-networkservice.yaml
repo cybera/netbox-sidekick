@@ -56,3 +56,11 @@
     member_router_address_ipv4: '192.168.1.2/31'
     asn: 12345
     legacy_id: 1
+
+- model: netbox_sidekick.NetworkServiceGroup
+  pk: 1
+  fields:
+    name: 'A Group'
+    description: 'Just some group'
+    network_services:
+      - 1

@@ -22,6 +22,8 @@ class LogicalSystem(ChangeLoggedModel):
 
     class Meta:
         ordering = ['name']
+        verbose_name = 'Logical System'
+        verbose_name_plural = 'Logical Systems'
 
     def __str__(self):
         return self.name
@@ -45,6 +47,8 @@ class RoutingType(ChangeLoggedModel):
 
     class Meta:
         ordering = ['name']
+        verbose_name = 'Routing Type'
+        verbose_name_plural = 'Routing Types'
 
     def __str__(self):
         return self.name
@@ -78,6 +82,8 @@ class NetworkServiceType(ChangeLoggedModel):
 
     class Meta:
         ordering = ['name']
+        verbose_name = 'Network Service Type'
+        verbose_name_plural = 'Network Service Types'
 
     def __str__(self):
         return self.name
@@ -151,6 +157,8 @@ class NetworkService(ChangeLoggedModel):
 
     class Meta:
         ordering = ['member', 'network_service_type']
+        verbose_name = 'Network Service'
+        verbose_name_plural = 'Network Services'
 
     def __str__(self):
         return f"{self.member.name}: {self.name}"
@@ -208,6 +216,10 @@ class NetworkServiceDevice(ChangeLoggedModel):
         default='',
     )
 
+    class Meta:
+        verbose_name = 'Network Service Device'
+        verbose_name_plural = 'Network Service Devices'
+
     def __str__(self):
         return f"{self.network_service} on {self.device.name} {self.interface}"
 
@@ -253,6 +265,10 @@ class NetworkServiceL2(ChangeLoggedModel):
         blank=True,
         default='',
     )
+
+    class Meta:
+        verbose_name = "Network Service L3"
+        verbose_name_plural = "Network Service L3s"
 
     def __str__(self):
         return f"{self.network_service_device} L2 Service"
@@ -381,8 +397,48 @@ class NetworkServiceL3(ChangeLoggedModel):
         default='',
     )
 
+    class Meta:
+        verbose_name = "Network Service L3"
+        verbose_name_plural = "Network Service L3s"
+
     def __str__(self):
         return f"{self.network_service_device} L3 Service"
 
     # def get_absolute_url(self):
     #     return reverse('plugins:netbox_sidekick:networkservicel3_detail', args=[self.pk])
+
+
+# NetworkServiceGroup represents a grouping of network services
+# that have a common theme. For example: K-12 Members
+class NetworkServiceGroup(ChangeLoggedModel):
+    name = models.CharField(
+        max_length=50,
+        unique=True,
+        verbose_name='Name',
+        help_text='The name of the network service group',
+    )
+
+    slug = models.SlugField(
+        unique=True,
+    )
+
+    description = models.CharField(
+        max_length=255,
+        verbose_name='Description',
+        help_text='A description of the network service group',
+        blank=True,
+        default='',
+    )
+
+    network_services = models.ManyToManyField(NetworkService)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Network Service Group'
+        verbose_name_plural = 'Network Service Groups'
+
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse('plugins:netbox_sidekick:networkservicegroup_detail', args=[self.pk])

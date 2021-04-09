@@ -7,6 +7,7 @@ from .models import (
     NetworkService,
     NetworkServiceDevice,
     NetworkServiceL2, NetworkServiceL3,
+    NetworkServiceGroup,
 
     MemberContact,
 
@@ -98,6 +99,18 @@ class NetworkServiceDeviceAdmin(admin.ModelAdmin):
     )
 
 
+@admin.register(NetworkServiceGroup)
+class NetworkServiceGroupAdmin(admin.ModelAdmin):
+    filter_horizontal = ('network_services',)
+
+    fieldsets = (
+        (None, {
+            'fields': (
+                'name', 'description', 'network_services',),
+        }),
+    )
+
+
 @admin.register(NetworkServiceL2)
 class NetworkServiceL2Admin(admin.ModelAdmin):
     fieldsets = (
@@ -115,6 +128,11 @@ class NetworkServiceL2Admin(admin.ModelAdmin):
 
 @admin.register(NetworkServiceL3)
 class NetworkServiceL3Admin(admin.ModelAdmin):
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'network_service_device':
+            kwargs['queryset'] = NetworkServiceDevice.objects.order_by('network_service__member__name')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
     fieldsets = (
         (None, {
             'fields': (

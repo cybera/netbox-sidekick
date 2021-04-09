@@ -6,6 +6,7 @@ from netbox_sidekick.models import (
     RoutingType, LogicalSystem,
     NetworkServiceType,
     NetworkService,
+    NetworkServiceGroup,
 )
 
 
@@ -102,3 +103,29 @@ class NetworkServiceFilterSet(django_filters.FilterSet):
         else:
             active = True
         return parent.filter(active=active)
+
+
+class NetworkServiceGroupFilterSet(django_filters.FilterSet):
+    q = django_filters.CharFilter(
+        method='search',
+        label='Search',
+    )
+
+    class Meta:
+        model = NetworkServiceGroup
+        fields = ['network_services']
+
+    def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
+        super().__init__(
+            data=data, queryset=queryset, request=request, prefix=prefix)
+        self.filters['network_services'].field.widget.attrs.update(
+            {'class': 'netbox-select2-static form-control'})
+
+    def search(self, queryset, name, value):
+        if not value.strip():
+            return queryset
+        return queryset.filter(
+            Q(name__icontains=value) |
+            Q(description__icontains=value) |
+            Q(network_services__name__icontains=value)
+        ).distinct()

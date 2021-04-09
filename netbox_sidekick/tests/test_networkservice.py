@@ -3,6 +3,7 @@ from django.urls import reverse
 from netbox_sidekick.models import (
     LogicalSystem, RoutingType,
     NetworkServiceType, NetworkService,
+    NetworkServiceGroup,
 )
 
 from .utils import BaseTest
@@ -50,6 +51,25 @@ class NetworkServiceTest(BaseTest):
         resp = self.client.get(
             reverse('plugins:netbox_sidekick:networkservice_index'))
         self.assertContains(resp, "East University&#x27;s peering service")
+
+    # Network Service Group
+    def test_networkservicegroup_basic(self):
+        ns = NetworkService.objects.get(member__name='East University')
+        v = NetworkServiceGroup.objects.get(network_services__in=[ns])
+        self.assertEqual(v.name, 'A Group')
+        self.assertEqual(v.description, 'Just some group')
+
+    def test_view_networkservicegroup_index(self):
+        resp = self.client.get(
+            reverse('plugins:netbox_sidekick:networkservicegroup_index'))
+        self.assertContains(resp, 'A Group')
+        self.assertContains(resp, 'Just some group')
+
+    def test_view_networkservicegroup_detail(self):
+        v = NetworkServiceGroup.objects.get(id=1)
+        resp = self.client.get(v.get_absolute_url())
+        self.assertContains(resp, 'A Group')
+        self.assertContains(resp, 'Just some group')
 
     # Routing Type
     def test_routingtype_basic(self):

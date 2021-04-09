@@ -7,6 +7,7 @@ from utilities.tables import BaseTable, ToggleColumn
 from netbox_sidekick.models import (
     LogicalSystem, RoutingType,
     NetworkServiceType, NetworkService,
+    NetworkServiceGroup,
 )
 
 NETWORK_SERVICE_LINK = """
@@ -74,3 +75,12 @@ class NetworkServiceTable(BaseTable):
             service_field = '-name'
         queryset = queryset.order_by(member_field, service_field)
         return (queryset, True)
+
+
+class NetworkServiceGroupTable(BaseTable):
+    pk = ToggleColumn()
+    name = tables.LinkColumn()
+
+    class Meta(BaseTable.Meta):
+        model = NetworkServiceGroup
+        fields = ('pk', 'name', 'description')

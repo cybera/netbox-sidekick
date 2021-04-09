@@ -240,9 +240,10 @@ class Command(BaseCommand):
                                         continue
 
                                     self.stdout.write(
-                                        f"IP Address {interface_ip} is already assigned to " +
-                                        f"{ip.assigned_object.name} on {ip.assigned_object.device.name}. " +
-                                        f"Will not assign to {existing_interface.name}.")
+                                        f"IP Address {interface_ip} is already assigned to "
+                                        f"{ip.assigned_object.name} on {ip.assigned_object.device.name}. "
+                                        f"Will not assign to {existing_interface.name} on "
+                                        f"{existing_interface.device.name}")
                                     continue
                                 # Otherwise, add the IP to the interface.
                                 else:

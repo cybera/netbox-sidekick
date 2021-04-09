@@ -209,7 +209,7 @@ class NetworkServiceDevice(ChangeLoggedModel):
     )
 
     def __str__(self):
-        return f"{self.network_service.name} on {self.device.name} {self.interface}"
+        return f"{self.network_service} on {self.device.name} {self.interface}"
 
     def get_absolute_url(self):
         return reverse('plugins:netbox_sidekick:networkservicedevice_detail', args=[self.pk])

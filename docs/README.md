@@ -38,3 +38,7 @@ example:
 * [Members](./members.md)
 * [Contacts](./contacts.md)
 * [Network Services](./network_services.md)
+
+# Other Features
+
+* [GREN Mapping](./mapping.md)

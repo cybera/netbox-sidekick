@@ -4,18 +4,17 @@ Sidekick can generate a GRENML-based file for creating a map of the NREN's membe
 
 In order to configure Sidekick to do this, do the following steps:
 
-## Custom Fields
+## Members and Sites
 
-As detailed in the [Install](install.md) doc, the `setup_sidekick` script will create
-several custom fields. The following fields are used for mapping:
+Make sure you have added all of your members as Tenants and have created one Site
+for each member, with the Site having the same name as the member.
 
-* `latitude`: This custom field is added to Tenants and Devices and is used to record
-  the latitude of a tenant's location and of a network device.
-* `longitude`: Similar to the `latitude` field, but for longitude.
-* `primary_map_node`: This custom field is added to Devices and is used to designate
-  a single device as the center of your map.
-* `map_label`: This custom field is added to Devices and is used to provide a friendly
-  description of a device for a map.
+Also make sure that the Site has the latitude and longitude values populated.
+
+Use the Site's "description" field to specify an alertnative name that will be
+used in the map. For example, if your Site is called "Member's New Data Centre"
+but you'd prefer the map to have "Member's Data Centre", put the latter name
+as a description.
 
 ## Adding Data
 
@@ -25,6 +24,7 @@ Modify the NetBox `configuration.py` file and add the following setting:
 PLUGINS_CONFIG = {
     'netbox_sidekick': {
 				'mapping_primary_owner': 'Your NREN Name',
+        'mapping_primary_site': 'Your Main Site',
         ...
     }
 }
@@ -32,23 +32,13 @@ PLUGINS_CONFIG = {
 
 "Your NREN Name" should be a Tenant that you've added to NetBox to represent yourself.
 
-While you are adding Tenants to NetBox (as detailed in the [Members](members.md) doc), also add their latitude and longitude. This will be used to plot their locations on a map.
-
-Next, as you are adding Devices to NetBox, do the following:
-
-* For any Device (such as a router) that represents a PoP of your NREN, add the latitude
-  and longitude of the PoP's location.
-* For one Device (such as a router) that represents the primary PoP of your NREN, set
-  `primary_map_node` to "True". All other PoPs will then point to this primary node.
-* Optionally, for any Device, fill in the `map_label` field and specify a friendly name
-  for the map location. For example, instead of "Calgary Core Router", which represents
-  the router of the Calgary PoP, you can set `map_label` to "Calgary" and have that
-  displayed in the map.
+"Your Main Site" should be the name or description of the Site you've added to NetBox
+to represent yourself.
 
 ## Adding Network Services
 
 As you add [Network Services](network_services.md) to Sidekick/NetBox, make sure that
-each service ultimately points to a Device located in one of your PoPs.
+each service ultimately points to a Device located in one of your PoPs (Sites).
 
 One this has been done for all of your members' services, all pieces are now in place
 to generate a map of membership.
@@ -59,4 +49,12 @@ The GRENML file is generated via an API call:
 
 ```
 curl https://netbox.example.com/api/plugins/sidekick/map/ -H "Authorization: Token <token>"
+```
+
+## Testing on the Command Line
+
+You can also test map generation on the command-line:
+
+```
+$ python manage.py gren_map
 ```

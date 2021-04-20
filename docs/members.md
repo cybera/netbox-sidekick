@@ -9,8 +9,6 @@ Sidekick requires there to be a Tenant Group called "Members" as well as
 the following custom fields attached to the Tenant model:
 
 * member_type
-* latitude
-* longitude
 * crm_id
 * active
 
@@ -56,3 +54,11 @@ python manage.py import_members --file /path/to/members.csv
 
 For an example CSV, see the `members.csv` testing fixture in the
 `netbox_sidekick/fixtures` directory.
+
+## Member Sites
+
+In addition to having one member per tenant, Sidekick also expects that
+each member also has a Site with the same name as the member.
+
+Currently, you have to manually create each Site, but an import script
+should be available in the future.

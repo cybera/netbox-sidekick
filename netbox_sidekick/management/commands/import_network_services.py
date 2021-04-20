@@ -5,6 +5,7 @@ from django.utils.dateparse import parse_datetime
 from django.utils.text import slugify
 
 from tenancy.models import Tenant
+from dcim.models import Site
 
 from netbox_sidekick.models import (
     NetworkServiceType,
@@ -81,6 +82,18 @@ class Command(BaseCommand):
                 self.stdout.write(f"WARNING: No member found for {member_name}. Skipping.")
                 continue
 
+            # Find a matching site.
+            # If one isn't found, skip.
+            try:
+                member_site = Site.objects.get(name=member_name)
+            except Tenant.MultipleObjectsReturned:
+                self.stdout.write(
+                    f"WARNING: Multiple results found for Site {member_name}. Skipping.")
+                continue
+            except Site.DoesNotExist:
+                self.stdout.write(f"WARNING: No site found for {member_site}. Skipping.")
+                continue
+
             # Find a matching service.
             # If one doesn't exist, create one.
             try:
@@ -115,6 +128,7 @@ class Command(BaseCommand):
                     name=service_name,
                     network_service_type=service_type,
                     member=member,
+                    member_site=member_site,
                     comments=notes,
                     start_date=date_in_production,
                     end_date=date_out_production,

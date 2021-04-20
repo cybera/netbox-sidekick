@@ -9,7 +9,10 @@ from dcim.models import Device, Interface
 
 from ipam.models import IPAddress
 
-from netbox_sidekick.models import NIC
+from netbox_sidekick.models import (
+    NetworkServiceDevice,
+    NIC,
+)
 
 from .sidekick_utils import (
     VALID_INTERFACE_NAMES,
@@ -239,6 +242,14 @@ class Command(BaseCommand):
                                     if f"{ip}".startswith("10.") or f"{ip}".startswith("172.") or f"{ip}".startswith("192."):
                                         continue
 
+                                    # If the IP assignment is on the same device, we will assume
+                                    # a reconfiguration was made. In this case, we reassign the
+                                    # IP.
+                                    if ip.assigned_object.device.name == existing_interface.device.name:
+                                        ip.assigned_object = existing_interface
+                                        ip.save()
+                                        continue
+
                                     self.stdout.write(
                                         f"IP Address {interface_ip} is already assigned to "
                                         f"{ip.assigned_object.name} on {ip.assigned_object.device.name}. "
@@ -322,7 +333,7 @@ class Command(BaseCommand):
                     total_seconds = (e1.last_updated - e2.last_updated).total_seconds()
 
                     graphite_prefix = "{}.{}".format(
-                        e1.device_name_graphite(), e1.interface_name_graphite())
+                        e1.graphite_device_name(), e1.graphite_interface_name())
 
                     for cat in METRIC_CATEGORIES:
                         m1 = getattr(e1, cat, None)
@@ -334,4 +345,32 @@ class Command(BaseCommand):
                                 diff = diff / total_seconds
                             graphite_name = f"{graphite_prefix}.{cat}"
                             # self.stdout.write(f"{graphite_name} {diff} {total_seconds}")
+                            graphyte.send(graphite_name, diff)
+
+                    # Determine if the interface is part of a member's network service.
+                    # If so, send a second set of metrics to Graphite with a prefix
+                    # dedicated to that service.
+                    try:
+                        nsd = NetworkServiceDevice.objects.get(
+                            device=device, interface=existing_interface.name,
+                            network_service__active=True)
+                    except NetworkServiceDevice.MultipleObjectsReturned:
+                        self.stdout.write(f"Multiple results found for network service using "
+                                          f"{device} {existing_interface.name}")
+                        continue
+                    except NetworkServiceDevice.DoesNotExist:
+                        continue
+
+                    ns = nsd.network_service
+                    service_prefix = f"{ns.graphite_service_name()}.{graphite_prefix}"
+
+                    for cat in ['in_octets', 'out_octets']:
+                        graphite_name = f"{service_prefix}.{cat}"
+                        m1 = getattr(e1, cat, None)
+                        m2 = getattr(e2, cat, None)
+                        if m1 is not None and m2 is not None:
+                            diff = (m1 - m2)
+
+                            if diff != 0:
+                                diff = diff / total_seconds
                             graphyte.send(graphite_name, diff)

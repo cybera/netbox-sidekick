@@ -1,10 +1,9 @@
+import json
 import netaddr
 import re
 import requests
 import rrdtool
 import time
-
-from base64 import b64encode
 
 from django.contrib.auth.models import User
 
@@ -20,18 +19,18 @@ from secrets.models import UserKey
 
 
 GRAPHS = {
-    'last_day': {
-        'title': 'Last Day',
-        'from': '-1d',
-    },
-    'last_week': {
-        'title': 'Last Week',
-        'from': '-7d',
-    },
-    'last_month': {
-        'title': 'Last Month',
-        'from': '-4w',
-    },
+    # 'last_day': {
+    #     'title': 'Last Day',
+    #     'from': '-1d',
+    # },
+    # 'last_week': {
+    #     'title': 'Last Week',
+    #     'from': '-7d',
+    # },
+    # 'last_month': {
+    #     'title': 'Last Month',
+    #     'from': '-4w',
+    # },
     'last_year': {
         'title': 'Last Year',
         'from': '-1y',
@@ -378,31 +377,72 @@ def parse_rrd(rrd_file):
     return results
 
 
-def get_graphite_graphs(nic, graphite_render_host=None):
+def get_graphite_nic_graph(nic, graphite_render_host=None):
     if graphite_render_host is None:
         return None
 
     carbon_name = "{}.{}".format(
-        nic.device_name_graphite(),
-        nic.interface_name_graphite()
+        nic.graphite_device_name(),
+        nic.graphite_interface_name()
     )
 
-    query_base = f"{graphite_render_host}/render?width=550&fontName=FreeMono&areaMode=all"
+    query_base = f"{graphite_render_host}/render?format=json"
+    graph_data = {}
+    graph_data['title'] = "Last Year - GB"
+    metric_in = f"{carbon_name}.in_octets"
+    metric_out = f"{carbon_name}.out_octets"
+    target_in = f"scale(scale(keepLastValue({metric_in}), 8), 0.000000000931323)"
+    target_out = f"scale(scale(keepLastValue({metric_out}), -8), 0.000000000931323)"
+    query = f"{query_base}&from=-1Y&target={target_in}&target={target_out}"
 
-    graphs = {}
-    for period, pdata in GRAPHS.items():
-        graphs[period] = {}
-        graphs[period]['title'] = pdata['title']
-        for inout in ['in', 'out']:
-            graphs[period][inout] = {}
+    r = requests.get(query)
+    # graphs[period][inout]['graph'] = b64encode(r.content).decode('utf-8')
+    results = json.loads(r.content.decode('utf-8'))
+    data = [[], [], []]
+    if len(results) == 0:
+        return None
 
-            title = f"{nic.interface.name} - Bits Per Second {inout.title()}"
-            metric = f"{carbon_name}.{inout}_octets"
-            target = f'cactiStyle(alias(scale(keepLastValue({metric}),8),"{inout.title()}"),"si","gb")'
-            query = f"{query_base}&from={pdata['from']}&target={target}&title={title}"
+    for d in results[0]['datapoints']:
+        data[0].append(d[1])
+        data[1].append(d[0])
 
-            r = requests.get(query)
-            graphs[period][inout]['graph'] = b64encode(r.content).decode('utf-8')
-            graphs[period][inout]['query'] = query
+    for d in results[1]['datapoints']:
+        data[2].append(d[0])
+    graph_data['data'] = data
+    graph_data['query'] = query
 
-    return graphs
+    return graph_data
+
+
+def get_graphite_service_graph(service, graphite_render_host=None):
+    if graphite_render_host is None:
+        return None
+
+    service_name = service.graphite_service_name()
+
+    query_base = f"{graphite_render_host}/render?format=json"
+
+    graph_data = {}
+    graph_data['title'] = "Last Year - GB"
+    target_in = f"scale(scale(keepLastValue({service_name}.*.*.in_octets), 8), 0.000000000931323)"
+    target_out = f"scale(scale(keepLastValue({service_name}.*.*.out_octets), -8), 0.000000000931323)"
+    # target = f'cactiStyle(alias(scale(keepLastValue({metric}),8),"{inout.title()}"),"si","gb")'
+    query = f"{query_base}&from=-1Y&target={target_in}&target={target_out}"
+
+    r = requests.get(query)
+    # graphs[period][inout]['graph'] = b64encode(r.content).decode('utf-8')
+    results = json.loads(r.content.decode('utf-8'))
+    data = [[], [], []]
+    if len(results) == 0:
+        return None
+
+    for d in results[0]['datapoints']:
+        data[0].append(d[1])
+        data[1].append(d[0])
+
+    for d in results[1]['datapoints']:
+        data[2].append(d[0])
+    graph_data['data'] = data
+    graph_data['query'] = query
+
+    return graph_data

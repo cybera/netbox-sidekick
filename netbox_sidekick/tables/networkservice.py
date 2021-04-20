@@ -65,7 +65,7 @@ class NetworkServiceTable(BaseTable):
 
     class Meta(BaseTable.Meta):
         model = NetworkService
-        fields = ('pk', 'active', 'id', 'name', 'network_service_type', 'member')
+        fields = ('pk', 'active', 'id', 'name', 'network_service_type', 'member', 'member_site')
 
     def order_name(self, queryset, is_descending):
         member_field = 'member__name'

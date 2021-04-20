@@ -15,12 +15,26 @@
     slug: "east-university"
     group: 1
 
+- model: dcim.Site
+  pk: 1
+  fields:
+    name: "East University"
+    slug: "east-university"
+    tenant_id: 1
+
 - model: tenancy.Tenant
   pk: 2
   fields:
     name: "Central School"
     slug: "central-school"
     group: 1
+
+- model: dcim.Site
+  pk: 2
+  fields:
+    name: "Central School"
+    slug: "central-school"
+    tenant_id: 2
 
 - model: tenancy.Tenant
   pk: 3
@@ -29,8 +43,22 @@
     slug: "south-not-for-profit"
     group: 1
 
+- model: dcim.Site
+  pk: 3
+  fields:
+    name: "South Not For Profit"
+    slug: "south-not-for-profit"
+    tenant_id: 3
+
 - model: tenancy.Tenant
   pk: 4
   fields:
     name: "Cybera"
     slug: "cybera"
+
+- model: dcim.Site
+  pk: 4
+  fields:
+    name: "Cybera"
+    slug: "cybera"
+    tenant_id: 4

@@ -72,7 +72,7 @@ class NetworkServiceAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Member', {
-            'fields': ('member',),
+            'fields': ('member', 'member_site'),
         }),
 
         ('General', {

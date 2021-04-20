@@ -73,12 +73,14 @@ class NetworkServiceFilterSet(django_filters.FilterSet):
 
     class Meta:
         model = NetworkService
-        fields = ['member', 'network_service_type', 'active']
+        fields = ['member', 'member_site', 'network_service_type', 'active']
 
     def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
         super().__init__(
             data=data, queryset=queryset, request=request, prefix=prefix)
         self.filters['member'].field.widget.attrs.update(
+            {'class': 'netbox-select2-static form-control'})
+        self.filters['member_site'].field.widget.attrs.update(
             {'class': 'netbox-select2-static form-control'})
         self.filters['active'].field.widget.attrs.update(
             {'class': 'netbox-select2-static form-control'})

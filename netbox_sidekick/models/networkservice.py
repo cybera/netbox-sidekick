@@ -1,6 +1,7 @@
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.text import slugify
 
 from dcim.models import Interface
 
@@ -114,6 +115,12 @@ class NetworkService(ChangeLoggedModel):
         on_delete=models.PROTECT,
     )
 
+    member_site = models.ForeignKey(
+        'dcim.Site',
+        verbose_name='Member Site',
+        on_delete=models.PROTECT,
+    )
+
     legacy_id = models.CharField(
         max_length=255,
         verbose_name='Old ID for migrations',
@@ -165,6 +172,11 @@ class NetworkService(ChangeLoggedModel):
 
     def get_absolute_url(self):
         return reverse('plugins:netbox_sidekick:networkservice_detail', args=[self.pk])
+
+    def graphite_service_name(self):
+        member_name = slugify(self.member.name)
+        service_name = slugify(self.name)
+        return f"services.{member_name}.{service_name}"
 
 
 # NetworkServiceDevice represents a device that is part

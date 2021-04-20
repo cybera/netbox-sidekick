@@ -86,10 +86,10 @@ class NIC(ChangeLoggedModel):
     def get_absolute_url(self):
         return reverse('plugins:netbox_sidekick:nic_detail', args=[self.interface.id])
 
-    def device_name_graphite(self):
+    def graphite_device_name(self):
         return self.interface.device.name.lower().replace(' ', '_')
 
-    def interface_name_graphite(self):
+    def graphite_interface_name(self):
         return self.interface.name.lower().replace('/', '-').replace('.', '_')
 
     # If there are more than 5 entries for a NIC,

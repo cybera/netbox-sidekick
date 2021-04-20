@@ -20,7 +20,7 @@ from netbox_sidekick.models import (
 )
 
 from netbox_sidekick.management.commands.sidekick_utils import (
-    get_graphite_graphs
+    get_graphite_nic_graph
 )
 
 
@@ -49,7 +49,7 @@ class NICDetailView(PermissionRequiredMixin, DetailView):
             context['nic'] = nics[0]
 
             graphite_render_host = settings.PLUGINS_CONFIG['netbox_sidekick'].get('graphite_render_host', None)
-            graphs = get_graphite_graphs(nics[0], graphite_render_host)
-            context['graphs'] = graphs
+            graph_data = get_graphite_nic_graph(nics[0], graphite_render_host)
+            context['graph_data'] = graph_data
 
         return context

@@ -23,11 +23,10 @@ from netbox_sidekick.models import (
     NetworkServiceType,
     NetworkService,
     NetworkServiceGroup,
-    NIC,
 )
 
 from netbox_sidekick.management.commands.sidekick_utils import (
-    get_graphite_graphs
+    get_graphite_service_graph
 )
 
 
@@ -136,17 +135,9 @@ class NetworkServiceDetailView(PermissionRequiredMixin, DetailView):
 
         ns = NetworkService.objects.get(pk=self.kwargs['pk'])
 
-        # Only supports one service per interface right now.
-        service_devices = ns.network_service_devices.all()
-        if len(service_devices) > 0:
-            sd = service_devices[0]
-            iface = sd.get_interface_entry()
-            if iface is not None:
-                nics = NIC.objects.filter(interface__id=iface.id)
-                if len(nics) > 0:
-                    graphite_render_host = settings.PLUGINS_CONFIG['netbox_sidekick'].get('graphite_render_host', None)
-                    graphs = get_graphite_graphs(nics[0], graphite_render_host)
-                    context['graphs'] = graphs
+        graphite_render_host = settings.PLUGINS_CONFIG['netbox_sidekick'].get('graphite_render_host', None)
+        graph_data = get_graphite_service_graph(ns, graphite_render_host)
+        context['graph_data'] = graph_data
 
         return context
 

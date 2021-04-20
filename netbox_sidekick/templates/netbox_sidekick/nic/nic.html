@@ -4,6 +4,9 @@
 {% block title %}Interface {{ nic.interface.name }} on {{ nic.device.name }}{% endblock %}
 
 {% block header %}
+<script src="https://leeoniya.github.io/uPlot/dist/uPlot.iife.min.js"></script>
+<link rel="stylesheet" href="https://leeoniya.github.io/uPlot/dist/uPlot.min.css" />
+
 <div class="row noprint">
   <div class="col-sm-8 col-md-9">
     <ol class="breadcrumb">
@@ -39,6 +42,14 @@
         <tr>
           <td>Interface Name</td>
           <td>{{ nic.interface.name }}</td>
+        </tr>
+				<tr>
+					<td>Device</td>
+					<td>
+            <a href="{{ nic.interface.device.get_absolute_url }}">
+              {{ nic.interface.device.name }}
+            </a>
+          </td>
         </tr>
         <tr>
           <td>Admin Status</td>
@@ -90,15 +101,37 @@
         <strong>Graphs</strong>
       </div>
       <table class="table table-hover panel-body attr-table">
-        {% for period, pdata in graphs.items %}
+        {{ graph_data.data|json_script:"graph_data" }}
         <tr>
           <td>
-            <center><h4>{{ pdata.title }}</h4></center>
-            <img src="data:image/png;base64,{{ pdata.in.graph }}"><br><br>
-            <img src="data:image/png;base64,{{ pdata.out.graph }}"><br>
+            <center><h4>{{ graph_data.title }}</h4></center>
+            <div id="graph"></div>
+            <script type="text/javascript">
+            let data = JSON.parse(document.getElementById('graph_data').textContent);
+
+            let opts = {
+              width: 600,
+              height: 350,
+              series: [
+                {},
+                {
+                  label: "In",
+                  stroke: "#2E7D32",
+                  fill: "#66BB6A",
+                },
+                {
+                  label: "Out",
+                  stroke: "#1565C0",
+                  fill: "#42A5F5",
+                  value: (self, rawValue) => rawValue.toFixed(3) * -1,
+                },
+              ],
+            };
+
+            let uplot = new uPlot(opts, data, document.getElementById('graph'));
+            </script>
           </td>
         </tr>
-        {% endfor %}
       </table>
     </div>
   </div>

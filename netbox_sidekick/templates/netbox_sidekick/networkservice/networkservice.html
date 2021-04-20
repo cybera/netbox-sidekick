@@ -3,6 +3,9 @@
 {% block title %}{{ object }}{% endblock %}
 
 {% block header %}
+<script src="https://leeoniya.github.io/uPlot/dist/uPlot.iife.min.js"></script>
+<link rel="stylesheet" href="https://leeoniya.github.io/uPlot/dist/uPlot.min.css" />
+
 <div class="row noprint">
   <div class="col-sm-12 col-md-12">
     <ol class="breadcrumb">
@@ -38,6 +41,10 @@
         <tr>
           <td>Member</td>
           <td><a href="{{ object.member.get_absolute_url }}">{{ object.member }}</a></td>
+        </tr>
+        <tr>
+          <td>Member Site</td>
+          <td><a href="{{ object.member_site.get_absolute_url }}">{{ object.member_site }}</a></td>
         </tr>
         <tr>
           <td>Active</td>
@@ -79,10 +86,20 @@
           </td>
         </tr>
         <tr>
-          <td>Interface</td>
+          <td>NetBox Interface</td>
           <td>
             {% if service_device.get_interface_entry %}
             <a href="{{ service_device.get_interface_entry.get_absolute_url }}">
+              {{ service_device.interface }}</a>
+            {% else %}
+              {{ service_device.interface }}
+            {% endif %}
+          </td>
+        <tr>
+          <td>Interface Graphs</td>
+          <td>
+            {% if service_device.get_interface_entry %}
+            <a href="/plugins/sidekick/nics/{{ service_device.get_interface_entry.id }}">
               {{ service_device.interface }}</a>
             {% else %}
               {{ service_device.interface }}
@@ -215,15 +232,37 @@
         <strong>Graphs</strong>
       </div>
       <table class="table table-hover panel-body attr-table">
-        {% for period, pdata in graphs.items %}
+        {{ graph_data.data|json_script:"graph_data" }}
         <tr>
           <td>
-            <center><h4>{{ pdata.title }}</h4></center>
-            <img src="data:image/png;base64,{{ pdata.in.graph }}"><br><br>
-            <img src="data:image/png;base64,{{ pdata.out.graph }}"><br>
+            <center><h4>{{ graph_data.title }}</h4></center>
+            <div id="graph"></div>
+            <script type="text/javascript">
+            let data = JSON.parse(document.getElementById('graph_data').textContent);
+
+            let opts = {
+              width: 600,
+              height: 350,
+              series: [
+                {},
+                {
+                  label: "In",
+                  stroke: "#2E7D32",
+                  fill: "#66BB6A",
+                },
+                {
+                  label: "Out",
+                  stroke: "#1565C0",
+                  fill: "#42A5F5",
+                  value: (self, rawValue) => rawValue.toFixed(3) * -1,
+                },
+              ],
+            };
+
+            let uplot = new uPlot(opts, data, document.getElementById('graph'));
+						</script>
           </td>
         </tr>
-        {% endfor %}
       </table>
     </div>
   </div>

@@ -31,6 +31,7 @@
     active: True
     network_service_type: 1
     member: 1
+    member_site: 1
     legacy_id: 1
 
 - model: netbox_sidekick.NetworkServiceDevice

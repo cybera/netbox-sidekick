@@ -11,7 +11,7 @@ from napalm import get_network_driver
 
 from netbox.api.authentication import TokenAuthentication
 
-from netbox_sidekick.management.commands.sidekick_utils import decrypt_secret
+from netbox_sidekick.utils import decrypt_secret
 
 
 class DeviceCheckAccessView(APIView):

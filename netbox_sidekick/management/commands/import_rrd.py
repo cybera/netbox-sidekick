@@ -7,7 +7,7 @@ from django.core.management.base import BaseCommand
 
 from dcim.models import Device
 
-from .sidekick_utils import parse_rrd
+from netbox_sidekick.utils import parse_rrd
 
 
 class Command(BaseCommand):

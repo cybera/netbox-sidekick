@@ -25,7 +25,7 @@ from netbox_sidekick.models import (
     NetworkServiceGroup,
 )
 
-from netbox_sidekick.management.commands.sidekick_utils import (
+from netbox_sidekick.utils import (
     get_graphite_service_graph
 )
 

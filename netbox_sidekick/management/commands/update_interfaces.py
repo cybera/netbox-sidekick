@@ -14,7 +14,7 @@ from netbox_sidekick.models import (
     NIC,
 )
 
-from .sidekick_utils import (
+from netbox_sidekick.utils import (
     VALID_INTERFACE_NAMES,
     decrypt_secret,
     snmpwalk_bulk,

@@ -19,7 +19,7 @@ from netbox_sidekick.models import (
     NIC,
 )
 
-from netbox_sidekick.management.commands.sidekick_utils import (
+from netbox_sidekick.utils import (
     get_graphite_nic_graph
 )
 

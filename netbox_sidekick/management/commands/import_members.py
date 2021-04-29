@@ -5,7 +5,7 @@ from django.utils.text import slugify
 
 from tenancy.models import Tenant
 
-from .sidekick_utils import MEMBER_TYPES
+from netbox_sidekick.utils import MEMBER_TYPES
 
 
 class Command(BaseCommand):

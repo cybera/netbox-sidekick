@@ -6,7 +6,7 @@ from extras.models import CustomField
 from tenancy.models import Tenant, TenantGroup
 from dcim.models import Device
 
-from .sidekick_utils import MEMBER_TYPES
+from netbox_sidekick.utils import MEMBER_TYPES
 
 
 class Command(BaseCommand):

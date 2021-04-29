@@ -33,6 +33,12 @@ urlpatterns = [
     # Network Service Details
     path('network_services/<int:pk>/', views.NetworkServiceDetailView.as_view(), name='networkservice_detail'),
 
+    # Network Service Device Index
+    path('network_service_devices/', views.NetworkServiceIndexView.as_view(), name='networkservicedevice_index'),
+
+    # Network Service Device Details
+    path('network_service_devices/<int:pk>/', views.NetworkServiceDetailView.as_view(), name='networkservicedevice_detail'),
+
     # Network Service Group Index
     path('network_service_groups/', views.NetworkServiceGroupIndexView.as_view(), name='networkservicegroup_index'),
 

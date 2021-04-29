@@ -279,8 +279,8 @@ class NetworkServiceL2(ChangeLoggedModel):
     )
 
     class Meta:
-        verbose_name = "Network Service L3"
-        verbose_name_plural = "Network Service L3s"
+        verbose_name = "Network Service L2"
+        verbose_name_plural = "Network Services L2"
 
     def __str__(self):
         return f"{self.network_service_device} L2 Service"
@@ -411,7 +411,7 @@ class NetworkServiceL3(ChangeLoggedModel):
 
     class Meta:
         verbose_name = "Network Service L3"
-        verbose_name_plural = "Network Service L3s"
+        verbose_name_plural = "Network Services L3"
 
     def __str__(self):
         return f"{self.network_service_device} L3 Service"

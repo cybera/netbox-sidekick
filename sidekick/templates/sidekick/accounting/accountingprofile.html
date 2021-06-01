@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block title %}{{ accounting_profile }}{% endblock %}
+
+{% block header %}
+<div class="row noprint">
+  <div class="col-sm-8 col-md-9">
+    <ol class="breadcrumb">
+      <li><a href="{% url 'plugins:sidekick:accountingprofile_index' %}">Accounting Profile</a></li>
+      <li>{{ accounting_profile }}</li>
+    </ol>
+  </div>
+  <div class="col-sm-4 col-md-3">
+    <form action="{% url 'plugins:sidekick:accountingprofile_index' %}" method="get">
+      <div class="input-group">
+        <input type="text" name="q" class="form-control" />
+        <span class="input-group-btn">
+          <button type="submit" class="btn btn-primary">
+            <span class="fa fa-search" aria-hidden="true"></span>
+          </button>
+        </span>
+      </div>
+    </form>
+  </div>
+</div>
+<h1>{{ accounting_profile }}</h1>
+{% include 'inc/created_updated.html' with obj=accounting_profile %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <strong>Accounting Profile Details</strong>
+      </div>
+      <table class="table table-hover panel-body attr-table">
+        <tr>
+          <td>Name</td>
+          <td>{{ accounting_profile.name }}</td>
+        </tr>
+        <tr>
+          <td>Enabled</td>
+          <td>{{ accounting_profile.enabled }}</td>
+        </tr>
+        <tr>
+          <td>Traffic Cap</td>
+          <td>{{ accounting_profile.get_current_bandwidth_profile.traffic_cap }}</td>
+        </tr>
+        <tr>
+          <td>Burst Limit</td>
+          <td>{{ accounting_profile.get_current_bandwidth_profile.burst_limit }}</td>
+        </tr>
+        <tr>
+          <td>Comments</td>
+          <td>{{ accounting_profile.comments }}</td>
+        </tr>
+        <tr>
+          <td>Accounting Sources</td>
+          <td>
+            <ul>
+            {% for as in accounting_profile.accounting_classes.all %}
+              <li><a href="{{ as.get_absolute_url }}">{{ as }}</a></li>
+            {% endfor %}
+            </ul>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <strong>Bandwidth History</strong>
+      </div>
+      <table class="table table-hover panel-body attr-table">
+        <tr>
+          <td>
+            <ul>
+              {% for bp in accounting_profile.bandwidthprofile_set.all %}
+                <li><a href="{{ bp.get_absolute_url }}">{{ bp.effective_date }}</a></li>
+              {% endfor %}
+            </ul>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

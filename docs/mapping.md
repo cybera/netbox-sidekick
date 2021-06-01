@@ -22,7 +22,7 @@ Modify the NetBox `configuration.py` file and add the following setting:
 
 ```
 PLUGINS_CONFIG = {
-    'netbox_sidekick': {
+    'sidekick': {
         'mapping_primary_owner': 'Your NREN Name',
         'mapping_primary_site': 'Your Main Site',
         ...

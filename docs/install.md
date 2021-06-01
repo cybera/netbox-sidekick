@@ -41,7 +41,7 @@ $ pip install -r local_requirements.txt
 
 ```
 PLUGINS = [
-  'netbox_sidekick',
+  'sidekick',
 ]
 ```
 
@@ -49,7 +49,7 @@ PLUGINS = [
 
 ```shell
 $ cd /opt/netbox/netbox
-$ python manage.py migrate netbox_sidekick
+$ python manage.py migrate sidekick
 ```
 
 3. Run the setup script:
@@ -71,7 +71,7 @@ $ sudo service netbox-rq restart
 If you are terrified of what you've just installed or it's simply not useful,
 you can remove this plugin by:
 
-1. Modify the NetBox `configuration.py` file and remove `netbox_sidekick` from
+1. Modify the NetBox `configuration.py` file and remove `sidekick` from
    the list of plugins.
 
 2. You can delete all data from the database by doing:
@@ -79,17 +79,17 @@ you can remove this plugin by:
 ```
 psql netbox
 \d
-drop table netbox_sidekick_nic;
-drop table netbox_sidekick_networkservicel3;
-drop table netbox_sidekick_networkservicel2;
-drop table netbox_sidekick_networkservicedevice;
-drop table netbox_sidekick_networkservice;
-drop table netbox_sidekick_logicalsystem;
-drop table netbox_sidekick_routingtype;
-drop table netbox_sidekick_networkservicetype;
-drop table netbox_sidekick_membercontact;
-drop table netbox_sidekick_contact;
-drop table netbox_sidekick_contacttype;
+drop table sidekick_nic;
+drop table sidekick_networkservicel3;
+drop table sidekick_networkservicel2;
+drop table sidekick_networkservicedevice;
+drop table sidekick_networkservice;
+drop table sidekick_logicalsystem;
+drop table sidekick_routingtype;
+drop table sidekick_networkservicetype;
+drop table sidekick_membercontact;
+drop table sidekick_contact;
+drop table sidekick_contacttype;
 
-delete from django_migrations where app = 'netbox_sidekick';
+delete from django_migrations where app = 'sidekick';
 ```

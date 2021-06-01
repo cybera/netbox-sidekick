@@ -27,7 +27,7 @@ Once this is configured, add the following to your NetBox configuration file:
 
 ```
 PLUGINS_CONFIG = {
-    'netbox_sidekick': {
+    'sidekick': {
         'secret_user': 'network',
         'secret_private_key_path': '/opt/netbox/.ssh/id_rsa',
     }
@@ -76,7 +76,7 @@ The `--dry-run` argument will perform a dry run / no-op and report some of
 the actions that will happen.
 
 > Note: The code for this command can be found at
-> `netbox_sidekick/management/commands/configure_device.py` if you need to
+> `sidekick/management/commands/configure_device.py` if you need to
 > customize it.
 
 # NICs
@@ -143,7 +143,7 @@ NetBox configuration file:
 
 ```
 PLUGINS_CONFIG = {
-    'netbox_sidekick': {
+    'sidekick': {
         'graphite_host': 'graphite.exaple.com',
     }
 }

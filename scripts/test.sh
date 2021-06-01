@@ -17,7 +17,7 @@ fi
 
 
 # Check code conventions
-flake8 --ignore W504,E501 netbox_sidekick/
+flake8 --ignore W504,E501 sidekick/
 RC=$?
 if [[ $RC != 0 ]]; then
   echo ""
@@ -34,14 +34,14 @@ git checkout $NETBOX_VERSION
 pip install -r requirements.txt 2>&1 > /dev/null
 cd ../..
 
-# Install netbox_sidekick
+# Install sidekick
 python setup.py develop
 
 cp scripts/configuration.testing.py build/netbox/netbox/netbox/configuration.py
 
-# Run netbox_sidekick unit tests
+# Run sidekick unit tests
 cd build/netbox
-coverage run --source="netbox/" netbox/manage.py test netbox_sidekick
+coverage run --source="netbox/" netbox/manage.py test sidekick
 RC=$?
 if [[ $RC != 0 ]]; then
   echo ""

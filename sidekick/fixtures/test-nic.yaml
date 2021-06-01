@@ -1,0 +1,44 @@
+- model: sidekick.NIC
+  pk: 1
+  fields:
+    interface: 1
+    admin_status: 1
+    oper_status: 2
+    out_octets: 1
+    in_octets: 2
+    out_unicast_packets: 3
+    in_unicast_packets: 4
+    out_nunicast_packets: 5
+    in_nunicast_packets: 6
+    out_errors: 11
+    in_errors: 12
+
+- model: sidekick.NIC
+  pk: 2
+  fields:
+    interface: 1
+    admin_status: 1
+    oper_status: 2
+    out_octets: 1
+    in_octets: 2
+    out_unicast_packets: 7
+    in_unicast_packets: 8
+    out_nunicast_packets: 6
+    in_nunicast_packets: 7
+    out_errors: 11
+    in_errors: 12
+
+- model: sidekick.NIC
+  pk: 3
+  fields:
+    interface: 2
+    admin_status: 1
+    oper_status: 2
+    out_octets: 1
+    in_octets: 2
+    out_unicast_packets: 3
+    in_unicast_packets: 4
+    out_nunicast_packets: 5
+    in_nunicast_packets: 6
+    out_errors: 11
+    in_errors: 12

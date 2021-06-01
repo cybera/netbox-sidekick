@@ -53,7 +53,7 @@ python manage.py import_members --file /path/to/members.csv
 ```
 
 For an example CSV, see the `members.csv` testing fixture in the
-`netbox_sidekick/fixtures` directory.
+`sidekick/fixtures` directory.
 
 ## Member Sites
 

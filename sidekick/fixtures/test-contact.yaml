@@ -1,0 +1,69 @@
+- model: sidekick.ContactType
+  pk: 1
+  fields:
+    name: 'Billing'
+    slug: 'billing'
+
+- model: sidekick.ContactType
+  pk: 2
+  fields:
+    name: 'Technical'
+    slug: 'technical'
+
+- model: sidekick.Contact
+  pk: 1
+  fields:
+    first_name: 'John'
+    last_name: 'Doe'
+    title: 'Superintendent'
+    phone: '403-555-5555'
+    email: 'john.doe@example.com'
+    comments: Foo
+
+- model: sidekick.Contact
+  pk: 2
+  fields:
+    first_name: 'Jane'
+    last_name: 'Doe'
+    title: 'Network Administrator'
+    phone: '403-555-1212'
+    email: 'jane.doe@example.com'
+    comments: Bar
+
+- model: sidekick.Contact
+  pk: 3
+  fields:
+    first_name: 'Joe'
+    last_name: 'Smith'
+    title: 'Principal'
+    phone: '403-555-1234'
+    email: 'joe.smith@example.com'
+    comments: Foo bar
+
+- model: sidekick.MemberContact
+  pk: 1
+  fields:
+    member: 1
+    contact: 1
+    type: 1
+
+- model: sidekick.MemberContact
+  pk: 2
+  fields:
+    member: 1
+    contact: 2
+    type: 2
+
+- model: sidekick.MemberContact
+  pk: 3
+  fields:
+    member: 2
+    contact: 3
+    type: 1
+
+- model: sidekick.MemberContact
+  pk: 4
+  fields:
+    member: 2
+    contact: 2
+    type: 2

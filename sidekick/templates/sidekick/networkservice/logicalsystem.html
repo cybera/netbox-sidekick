@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block title %}{{ logical_system }}{% endblock %}
+
+{% block header %}
+<div class="row noprint">
+  <div class="col-sm-8 col-md-9">
+    <ol class="breadcrumb">
+      <li><a href="{% url 'plugins:sidekick:logicalsystem_index' %}">Logical Systems</a></li>
+      <li>{{ logical_system.name }}</li>
+    </ol>
+  </div>
+  <div class="col-sm-4 col-md-3">
+    <form action="{% url 'plugins:sidekick:logicalsystem_index' %}" method="get">
+      <div class="input-group">
+        <input type="text" name="q" class="form-control" />
+        <span class="input-group-btn">
+          <button type="submit" class="btn btn-primary">
+            <span class="fa fa-search" aria-hidden="true"></span>
+          </button>
+        </span>
+      </div>
+    </form>
+  </div>
+</div>
+<h1>{{ logical_system.name }}</h1>
+{% include 'inc/created_updated.html' with obj=logical_system %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <strong>Logical System</strong>
+      </div>
+      <table class="table table-hover panel-body attr-table">
+        <tr>
+          <td>Name</td>
+          <td>{{ logical_system.name }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      {% render_table table %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+- model: sidekick.LogicalSystem
+  pk: 1
+  fields:
+    name: "Peering"
+    slug: "peering"
+
+- model: sidekick.LogicalSystem
+  pk: 2
+  fields:
+    name: "Transit"
+    slug: "transit"
+
+- model: sidekick.RoutingType
+  pk: 1
+  fields:
+    name: "BGP"
+    slug: "bgp"
+
+- model: sidekick.NetworkServiceType
+  pk: 1
+  fields:
+    name: "Peering"
+    slug: "peering"
+    description: "Peering for members"
+
+- model: sidekick.NetworkService
+  pk: 1
+  fields:
+    name: "East University's peering service"
+    description: "Peering service for East University"
+    active: True
+    network_service_type: 1
+    member: 1
+    member_site: 1
+    legacy_id: 1
+
+- model: sidekick.NetworkServiceDevice
+  pk: 1
+  fields:
+    network_service: 1
+    device: 1
+    interface: 'xe-3/3/3.300'
+    vlan: 300
+    legacy_id: 1
+
+- model: sidekick.NetworkServiceL3
+  pk: 1
+  fields:
+    network_service_device: 1
+    logical_system: 1
+    routing_type: 1
+    ipv4_unicast: 1
+    ipv4_multicast: 0
+    ipv6_unicast: 1
+    ipv6_multicast: 0
+    provider_router_address_ipv4: '192.168.1.1/31'
+    member_router_address_ipv4: '192.168.1.2/31'
+    asn: 12345
+    legacy_id: 1
+
+- model: sidekick.NetworkServiceGroup
+  pk: 1
+  fields:
+    name: 'A Group'
+    description: 'Just some group'
+    network_services:
+      - 1

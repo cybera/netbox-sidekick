@@ -15,7 +15,7 @@ DATABASE = {
 }
 
 PLUGINS = [
-    'netbox_sidekick',
+    'sidekick',
 ]
 
 REDIS = {

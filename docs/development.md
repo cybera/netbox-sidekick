@@ -32,7 +32,7 @@ If you need to create a model, please use the following process:
 4. Repeat the process for `tables` and `views`.
 
 5. Define at least two standard templates for indexing and detail views in the
-   `templates/netbox_sidekick` directory.
+   `templates/sidekick` directory.
 
 8. Add new URLs to the `urls.py` fiile.
 
@@ -52,7 +52,7 @@ Run the suite of tests by doing:
 
 ```shell
 $ cd /opt/netbox/netbox
-$ python manage.py test netbox_sidekick
+$ python manage.py test sidekick
 ```
 
 ### Update Migrations
@@ -70,7 +70,7 @@ Then run:
 
 ```shell
 $ cd /opt/netbox/netbox
-$ python manage.py makemigrations netbox_sidekick
+$ python manage.py makemigrations sidekick
 ```
 
 ### Generate a Model Diagram
@@ -101,7 +101,7 @@ Then generate the image:
 
 ```
 $ cd /opt/netbox/netbox
-$ python manage.py graph_models netbox_sidekick > ~/output.dot
+$ python manage.py graph_models sidekick > ~/output.dot
 $ dot -Tpng ~/output.dot -o /opt/netbox-sidekick/docs/img/models.png
 ```
 
@@ -113,12 +113,12 @@ $ dot -Tpng ~/output.dot -o /opt/netbox-sidekick/docs/img/models.png
 For any changes that you make, if it's possible to create a unit test
 for it, please do so.
 
-Unit tests are stored in the `netbox_sidekick/tests` directory. Files begin
+Unit tests are stored in the `sidekick/tests` directory. Files begin
 with `test_`.
 
 To test the files, run:
 
 ```shell
 $ cd /opt/netbox/netbox
-$ python manage.py test netbox_sidekick
+$ python manage.py test sidekick
 ```

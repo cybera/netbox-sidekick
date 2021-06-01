@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block title %}{{ accounting_class }}{% endblock %}
+
+{% block header %}
+<div class="row noprint">
+  <div class="col-sm-8 col-md-9">
+    <ol class="breadcrumb">
+      <li><a href="{% url 'plugins:sidekick:accountingclass_index' %}">Accounting Class</a></li>
+      <li>{{ accounting_class }}</li>
+    </ol>
+  </div>
+  <div class="col-sm-4 col-md-3">
+    <form action="{% url 'plugins:sidekick:accountingclass_index' %}" method="get">
+      <div class="input-group">
+        <input type="text" name="q" class="form-control" />
+        <span class="input-group-btn">
+          <button type="submit" class="btn btn-primary">
+            <span class="fa fa-search" aria-hidden="true"></span>
+          </button>
+        </span>
+      </div>
+    </form>
+  </div>
+</div>
+<h1>{{ accounting_class }}</h1>
+{% include 'inc/created_updated.html' with obj=accounting_class %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <strong>Accounting Class</strong>
+      </div>
+      <table class="table table-hover panel-body attr-table">
+        <tr>
+          <td>Name</td>
+          <td>{{ accounting_class.name }}</td>
+        </tr>
+        <tr>
+          <td>Device</td>
+          <td>{{ accounting_class.device }}</td>
+        </tr>
+        <tr>
+          <td>Destination</td>
+          <td>{{ accounting_class.destination }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="panel-heading">
+      <strong>Accounting Profiles</strong>
+    </div>
+    <div class="panel panel-default">
+      {% render_table table %}
+    </div>
+  </div>
+</div>
+{% endblock %}

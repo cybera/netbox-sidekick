@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 VERSION = "0.0.1"
 
 setup(
-    name='netbox-sidekick',
+    name='sidekick',
     author='Cybera',
     version=VERSION,
     license='Apache 2.0',

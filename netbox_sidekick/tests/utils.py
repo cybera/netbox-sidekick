@@ -12,6 +12,7 @@ from netbox.urls import _patterns
 
 class BaseTest(TestCase):
     fixtures = [
+        'test-accounting.yaml',
         'test-contact.yaml',
         'test-customfield.yaml',
         'test-device.yaml',

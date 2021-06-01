@@ -1,3 +1,9 @@
+from .accounting import (  # noqa: F401
+    AccountingProfileIndexView, AccountingProfileDetailView,
+    AccountingClassIndexView, AccountingClassDetailView,
+    BandwidthProfileIndexView, BandwidthProfileDetailView,
+)
+
 from .contact import (  # noqa: F401
     ContactTypeIndexView, ContactTypeDetailView,
     ContactIndexView, ContactDetailView,

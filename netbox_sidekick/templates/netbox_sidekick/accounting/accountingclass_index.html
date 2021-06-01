@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block title %}Accounting Sources{% endblock %}
+
+{% block content %}
+<h1>Accounting Sources</h1>
+<div class="row">
+  <div class="col-md-{% if filter %}9{% else %}12{% endif %}">
+    {% render_table table %}
+  </div>
+  {% if filter %}
+  <div class="col-md-3 noprint">
+    {% include 'netbox_sidekick/include/filter.html' %}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

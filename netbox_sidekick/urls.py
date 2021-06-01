@@ -3,6 +3,24 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Accounting Profile Index
+    path('accounting_profiles/', views.AccountingProfileIndexView.as_view(), name='accountingprofile_index'),
+
+    # Accounting Profile Details
+    path('accounting_profiles/<int:pk>/', views.AccountingProfileDetailView.as_view(), name='accountingprofile_detail'),
+
+    # Accounting Class Index
+    path('accounting_classes/', views.AccountingClassIndexView.as_view(), name='accountingclass_index'),
+
+    # Accounting Class Details
+    path('accounting_classes/<int:pk>/', views.AccountingClassDetailView.as_view(), name='accountingclass_detail'),
+
+    # Bandwidth Profile Index
+    path('bandwidth_profiles/', views.BandwidthProfileIndexView.as_view(), name='bandwidthprofile_index'),
+
+    # Bandwidth Profile Details
+    path('bandwidth_profiles/<int:pk>/', views.BandwidthProfileDetailView.as_view(), name='bandwidthprofile_detail'),
+
     # Contact Type Index
     path('contact_types/', views.ContactTypeIndexView.as_view(), name='contacttype_index'),
 

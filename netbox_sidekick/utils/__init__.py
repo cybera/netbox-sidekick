@@ -196,7 +196,7 @@ def snmpwalk(ipaddress, community, oid):
 def snmpwalk_bulk_accounting(ipaddress, community):
     data = []
     isps = {}
-    customer_names = {}
+    class_names = {}
     scu_bytes = {}
     dcu_bytes = {}
 
@@ -225,39 +225,39 @@ def snmpwalk_bulk_accounting(ipaddress, community):
 
     for row in data:
         for r in row:
-            # collect customer name via jnxScuStatsClName
+            # collect class name via jnxScuStatsClName
             m = re.match(jnxScuStatsClName_re, f"{r[0]}")
             if m:
                 isps[m[1]] = ""
-                customer_names[m[5]] = f"{r[1]}"
+                class_names[m[5]] = f"{r[1]}"
 
-            # collect customer name via jnxDcuStatsClName
+            # collect class name via jnxDcuStatsClName
             m = re.match(jnxDcuStatsClName_re, f"{r[0]}")
             if m:
                 isps[m[1]] = ""
-                customer_names[m[4]] = f"{r[1]}"
+                class_names[m[4]] = f"{r[1]}"
 
             # collect scu bytes via jnxScuStatsBytes
             m = re.match(jnxScuStatsBytes_re, f"{r[0]}")
             if m:
                 _isp = m[1]
-                _cust = m[3]
+                _class = m[3]
 
-                if _cust not in scu_bytes:
-                    scu_bytes[_cust] = {}
-                if _isp not in scu_bytes[_cust]:
-                    scu_bytes[_cust][_isp] = f"{r[1]}"
+                if _class not in scu_bytes:
+                    scu_bytes[_class] = {}
+                if _isp not in scu_bytes[_class]:
+                    scu_bytes[_class][_isp] = f"{r[1]}"
 
             # collect scu bytes via jnxDcuStatsBytes
             m = re.match(jnxDcuStatsBytes_re, f"{r[0]}")
             if m:
                 _isp = m[1]
-                _cust = m[3]
+                _class = m[3]
 
-                if _cust not in dcu_bytes:
-                    dcu_bytes[_cust] = {}
-                if _isp not in dcu_bytes[_cust]:
-                    dcu_bytes[_cust][_isp] = f"{r[1]}"
+                if _class not in dcu_bytes:
+                    dcu_bytes[_class] = {}
+                if _isp not in dcu_bytes[_class]:
+                    dcu_bytes[_class][_isp] = f"{r[1]}"
 
     # Obtain the name for each ISP
     for isp in isps.keys():
@@ -266,11 +266,35 @@ def snmpwalk_bulk_accounting(ipaddress, community):
         if isp_name is not None:
             isps[isp] = f"{isp_name[0][1]}"
 
+    # Format and structure the results
+    classes = {}
+    current = {}
+
+    for k, v in scu_bytes.items():
+        for isp, data in v.items():
+            title = f"{class_names[k]} -- {isps[isp]}"
+            if title not in classes:
+                classes[title] = {}
+                classes[title]['class'] = class_names[k]
+                classes[title]['isp'] = isps[isp]
+            if title not in current:
+                current[title] = {}
+            current[title]['scu'] = data
+
+    for k, v in dcu_bytes.items():
+        for isp, data in v.items():
+            title = f"{class_names[k]} -- {isps[isp]}"
+            if title not in classes:
+                classes[title] = {}
+                classes[title]['class'] = class_names[k]
+                classes[title]['isp'] = isps[isp]
+            if title not in current:
+                current[title] = {}
+            current[title]['dcu'] = data
+
     results = {
-        'customer_names': customer_names,
-        'isps': isps,
-        'scu_bytes': scu_bytes,
-        'dcu_bytes': dcu_bytes,
+        'classes': classes,
+        'current': current,
     }
 
     return results

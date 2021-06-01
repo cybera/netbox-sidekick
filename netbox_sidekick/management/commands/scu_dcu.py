@@ -5,6 +5,10 @@ from dcim.models import (
     Device
 )
 
+from netbox_sidekick.models import (
+    AccountingClass
+)
+
 from netbox_sidekick.utils import (
     decrypt_secret,
     snmpwalk_bulk_accounting,
@@ -59,40 +63,20 @@ class Command(BaseCommand):
                 self.stdout.write(f"Error querying device {device}: {e}")
                 return
 
-            customer_names = results['customer_names']
-            isps = results['isps']
-            scu_bytes = results['scu_bytes']
-            dcu_bytes = results['dcu_bytes']
+            classes = results['classes']
 
-            profiles = {}
-            current = {}
-
-            for k, v in scu_bytes.items():
-                for isp, data in v.items():
-                    title = f"{customer_names[k]} -- {isps[isp]}"
-                    if title not in profiles:
-                        profiles[title] = {}
-                        profiles[title]['customer'] = customer_names[k]
-                        profiles[title]['isp'] = isps[isp]
-                        profiles[title]['device'] = device.name
-                    if title not in current:
-                        current[title] = {}
-                    current[title]['scu'] = data
-
-                    self.stdout.write(f"{title}: {data}")
-
-            for k, v in dcu_bytes.items():
-                for isp, data in v.items():
-                    title = f"{customer_names[k]} -- {isps[isp]}"
-                    if title not in profiles:
-                        profiles[title] = {}
-                        profiles[title]['customer'] = customer_names[k]
-                        profiles[title]['isp'] = isps[isp]
-                        profiles[title]['device'] = device.name
-
-                    if title not in current:
-                        current[title] = {}
-                    current[title]['dcu'] = data
-
-            for customer, data in current.items():
-                self.stdout.write(f"{customer}: {data}")
+            for name, data in classes.items():
+                try:
+                    accounting_class = AccountingClass.objects.get(
+                        device=device,
+                        name=data['class'],
+                    )
+                except AccountingClass.DoesNotExist:
+                    accounting_class = AccountingClass(
+                        device=device,
+                        name=data['class'],
+                        destination=data['isp'],
+                    )
+                    accounting_class.save()
+                except AccountingClass.MultipleObjectsReturned:
+                    self.stdout.write(f"Multiple SCU/DCU classes found for {name} on {device}")

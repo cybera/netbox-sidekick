@@ -44,3 +44,11 @@
     device: 1
     name: "xe-3/3/4.300"
     type: "1000base-t"
+
+- model: dcim.Device
+  pk: 2
+  fields:
+    device_type: 1
+    device_role: 1
+    site: 1
+    name: "Router 2"

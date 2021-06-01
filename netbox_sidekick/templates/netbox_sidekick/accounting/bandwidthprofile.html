@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block title %}{{ bandwidth_profile }}{% endblock %}
+
+{% block header %}
+<div class="row noprint">
+  <div class="col-sm-8 col-md-9">
+    <ol class="breadcrumb">
+      <li><a href="{% url 'plugins:netbox_sidekick:bandwidthprofile_index' %}">Bandwidth Profile</a></li>
+      <li>{{ bandwidth_profile }}</li>
+    </ol>
+  </div>
+  <div class="col-sm-4 col-md-3">
+    <form action="{% url 'plugins:netbox_sidekick:bandwidthprofile_index' %}" method="get">
+      <div class="input-group">
+        <input type="text" name="q" class="form-control" />
+        <span class="input-group-btn">
+          <button type="submit" class="btn btn-primary">
+            <span class="fa fa-search" aria-hidden="true"></span>
+          </button>
+        </span>
+      </div>
+    </form>
+  </div>
+</div>
+<h1>{{ bandwidth_profile }}</h1>
+{% include 'inc/created_updated.html' with obj=bandwidth_profile %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <strong>Bandwidth Profile</strong>
+      </div>
+      <table class="table table-hover panel-body attr-table">
+        <tr>
+          <td>Member</td>
+          <td>{{ bandwidth_profile.accounting_profile.member.name }}</td>
+        </tr>
+        <tr>
+          <td>Accounting Profile</td>
+          <td>
+            <a href="{{ bandwidth_profile.accounting_profile.get_absolute_url }}">
+              {{ bandwidth_profile.accounting_profile }}
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td>Effective Date</td>
+          <td>{{ bandwidth_profile.effective_date }}</td>
+        </tr>
+        <tr>
+          <td>Traffic Cap</td>
+          <td>{{ bandwidth_profile.traffic_cap }}</td>
+        </tr>
+        <tr>
+          <td>Burst Limit</td>
+          <td>{{ bandwidth_profile.burst_limit }}</td>
+        </tr>
+        <tr>
+          <td>Comments</td>
+          <td>{{ bandwidth_profile.comments }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -2,6 +2,18 @@ from extras.plugins import PluginMenuItem
 
 menu_items = (
     PluginMenuItem(
+        link='plugins:netbox_sidekick:accountingprofile_index',
+        link_text='Accounting Profiles',
+    ),
+    PluginMenuItem(
+        link='plugins:netbox_sidekick:accountingclass_index',
+        link_text='Accounting Classes',
+    ),
+    PluginMenuItem(
+        link='plugins:netbox_sidekick:bandwidthprofile_index',
+        link_text='Bandwidth Profiles',
+    ),
+    PluginMenuItem(
         link='plugins:netbox_sidekick:contact_index',
         link_text='Contacts',
     ),

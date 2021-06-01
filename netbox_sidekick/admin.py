@@ -1,6 +1,9 @@
 from django.contrib import admin
 
 from .models import (
+    AccountingProfile, AccountingClass,
+    BandwidthProfile,
+
     ContactType, Contact,
 
     LogicalSystem, RoutingType, NetworkServiceType,
@@ -13,6 +16,53 @@ from .models import (
 
     NIC,
 )
+
+
+class BandwidthProfileInline(admin.StackedInline):
+    model = BandwidthProfile
+    extra = 1
+
+    fieldsets = (
+        (None, {
+            'fields': ('traffic_cap', 'burst_limit', 'effective_date'),
+        }),
+        (None, {
+            'fields': ('comments',),
+        })
+    )
+
+
+@admin.register(AccountingProfile)
+class AccountingProfileAdmin(admin.ModelAdmin):
+    filter_horizontal = ('accounting_classes',)
+    inlines = (BandwidthProfileInline,)
+
+    fieldsets = (
+        (None, {
+            'fields': (
+                'member', 'name', 'enabled', 'comments',
+                'accounting_classes'),
+        }),
+    )
+
+
+@admin.register(AccountingClass)
+class AccountingClassAdmin(admin.ModelAdmin):
+    list_display = (
+        'device', 'name', 'destination',
+    )
+
+
+@admin.register(BandwidthProfile)
+class BandwidthProfile(admin.ModelAdmin):
+    fieldsets = (
+        (None, {
+            'fields': ('traffic_cap', 'burst_limit', 'effective_date'),
+        }),
+        (None, {
+            'fields': ('comments',),
+        })
+    )
 
 
 @admin.register(ContactType)

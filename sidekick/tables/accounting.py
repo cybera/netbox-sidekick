@@ -13,6 +13,12 @@ NAME_LINK = """
     <a href="{{ record.get_absolute_url }}">{{ record }}</a>
 """
 
+MEMBER_LINK = """
+    <a href="{{ record.accounting_profile.member.get_absolute_url }}">
+        {{ record.accounting_profile.member.name }}
+    </a>
+"""
+
 
 class AccountingProfileTable(BaseTable):
     pk = ToggleColumn()
@@ -48,7 +54,11 @@ class AccountingClassTable(BaseTable):
 
 class BandwidthProfileTable(BaseTable):
     pk = ToggleColumn()
+    member = tables.TemplateColumn(
+        template_code=MEMBER_LINK,
+        verbose_name='Member',
+    )
 
     class Meta(BaseTable.Meta):
         model = BandwidthProfile
-        fields = ('pk', 'traffic_cap', 'burst_limit')
+        fields = ('pk', 'member', 'traffic_cap', 'burst_limit')

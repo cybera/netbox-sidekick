@@ -565,3 +565,38 @@ def get_graphite_service_graph(service, graphite_render_host=None):
     graph_data['query'] = query
 
     return graph_data
+
+
+def get_graphite_service_graph_plotly(service, graphite_render_host=None):
+    if graphite_render_host is None:
+        return None
+
+    service_name = service.graphite_service_name()
+
+    query_base = f"{graphite_render_host}/render?format=json"
+
+    graph_data = {
+        'x': [],
+        'y': [],
+    }
+    target_in = f"scale(scale(keepLastValue({service_name}.*.*.in_octets), 8), 0.000000000931323)"
+    target_out = f"scale(scale(keepLastValue({service_name}.*.*.out_octets), -8), 0.000000000931323)"
+    # target = f'cactiStyle(alias(scale(keepLastValue({metric}),8),"{inout.title()}"),"si","gb")'
+    query = f"{query_base}&from=-1Y&target={target_in}&target={target_out}"
+
+    r = requests.get(query)
+    # graphs[period][inout]['graph'] = b64encode(r.content).decode('utf-8')
+    results = json.loads(r.content.decode('utf-8'))
+    if len(results) == 0:
+        return None
+
+    for d in results[0]['datapoints']:
+        graph_data['x'].append(d[1])
+        graph_data['y'].append(d[0])
+
+    # for d in results[1]['datapoints']:
+    #    data[2].append(d[0])
+    # graph_data['x'] = data
+    # graph_data['query'] = query
+
+    return graph_data

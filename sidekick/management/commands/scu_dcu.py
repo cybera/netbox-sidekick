@@ -1,3 +1,5 @@
+import graphyte
+
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
@@ -6,7 +8,8 @@ from dcim.models import (
 )
 
 from sidekick.models import (
-    AccountingClass
+    AccountingClass,
+    AccountingClassCounter,
 )
 
 from sidekick.utils import (
@@ -58,13 +61,12 @@ class Command(BaseCommand):
                 return
 
             try:
-                results = snmpwalk_bulk_accounting(_mgmt_ip, snmp)
+                classes = snmpwalk_bulk_accounting(_mgmt_ip, snmp)
             except Exception as e:
                 self.stdout.write(f"Error querying device {device}: {e}")
                 return
 
-            classes = results['classes']
-
+            # Add any new classes to the database.
             for name, data in classes.items():
                 try:
                     accounting_class = AccountingClass.objects.get(
@@ -77,6 +79,56 @@ class Command(BaseCommand):
                         name=data['class'],
                         destination=data['isp'],
                     )
-                    accounting_class.save()
+                    if options['dry_run']:
+                        self.stdout.write(f"Would have created AccountingClass {accounting_class}")
+                    else:
+                        accounting_class.save()
                 except AccountingClass.MultipleObjectsReturned:
                     self.stdout.write(f"Multiple SCU/DCU classes found for {name} on {device}")
+
+                # Add new counters to the databse.
+                if options['dry_run']:
+                    self.stdout.write(f"Would have updated counters for {accounting_class}")
+                else:
+                    counter = AccountingClassCounter(
+                        accounting_class=accounting_class,
+                        scu=data['scu'],
+                        dcu=data['dcu'],
+                    )
+                    counter.save()
+
+                # Send the metrics to Graphite if graphite_host has been set.
+                graphite_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_host', None)
+                if graphite_host is not None:
+                    graphyte.init(graphite_host)
+
+                    # Determine the difference between the last two updates.
+                    # This is because Cybera's metrics were previously stored in RRD
+                    # files which only retains the derivative and not what the actual
+                    # counters were.
+                    previous_entries = AccountingClassCounter.objects.filter(
+                        accounting_class=accounting_class).order_by('-last_updated')
+                    if len(previous_entries) < 2:
+                        continue
+
+                    e1 = previous_entries[0]
+                    e2 = previous_entries[1]
+                    total_seconds = (e1.last_updated - e2.last_updated).total_seconds()
+
+                    graphite_prefix = "accounting.{}.{}".format(
+                        e1.accounting_class.graphite_name(),
+                        e1.accounting_class.graphite_destination_name())
+
+                    for cat in ['scu', 'dcu']:
+                        m1 = getattr(e1, cat, None)
+                        m2 = getattr(e2, cat, None)
+                        if m1 is not None and m2 is not None:
+                            diff = (m1 - m2)
+
+                            if diff != 0:
+                                diff = diff / total_seconds
+                            graphite_name = f"{graphite_prefix}.{cat}"
+                            if options['dry_run']:
+                                self.stdout.write(f"{graphite_name} {diff} {total_seconds}")
+                            else:
+                                graphyte.send(graphite_name, diff)

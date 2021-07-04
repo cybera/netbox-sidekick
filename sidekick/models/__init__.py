@@ -1,4 +1,5 @@
 from .accounting import AccountingClass                   # noqa: F401
+from .accounting import AccountingClassCounter            # noqa: F401
 from .accounting import AccountingProfile                 # noqa: F401
 from .accounting import BandwidthProfile                  # noqa: F401
 from .contact import ContactType, Contact, MemberContact  # noqa: F401

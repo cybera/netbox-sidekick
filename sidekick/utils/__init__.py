@@ -268,7 +268,6 @@ def snmpwalk_bulk_accounting(ipaddress, community):
 
     # Format and structure the results
     classes = {}
-    current = {}
 
     for k, v in scu_bytes.items():
         for isp, data in v.items():
@@ -277,9 +276,7 @@ def snmpwalk_bulk_accounting(ipaddress, community):
                 classes[title] = {}
                 classes[title]['class'] = class_names[k]
                 classes[title]['isp'] = isps[isp]
-            if title not in current:
-                current[title] = {}
-            current[title]['scu'] = data
+            classes[title]['scu'] = data
 
     for k, v in dcu_bytes.items():
         for isp, data in v.items():
@@ -288,16 +285,9 @@ def snmpwalk_bulk_accounting(ipaddress, community):
                 classes[title] = {}
                 classes[title]['class'] = class_names[k]
                 classes[title]['isp'] = isps[isp]
-            if title not in current:
-                current[title] = {}
-            current[title]['dcu'] = data
+            classes[title]['dcu'] = data
 
-    results = {
-        'classes': classes,
-        'current': current,
-    }
-
-    return results
+    return classes
 
 
 def snmpwalk_bulk(ipaddress, community):

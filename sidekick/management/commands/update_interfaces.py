@@ -344,8 +344,10 @@ class Command(BaseCommand):
                             if diff != 0:
                                 diff = diff / total_seconds
                             graphite_name = f"{graphite_prefix}.{cat}"
-                            # self.stdout.write(f"{graphite_name} {diff} {total_seconds}")
-                            graphyte.send(graphite_name, diff)
+                            if options['dry_run']:
+                                self.stdout.write(f"{graphite_name} {diff} {total_seconds}")
+                            else:
+                                graphyte.send(graphite_name, diff)
 
                     # Determine if the interface is part of a member's network service.
                     # If so, send a second set of metrics to Graphite with a prefix

@@ -1,6 +1,7 @@
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.text import slugify
 
 from extras.models import ChangeLoggedModel
 
@@ -35,6 +36,52 @@ class AccountingClass(ChangeLoggedModel):
 
     def get_absolute_url(self):
         return reverse('plugins:sidekick:accountingclass_detail', args=[self.pk])
+
+    def graphite_name(self):
+        return slugify(self.name)
+
+    def graphite_destination_name(self):
+        return slugify(self.destination)
+
+
+# AccountingClassCounter represents counters for an AccountingClass from a device.
+class AccountingClassCounter(ChangeLoggedModel):
+    accounting_class = models.ForeignKey(
+        'sidekick.AccountingClass',
+        on_delete=models.PROTECT,
+    )
+
+    scu = models.BigIntegerField(
+        verbose_name="SCU",
+        help_text="SCU Bytes",
+        default=0,
+    )
+
+    dcu = models.BigIntegerField(
+        verbose_name="DCU",
+        help_text="DCU Bytes",
+        default=0,
+    )
+
+    class Meta:
+        verbose_name = 'Accounting Class Counter'
+        verbose_name_plural = 'Accounting Class Counters'
+
+    def __str__(self):
+        return f"{self.accounting_class}: {self.scu}/{self.dcu}"
+
+    def get_absolute_url(self):
+        return reverse('plugins:sidekick:accountingclasscounter_detail', args=[self.pk])
+
+    # If there are more than 5 entries for an AccountingClassCounter,
+    # delete older ones.
+    def save(self, *args, **kwargs):
+        previous_entries = AccountingClassCounter.objects.filter(
+            accounting_class_id=self.accounting_class_id).order_by('-last_updated')
+        for entry in previous_entries[4:]:
+            entry.delete()
+
+        super().save(*args, **kwargs)
 
 
 # AccountingProfile represents a Member with tracked bandwidth
@@ -82,7 +129,8 @@ class AccountingProfile(ChangeLoggedModel):
         return reverse('plugins:sidekick:accountingprofile_detail', args=[self.pk])
 
     def get_current_bandwidth_profile(self):
-        return self.bandwidthprofile_set.latest('effective_date')
+        return self.bandwidthprofile_set.filter(
+            effective_date__lte=timezone.now()).order_by('-effective_date').first()
 
 
 # BandwidthProfile represents a bandwidth setting for a member.

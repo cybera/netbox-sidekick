@@ -1,3 +1,5 @@
+import netaddr
+
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
@@ -177,6 +179,43 @@ class NetworkService(ChangeLoggedModel):
         member_name = slugify(self.member.name)
         service_name = slugify(self.name)
         return f"services.{member_name}.{service_name}"
+
+    def get_ipv4_prefixes(self):
+        prefixes = []
+        for network_device in self.network_service_devices.all():
+            for l3 in network_device.network_service_l3.all():
+                for prefix in l3.ipv4_prefixes.split("\n"):
+                    prefix = prefix.strip()
+                    if prefix:
+                        try:
+                            prefix = netaddr.IPNetwork(prefix)
+                        except netaddr.core.AddrFormatError:
+                            continue
+                        if prefix not in prefixes:
+                            prefixes.append(prefix)
+        prefixes.sort()
+        return prefixes
+
+    def get_ipv6_prefixes(self):
+        prefixes = []
+        for network_device in self.network_service_devices.all():
+            for l3 in network_device.network_service_l3.all():
+                for prefix in l3.ipv6_prefixes.split("\n"):
+                    prefix = prefix.strip()
+                    if prefix:
+                        try:
+                            prefix = netaddr.IPNetwork(prefix)
+                        except netaddr.core.AddrFormatError:
+                            continue
+                        prefixes.append(prefix)
+        prefixes.sort()
+        return prefixes
+
+    def get_ip_prefixes(self):
+        prefixes = self.get_ipv4_prefixes()
+        prefixes.extend(self.get_ipv6_prefixes())
+        prefixes.sort()
+        return prefixes
 
 
 # NetworkServiceDevice represents a device that is part

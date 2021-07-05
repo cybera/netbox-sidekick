@@ -10,6 +10,10 @@ from sidekick.models import (
     NetworkServiceGroup,
 )
 
+MEMBER_NETWORK_SERVICES_LINK = """
+    <a href="{% url 'plugins:sidekick:networkservice_index' %}?member={{ record.member.id }}&ip_address={{ record.prefix }}">{{ record.member.name }}</a>
+"""
+
 NETWORK_SERVICE_LINK = """
     <a href="{{ record.get_absolute_url }}">{{ record }}</a>
 """
@@ -17,6 +21,20 @@ NETWORK_SERVICE_LINK = """
 TENANT_LINK = """
     <a href="{{ record.member.get_absolute_url }}">{{ record.member.name }}</a>
 """
+
+
+class IPPrefixTable(tables.Table):
+    prefix = tables.Column()
+
+    member = tables.TemplateColumn(
+        template_code=MEMBER_NETWORK_SERVICES_LINK,
+        verbose_name='Member',
+    )
+
+    class Meta:
+        attrs = {
+            'class': 'table table-hover table-headings',
+        }
 
 
 class LogicalSystemTable(BaseTable):

@@ -1,3 +1,5 @@
+import netaddr
+
 from django.urls import reverse
 
 from sidekick.models import (
@@ -86,3 +88,13 @@ class NetworkServiceTest(BaseTest):
         resp = self.client.get(v.get_absolute_url())
         self.assertContains(resp, 'BGP')
         self.assertContains(resp, "East University&#x27;s peering service")
+
+    # IP Prefixes
+    def test_ip_prefixes(self):
+        expected_prefixes = [
+            netaddr.IPNetwork('192.168.1.0/24'),
+            netaddr.IPNetwork('192.168.2.0/24'),
+        ]
+        v = NetworkService.objects.get(member__name='East University')
+        prefixes = v.get_ipv4_prefixes()
+        self.assertEqual(prefixes, expected_prefixes)

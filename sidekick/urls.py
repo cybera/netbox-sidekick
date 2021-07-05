@@ -33,6 +33,9 @@ urlpatterns = [
     # Contact Details
     path('contacts/<int:pk>/', views.ContactDetailView.as_view(), name='contact_detail'),
 
+    # IP Prefix Index
+    path('ip_prefixes/', views.IPPrefixIndexView.as_view(), name='ipprefix_index'),
+
     # Logical System Index
     path('logical_systems/', views.LogicalSystemIndexView.as_view(), name='logicalsystem_index'),
 

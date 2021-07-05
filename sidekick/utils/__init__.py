@@ -17,6 +17,9 @@ from pysnmp.hlapi import (
 
 from secrets.models import UserKey
 
+from sidekick.models import (
+    NetworkService,
+)
 
 GRAPHS = {
     # 'last_day': {
@@ -590,3 +593,19 @@ def get_graphite_service_graph_plotly(service, graphite_render_host=None):
     # graph_data['query'] = query
 
     return graph_data
+
+
+def get_all_ip_prefixes():
+    prefixes = {}
+    for network_service in NetworkService.objects.filter(active=True):
+        member_id = network_service.member.id
+        if member_id not in prefixes:
+            prefixes[member_id] = {
+                'prefixes': [],
+                'member': network_service.member,
+            }
+        for prefix in network_service.get_ip_prefixes():
+            if prefix not in prefixes[member_id]['prefixes']:
+                prefixes[member_id]['prefixes'].append(prefix)
+        prefixes[member_id]['prefixes'].sort()
+    return prefixes

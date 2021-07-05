@@ -1,4 +1,5 @@
 import django_filters
+import netaddr
 
 from django.db.models import Q
 
@@ -71,13 +72,20 @@ class NetworkServiceFilterSet(django_filters.FilterSet):
         label='Search',
     )
 
+    ip_address = django_filters.CharFilter(
+        method='prefix_search',
+        label='IP Address',
+    )
+
     class Meta:
         model = NetworkService
-        fields = ['member', 'member_site', 'network_service_type', 'active']
+        fields = ['member', 'member_site', 'network_service_type', 'ip_address', 'active']
 
     def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
         super().__init__(
             data=data, queryset=queryset, request=request, prefix=prefix)
+        self.filters['ip_address'].field.widget.attrs.update(
+            {'class': 'form-control'})
         self.filters['member'].field.widget.attrs.update(
             {'class': 'netbox-select2-static form-control'})
         self.filters['member_site'].field.widget.attrs.update(
@@ -95,6 +103,32 @@ class NetworkServiceFilterSet(django_filters.FilterSet):
             Q(comments__icontains=value) |
             Q(description__icontains=value)
         ).distinct()
+
+    def prefix_search(self, queryset, name, value):
+        services = []
+        if not value.strip():
+            return queryset
+
+        if '/' in value:
+            try:
+                ip = netaddr.IPNetwork(value)
+            except netaddr.core.AddrFormatError:
+                return queryset
+        else:
+            try:
+                ip = netaddr.IPAddress(value)
+            except netaddr.core.AddrFormatError:
+                return queryset
+
+        for network_service in NetworkService.objects.filter(active=True):
+            for prefix in network_service.get_ip_prefixes():
+                prefix = netaddr.IPSet(prefix)
+                if ip in prefix:
+                    services.append(network_service.id)
+                    continue
+        return queryset.filter(
+            id__in=services
+        )
 
     @property
     def qs(self):

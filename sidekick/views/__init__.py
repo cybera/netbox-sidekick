@@ -10,6 +10,7 @@ from .contact import (  # noqa: F401
 )
 
 from .networkservice import (  # noqa: F401
+    IPPrefixIndexView,
     LogicalSystemIndexView, LogicalSystemDetailView,
     NetworkServiceTypeIndexView, NetworkServiceTypeDetailView,
     NetworkServiceIndexView, NetworkServiceDetailView,

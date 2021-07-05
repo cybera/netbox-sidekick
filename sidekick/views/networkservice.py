@@ -13,6 +13,7 @@ from sidekick.filters import (
 )
 
 from sidekick.tables import (
+    IPPrefixTable,
     LogicalSystemTable, RoutingTypeTable,
     NetworkServiceTypeTable, NetworkServiceTable,
     NetworkServiceGroupTable,
@@ -26,8 +27,32 @@ from sidekick.models import (
 )
 
 from sidekick.utils import (
-    get_graphite_service_graph
+    get_all_ip_prefixes,
+    get_graphite_service_graph,
 )
+
+
+# IP Prefix Index
+class IPPrefixIndexView(PermissionRequiredMixin, SingleTableView):
+    permission_required = 'sidekick.view_ipprefix'
+    model = NetworkService
+    context_object_name = 'ns'
+    template_name = 'sidekick/networkservice/ipprefix_index.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        prefixes = []
+        for member_id, data in get_all_ip_prefixes().items():
+            for prefix in data['prefixes']:
+                prefixes.append({
+                    'prefix': prefix,
+                    'member': data['member'],
+                })
+        table = IPPrefixTable(prefixes)
+        context['table'] = table
+
+        return context
 
 
 # Logical System Index

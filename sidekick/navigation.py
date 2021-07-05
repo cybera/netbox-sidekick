@@ -22,16 +22,16 @@ menu_items = (
         link_text='Contact Types',
     ),
     PluginMenuItem(
-        link='plugins:sidekick:nic_index',
-        link_text='Interfaces',
+        link='plugins:sidekick:ipprefix_index',
+        link_text='IP Prefixes',
     ),
     PluginMenuItem(
         link='plugins:sidekick:logicalsystem_index',
         link_text='Logical Systems',
     ),
     PluginMenuItem(
-        link='plugins:sidekick:routingtype_index',
-        link_text='Routing Types',
+        link='plugins:sidekick:nic_index',
+        link_text='Interfaces',
     ),
     PluginMenuItem(
         link='plugins:sidekick:networkservice_index',
@@ -44,5 +44,9 @@ menu_items = (
     PluginMenuItem(
         link='plugins:sidekick:networkservicetype_index',
         link_text='Service Types',
+    ),
+    PluginMenuItem(
+        link='plugins:sidekick:routingtype_index',
+        link_text='Routing Types',
     ),
 )

@@ -1,5 +1,5 @@
 from .accounting import AccountingProfileFilterSet                        # noqa: F401
-from .accounting import AccountingClassFilterSet                          # noqa: F401
+from .accounting import AccountingSourceFilterSet                         # noqa: F401
 from .accounting import BandwidthProfileFilterSet                         # noqa: F401
 from .contact import ContactTypeFilterSet, ContactFilterSet               # noqa: F401
 from .networkservice import LogicalSystemFilterSet, RoutingTypeFilterSet  # noqa: F401

@@ -6,8 +6,8 @@ menu_items = (
         link_text='Accounting Profiles',
     ),
     PluginMenuItem(
-        link='plugins:sidekick:accountingclass_index',
-        link_text='Accounting Classes',
+        link='plugins:sidekick:accountingsource_index',
+        link_text='Accounting Sources',
     ),
     PluginMenuItem(
         link='plugins:sidekick:bandwidthprofile_index',

@@ -1,6 +1,6 @@
 from .accounting import (  # noqa: F401
     AccountingProfileIndexView, AccountingProfileDetailView,
-    AccountingClassIndexView, AccountingClassDetailView,
+    AccountingSourceIndexView, AccountingSourceDetailView,
     BandwidthProfileIndexView, BandwidthProfileDetailView,
 )
 

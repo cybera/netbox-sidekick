@@ -1,18 +1,18 @@
 {% extends 'base.html' %}
 {% load render_table from django_tables2 %}
 
-{% block title %}{{ accounting_class }}{% endblock %}
+{% block title %}{{ accounting_source }}{% endblock %}
 
 {% block header %}
 <div class="row noprint">
   <div class="col-sm-8 col-md-9">
     <ol class="breadcrumb">
-      <li><a href="{% url 'plugins:sidekick:accountingclass_index' %}">Accounting Class</a></li>
-      <li>{{ accounting_class }}</li>
+      <li><a href="{% url 'plugins:sidekick:accountingsource_index' %}">Accounting Source</a></li>
+      <li>{{ accounting_source }}</li>
     </ol>
   </div>
   <div class="col-sm-4 col-md-3">
-    <form action="{% url 'plugins:sidekick:accountingclass_index' %}" method="get">
+    <form action="{% url 'plugins:sidekick:accountingsource_index' %}" method="get">
       <div class="input-group">
         <input type="text" name="q" class="form-control" />
         <span class="input-group-btn">
@@ -24,8 +24,8 @@
     </form>
   </div>
 </div>
-<h1>{{ accounting_class }}</h1>
-{% include 'inc/created_updated.html' with obj=accounting_class %}
+<h1>{{ accounting_source }}</h1>
+{% include 'inc/created_updated.html' with obj=accounting_source %}
 {% endblock %}
 
 {% block content %}
@@ -33,20 +33,20 @@
   <div class="col-md-6">
     <div class="panel panel-default">
       <div class="panel-heading">
-        <strong>Accounting Class</strong>
+        <strong>Accounting Source</strong>
       </div>
       <table class="table table-hover panel-body attr-table">
         <tr>
           <td>Name</td>
-          <td>{{ accounting_class.name }}</td>
+          <td>{{ accounting_source.name }}</td>
         </tr>
         <tr>
           <td>Device</td>
-          <td>{{ accounting_class.device }}</td>
+          <td>{{ accounting_source.device }}</td>
         </tr>
         <tr>
           <td>Destination</td>
-          <td>{{ accounting_class.destination }}</td>
+          <td>{{ accounting_source.destination }}</td>
         </tr>
       </table>
     </div>

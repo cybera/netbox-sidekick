@@ -1,11 +1,11 @@
-- model: sidekick.AccountingClass
+- model: sidekick.AccountingSource
   pk: 1
   fields:
     device: 1
     name: "Client-EastUniversity"
     destination: "Primary ISP"
 
-- model: sidekick.AccountingClass
+- model: sidekick.AccountingSource
   pk: 2
   fields:
     device: 2
@@ -18,7 +18,7 @@
     member: 1
     enabled: True
     comments: "East University's profile"
-    accounting_classes:
+    accounting_sources:
       - 1
       - 2
 

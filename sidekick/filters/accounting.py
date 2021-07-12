@@ -4,7 +4,7 @@ from django.db.models import Q
 
 from sidekick.models import (
     AccountingProfile,
-    AccountingClass,
+    AccountingSource,
     BandwidthProfile,
 )
 
@@ -46,14 +46,14 @@ class AccountingProfileFilterSet(django_filters.FilterSet):
         return parent.filter(enabled=enabled)
 
 
-class AccountingClassFilterSet(django_filters.FilterSet):
+class AccountingSourceFilterSet(django_filters.FilterSet):
     q = django_filters.CharFilter(
         method='search',
         label='Search',
     )
 
     class Meta:
-        model = AccountingClass
+        model = AccountingSource
         fields = ['device']
 
     def __init__(self, data=None, queryset=None, *, request=None, prefix=None):

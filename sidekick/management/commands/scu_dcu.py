@@ -8,8 +8,8 @@ from dcim.models import (
 )
 
 from sidekick.models import (
-    AccountingClass,
-    AccountingClassCounter,
+    AccountingSource,
+    AccountingSourceCounter,
 )
 
 from sidekick.utils import (
@@ -69,29 +69,29 @@ class Command(BaseCommand):
             # Add any new classes to the database.
             for name, data in classes.items():
                 try:
-                    accounting_class = AccountingClass.objects.get(
+                    accounting_source = AccountingSource.objects.get(
                         device=device,
                         name=data['class'],
                     )
-                except AccountingClass.DoesNotExist:
-                    accounting_class = AccountingClass(
+                except AccountingSource.DoesNotExist:
+                    accounting_source = AccountingSource(
                         device=device,
                         name=data['class'],
                         destination=data['isp'],
                     )
                     if options['dry_run']:
-                        self.stdout.write(f"Would have created AccountingClass {accounting_class}")
+                        self.stdout.write(f"Would have created AccountingSource {accounting_source}")
                     else:
-                        accounting_class.save()
-                except AccountingClass.MultipleObjectsReturned:
+                        accounting_source.save()
+                except AccountingSource.MultipleObjectsReturned:
                     self.stdout.write(f"Multiple SCU/DCU classes found for {name} on {device}")
 
                 # Add new counters to the databse.
                 if options['dry_run']:
-                    self.stdout.write(f"Would have updated counters for {accounting_class}")
+                    self.stdout.write(f"Would have updated counters for {accounting_source}")
                 else:
-                    counter = AccountingClassCounter(
-                        accounting_class=accounting_class,
+                    counter = AccountingSourceCounter(
+                        accounting_source=accounting_source,
                         scu=data['scu'],
                         dcu=data['dcu'],
                     )
@@ -106,8 +106,8 @@ class Command(BaseCommand):
                     # This is because Cybera's metrics were previously stored in RRD
                     # files which only retains the derivative and not what the actual
                     # counters were.
-                    previous_entries = AccountingClassCounter.objects.filter(
-                        accounting_class=accounting_class).order_by('-last_updated')
+                    previous_entries = AccountingSourceCounter.objects.filter(
+                        accounting_source=accounting_source).order_by('-last_updated')
                     if len(previous_entries) < 2:
                         continue
 
@@ -116,8 +116,8 @@ class Command(BaseCommand):
                     total_seconds = (e1.last_updated - e2.last_updated).total_seconds()
 
                     graphite_prefix = "accounting.{}.{}".format(
-                        e1.accounting_class.graphite_name(),
-                        e1.accounting_class.graphite_destination_name())
+                        e1.accounting_source.graphite_name(),
+                        e1.accounting_source.graphite_destination_name())
 
                     for cat in ['scu', 'dcu']:
                         m1 = getattr(e1, cat, None)

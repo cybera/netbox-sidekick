@@ -1,5 +1,5 @@
 from .accounting import AccountingProfileTable                    # noqa: F401
-from .accounting import AccountingClassTable                      # noqa: F401
+from .accounting import AccountingSourceTable                     # noqa: F401
 from .accounting import BandwidthProfileTable                     # noqa: F401
 from .contact import ContactTypeTable, ContactTable               # noqa: F401
 from .networkservice import IPPrefixTable                         # noqa: F401

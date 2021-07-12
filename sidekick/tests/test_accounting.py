@@ -2,7 +2,7 @@ from django.urls import reverse
 
 from sidekick.models import (
     AccountingProfile,
-    AccountingClass,
+    AccountingSource,
     BandwidthProfile,
 )
 
@@ -10,20 +10,20 @@ from .utils import BaseTest
 
 
 class AccountingTest(BaseTest):
-    # Accounting Class
-    def test_accountingclass_basic(self):
-        v = AccountingClass.objects.get(device=1, name='Client-EastUniversity')
+    # Accounting Source
+    def test_accountingsource_basic(self):
+        v = AccountingSource.objects.get(device=1, name='Client-EastUniversity')
         self.assertEqual(v.destination, 'Primary ISP')
 
-    def test_view_accountingclass_index(self):
+    def test_view_accountingsource_index(self):
         resp = self.client.get(
-            reverse('plugins:sidekick:accountingclass_index'))
+            reverse('plugins:sidekick:accountingsource_index'))
         self.assertContains(resp, 'Router 1')
         self.assertContains(resp, 'Router 2')
         self.assertContains(resp, 'Client-EastUniversity')
 
-    def test_view_accountingclass_detail(self):
-        v = AccountingClass.objects.get(device=1, name='Client-EastUniversity')
+    def test_view_accountingsource_detail(self):
+        v = AccountingSource.objects.get(device=1, name='Client-EastUniversity')
         resp = self.client.get(v.get_absolute_url())
         self.assertContains(resp, "Router 1: Client-EastUniversity")
 

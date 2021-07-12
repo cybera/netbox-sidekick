@@ -4,7 +4,7 @@ from utilities.tables import BaseTable, ToggleColumn
 
 from sidekick.models import (
     AccountingProfile,
-    AccountingClass,
+    AccountingSource,
     BandwidthProfile,
 )
 
@@ -21,6 +21,10 @@ MEMBER_LINK = """
 
 
 class AccountingProfileTable(BaseTable):
+    table_pagination = {
+        'per_page': 1000,
+    }
+
     pk = ToggleColumn()
     name = tables.TemplateColumn(
         template_code=NAME_LINK,
@@ -31,10 +35,16 @@ class AccountingProfileTable(BaseTable):
     burst_limit = tables.Column(empty_values=())
 
     def render_traffic_cap(self, value, record):
-        return record.get_current_bandwidth_profile().traffic_cap
+        v = record.get_current_bandwidth_profile()
+        if v is not None:
+            return v.traffic_cap
+        return '-'
 
     def render_burst_limit(self, value, record):
-        return record.get_current_bandwidth_profile().burst_limit
+        v = record.get_current_bandwidth_profile()
+        if v is not None:
+            return v.burst_limit
+        return '-'
 
     class Meta(BaseTable.Meta):
         model = AccountingProfile
@@ -43,12 +53,12 @@ class AccountingProfileTable(BaseTable):
         )
 
 
-class AccountingClassTable(BaseTable):
+class AccountingSourceTable(BaseTable):
     pk = ToggleColumn()
     name = tables.LinkColumn()
 
     class Meta(BaseTable.Meta):
-        model = AccountingClass
+        model = AccountingSource
         fields = ('pk', 'device', 'name', 'destination')
 
 
@@ -61,4 +71,4 @@ class BandwidthProfileTable(BaseTable):
 
     class Meta(BaseTable.Meta):
         model = BandwidthProfile
-        fields = ('pk', 'member', 'traffic_cap', 'burst_limit')
+        fields = ('pk', 'member', 'traffic_cap', 'burst_limit', 'effective_date')

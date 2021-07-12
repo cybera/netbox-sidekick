@@ -6,8 +6,8 @@ from django.utils.text import slugify
 from extras.models import ChangeLoggedModel
 
 
-# AccountingClass represents an SCU/DCU class from a device.
-class AccountingClass(ChangeLoggedModel):
+# AccountingSource represents an SCU/DCU source from a device.
+class AccountingSource(ChangeLoggedModel):
     device = models.ForeignKey(
         'dcim.Device',
         verbose_name='Device',
@@ -28,14 +28,14 @@ class AccountingClass(ChangeLoggedModel):
 
     class Meta:
         ordering = ['device', 'name', 'destination']
-        verbose_name = 'Accounting Class'
-        verbose_name_plural = 'Accounting Classes'
+        verbose_name = 'Accounting Source'
+        verbose_name_plural = 'Accounting Sources'
 
     def __str__(self):
         return f"{self.device.name}: {self.name} -- {self.destination}"
 
     def get_absolute_url(self):
-        return reverse('plugins:sidekick:accountingclass_detail', args=[self.pk])
+        return reverse('plugins:sidekick:accountingsource_detail', args=[self.pk])
 
     def graphite_name(self):
         return slugify(self.name)
@@ -44,10 +44,10 @@ class AccountingClass(ChangeLoggedModel):
         return slugify(self.destination)
 
 
-# AccountingClassCounter represents counters for an AccountingClass from a device.
-class AccountingClassCounter(ChangeLoggedModel):
-    accounting_class = models.ForeignKey(
-        'sidekick.AccountingClass',
+# AccountingSourceCounter represents counters for an AccountingSource from a device.
+class AccountingSourceCounter(ChangeLoggedModel):
+    accounting_source = models.ForeignKey(
+        'sidekick.AccountingSource',
         on_delete=models.PROTECT,
     )
 
@@ -64,20 +64,20 @@ class AccountingClassCounter(ChangeLoggedModel):
     )
 
     class Meta:
-        verbose_name = 'Accounting Class Counter'
-        verbose_name_plural = 'Accounting Class Counters'
+        verbose_name = 'Accounting Source Counter'
+        verbose_name_plural = 'Accounting Source Counters'
 
     def __str__(self):
-        return f"{self.accounting_class}: {self.scu}/{self.dcu}"
+        return f"{self.accounting_source}: {self.scu}/{self.dcu}"
 
     def get_absolute_url(self):
-        return reverse('plugins:sidekick:accountingclasscounter_detail', args=[self.pk])
+        return reverse('plugins:sidekick:accountingsourcecounter_detail', args=[self.pk])
 
-    # If there are more than 5 entries for an AccountingClassCounter,
+    # If there are more than 5 entries for an AccountingSourceCounter,
     # delete older ones.
     def save(self, *args, **kwargs):
-        previous_entries = AccountingClassCounter.objects.filter(
-            accounting_class_id=self.accounting_class_id).order_by('-last_updated')
+        previous_entries = AccountingSourceCounter.objects.filter(
+            accounting_source_id=self.accounting_source_id).order_by('-last_updated')
         for entry in previous_entries[4:]:
             entry.delete()
 
@@ -91,7 +91,7 @@ class AccountingProfile(ChangeLoggedModel):
         on_delete=models.PROTECT,
     )
 
-    accounting_classes = models.ManyToManyField(AccountingClass)
+    accounting_sources = models.ManyToManyField(AccountingSource, blank=True)
 
     name = models.CharField(
         max_length=255,

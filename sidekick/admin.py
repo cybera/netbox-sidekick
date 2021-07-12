@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (
-    AccountingProfile, AccountingClass,
+    AccountingProfile, AccountingSource,
     BandwidthProfile,
 
     ContactType, Contact,
@@ -20,7 +20,7 @@ from .models import (
 
 class BandwidthProfileInline(admin.StackedInline):
     model = BandwidthProfile
-    extra = 1
+    extra = 0
 
     fieldsets = (
         (None, {
@@ -34,20 +34,19 @@ class BandwidthProfileInline(admin.StackedInline):
 
 @admin.register(AccountingProfile)
 class AccountingProfileAdmin(admin.ModelAdmin):
-    filter_horizontal = ('accounting_classes',)
     inlines = (BandwidthProfileInline,)
+    filter_horizontal = ('accounting_sources',)
 
     fieldsets = (
         (None, {
             'fields': (
-                'member', 'name', 'enabled', 'comments',
-                'accounting_classes'),
+                'member', 'name', 'enabled', 'comments', 'accounting_sources')
         }),
     )
 
 
-@admin.register(AccountingClass)
-class AccountingClassAdmin(admin.ModelAdmin):
+@admin.register(AccountingSource)
+class AccountingSourceAdmin(admin.ModelAdmin):
     list_display = (
         'device', 'name', 'destination',
     )

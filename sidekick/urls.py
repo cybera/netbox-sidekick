@@ -9,11 +9,11 @@ urlpatterns = [
     # Accounting Profile Details
     path('accounting_profiles/<int:pk>/', views.AccountingProfileDetailView.as_view(), name='accountingprofile_detail'),
 
-    # Accounting Class Index
-    path('accounting_classes/', views.AccountingClassIndexView.as_view(), name='accountingclass_index'),
+    # Accounting Source Index
+    path('accounting_sources/', views.AccountingSourceIndexView.as_view(), name='accountingsource_index'),
 
-    # Accounting Class Details
-    path('accounting_classes/<int:pk>/', views.AccountingClassDetailView.as_view(), name='accountingclass_detail'),
+    # Accounting Source Details
+    path('accounting_sources/<int:pk>/', views.AccountingSourceDetailView.as_view(), name='accountingsource_detail'),
 
     # Bandwidth Profile Index
     path('bandwidth_profiles/', views.BandwidthProfileIndexView.as_view(), name='bandwidthprofile_index'),

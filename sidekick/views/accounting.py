@@ -8,43 +8,43 @@ from django_tables2.views import SingleTableView
 from sidekick.filters import (
     BandwidthProfileFilterSet,
     AccountingProfileFilterSet,
-    AccountingClassFilterSet,
+    AccountingSourceFilterSet,
 )
 
 from sidekick.tables import (
     BandwidthProfileTable,
     AccountingProfileTable,
-    AccountingClassTable,
+    AccountingSourceTable,
 )
 
 from sidekick.models import (
     BandwidthProfile,
     AccountingProfile,
-    AccountingClass,
+    AccountingSource,
 )
 
 
-class AccountingClassIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
-    permission_required = 'sidekick.view_accountingclass'
-    model = AccountingClass
-    table_class = AccountingClassTable
-    filterset_class = AccountingClassFilterSet
-    template_name = 'sidekick/accounting/accountingclass_index.html'
+class AccountingSourceIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
+    permission_required = 'sidekick.view_accountingsource'
+    model = AccountingSource
+    table_class = AccountingSourceTable
+    filterset_class = AccountingSourceFilterSet
+    template_name = 'sidekick/accounting/accountingsource_index.html'
 
 
-class AccountingClassDetailView(PermissionRequiredMixin, DetailView):
-    permission_required = 'sidekick.view_accountingclass'
-    model = AccountingClass
-    template_name = 'sidekick/accounting/accountingclass.html'
+class AccountingSourceDetailView(PermissionRequiredMixin, DetailView):
+    permission_required = 'sidekick.view_accountingsource'
+    model = AccountingSource
+    template_name = 'sidekick/accounting/accountingsource.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        accounting_class = get_object_or_404(AccountingClass, pk=self.kwargs['pk'])
-        context['accounting_class'] = accounting_class
+        accounting_source = get_object_or_404(AccountingSource, pk=self.kwargs['pk'])
+        context['accounting_source'] = accounting_source
 
         table = AccountingProfileTable(AccountingProfile.objects.filter(
-            accounting_classes__in=[accounting_class.id]))
+            accounting_sources__id__in=[accounting_source.id]))
         context['table'] = table
 
         return context

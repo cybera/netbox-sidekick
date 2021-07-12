@@ -60,7 +60,7 @@
           <td>Accounting Sources</td>
           <td>
             <ul>
-            {% for as in accounting_profile.accounting_classes.all %}
+            {% for as in accounting_profile.accounting_sources.all %}
               <li><a href="{{ as.get_absolute_url }}">{{ as }}</a></li>
             {% endfor %}
             </ul>

@@ -106,29 +106,15 @@ class Command(BaseCommand):
                     # This is because Cybera's metrics were previously stored in RRD
                     # files which only retains the derivative and not what the actual
                     # counters were.
-                    previous_entries = AccountingSourceCounter.objects.filter(
-                        accounting_source=accounting_source).order_by('-last_updated')
-                    if len(previous_entries) < 2:
-                        continue
-
-                    e1 = previous_entries[0]
-                    e2 = previous_entries[1]
-                    total_seconds = (e1.last_updated - e2.last_updated).total_seconds()
+                    results = accounting_source.get_current_rate()
 
                     graphite_prefix = "accounting.{}.{}".format(
-                        e1.accounting_source.graphite_name(),
-                        e1.accounting_source.graphite_destination_name())
+                        accounting_source.graphite_name(),
+                        accounting_source.graphite_destination_name())
 
                     for cat in ['scu', 'dcu']:
-                        m1 = getattr(e1, cat, None)
-                        m2 = getattr(e2, cat, None)
-                        if m1 is not None and m2 is not None:
-                            diff = (m1 - m2)
-
-                            if diff != 0:
-                                diff = diff / total_seconds
-                            graphite_name = f"{graphite_prefix}.{cat}"
-                            if options['dry_run']:
-                                self.stdout.write(f"{graphite_name} {diff} {total_seconds}")
-                            else:
-                                graphyte.send(graphite_name, diff)
+                        graphite_name = f"{graphite_prefix}.{cat}"
+                        if options['dry_run']:
+                            self.stdout.write(f"{graphite_name} {results[cat]}")
+                        else:
+                            graphyte.send(graphite_name, results[cat])

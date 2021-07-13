@@ -43,6 +43,31 @@ class AccountingSource(ChangeLoggedModel):
     def graphite_destination_name(self):
         return slugify(self.destination)
 
+    def get_current_rate(self):
+        results = {
+            'scu': 0,
+            'dcu': 0,
+        }
+
+        entries = self.accountingsourcecounter_set.order_by('-last_updated')
+        if len(entries) < 2:
+            return results
+
+        e1 = entries[0]
+        e2 = entries[1]
+        total_seconds = (e1.last_updated - e2.last_updated).total_seconds()
+
+        for cat in ['scu', 'dcu']:
+            m1 = getattr(e1, cat, None)
+            m2 = getattr(e2, cat, None)
+            if m1 is not None and m2 is not None:
+                diff = (m1 - m2)
+                if diff != 0:
+                    diff = diff / total_seconds
+                    results[cat] = diff
+
+        return results
+
 
 # AccountingSourceCounter represents counters for an AccountingSource from a device.
 class AccountingSourceCounter(ChangeLoggedModel):

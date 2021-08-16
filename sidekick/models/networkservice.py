@@ -164,6 +164,15 @@ class NetworkService(ChangeLoggedModel):
         default=True,
     )
 
+    backup_for = models.ForeignKey(
+        "self",
+        on_delete=models.PROTECT,
+        verbose_name="Backup Service for",
+        help_text="The primary service",
+        blank=True,
+        null=True,
+    )
+
     class Meta:
         ordering = ['member', 'network_service_type']
         verbose_name = 'Network Service'
@@ -216,6 +225,9 @@ class NetworkService(ChangeLoggedModel):
         prefixes.extend(self.get_ipv6_prefixes())
         prefixes.sort()
         return prefixes
+
+    def get_backup_service(self):
+        return NetworkService.objects.filter(backup_for=self.id)
 
 
 # NetworkServiceDevice represents a device that is part

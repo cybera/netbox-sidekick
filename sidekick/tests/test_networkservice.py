@@ -46,7 +46,9 @@ class NetworkServiceTest(BaseTest):
 
     # Network Service
     def test_networkservice_basic(self):
-        v = NetworkService.objects.get(member__name='East University')
+        v = NetworkService.objects.get(
+            member__name='East University',
+            description="Peering service for East University")
         self.assertEqual(v.name, "East University's peering service")
 
     def test_view_networkservice_index(self):
@@ -56,7 +58,9 @@ class NetworkServiceTest(BaseTest):
 
     # Network Service Group
     def test_networkservicegroup_basic(self):
-        ns = NetworkService.objects.get(member__name='East University')
+        ns = NetworkService.objects.get(
+            member__name='East University',
+            description="Peering service for East University")
         v = NetworkServiceGroup.objects.get(network_services__in=[ns])
         self.assertEqual(v.name, 'A Group')
         self.assertEqual(v.description, 'Just some group')
@@ -95,6 +99,17 @@ class NetworkServiceTest(BaseTest):
             netaddr.IPNetwork('192.168.1.0/24'),
             netaddr.IPNetwork('192.168.2.0/24'),
         ]
-        v = NetworkService.objects.get(member__name='East University')
+        v = NetworkService.objects.get(
+            member__name='East University',
+            description="Peering service for East University")
         prefixes = v.get_ipv4_prefixes()
         self.assertEqual(prefixes, expected_prefixes)
+
+    # Backup service
+    def test_backup_service(self):
+        expected_service_name = "East University's backup peering service"
+        v = NetworkService.objects.get(
+            member__name='East University',
+            description="Peering service for East University")
+        backup = v.get_backup_service()[0]
+        self.assertEqual(backup.name, expected_service_name)

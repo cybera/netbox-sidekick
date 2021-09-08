@@ -128,7 +128,7 @@ class NetworkServiceAdmin(admin.ModelAdmin):
             'fields': (
                 'name', 'network_service_type', 'description',
                 'comments', 'active', 'start_date', 'end_date',
-                'backup_for', 'legacy_id',),
+                'backup_for', 'accounting_profile', 'legacy_id',),
         }),
     )
 

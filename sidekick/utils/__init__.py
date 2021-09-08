@@ -4,6 +4,7 @@ import re
 import requests
 import rrdtool
 import time
+import whisper
 
 from django.contrib.auth.models import User
 
@@ -412,7 +413,8 @@ def snmpwalk_bulk(ipaddress, community):
 
 # Most of this was taken from
 # https://github.com/graphite-project/whisper/blob/master/bin/rrd2whisper.py
-def parse_rrd(rrd_file):
+# https://github.com/graphite-project/whisper/blob/master/bin/whisper-resize.py
+def convert_rrd(rrd_file, dest_dir):
     datasource_map = {
         'OUTOCTETS': 'out_octets',
         'OUTUCASTPKTS': 'out_unicast_packets',
@@ -461,35 +463,37 @@ def parse_rrd(rrd_file):
         points = rra['rows']
         archives.append((precision, points))
 
-    results = {}
     for datasource in datasources:
-        d = datasource_map[datasource]
-        results[d] = []
         now = int(time.time())
+        d = datasource_map[datasource]
+        dest_path = f"{dest_dir}/{d}.wsp"
+        try:
+            whisper.create(dest_path, archives, xFilesFactor=0.5)
+        except whisper.InvalidConfiguration:
+            pass
 
         datapoints = []
-        archiveNumber = len(archives) - 1
-        for precision, points in archives:
+        for precision, points in reversed(archives):
             retention = precision * points
             endTime = now - now % precision
             startTime = endTime - retention
             (time_info, columns, rows) = rrdtool.fetch(
                 rrd_file,
                 'MAX',
+                '-r', str(precision),
                 '-s', str(startTime),
-                '-e', str(endTime))
+                '-e', str(endTime),
+                '-a')
             column_index = list(columns).index(datasource)
+            rows.pop()
             values = [row[column_index] for row in rows]
             timestamps = list(range(*time_info))
-            datapoints.extend(
-                p for p in zip(timestamps, values) if p[1] is not None)
-            archiveNumber -= 1
-        results[d] = datapoints
-
-    return results
+            datapoints = zip(timestamps, values)
+            datapoints = [datapoint for datapoint in datapoints if datapoint[1] is not None]
+            whisper.update_many(dest_path, datapoints)
 
 
-def get_graphite_nic_graph(nic, graphite_render_host=None):
+def get_graphite_nic_graph(nic, graphite_render_host=None, period="-1Y"):
     if graphite_render_host is None:
         return None
 
@@ -505,7 +509,7 @@ def get_graphite_nic_graph(nic, graphite_render_host=None):
     metric_out = f"{carbon_name}.out_octets"
     target_in = f"scale(scale(keepLastValue({metric_in}), 8), 0.000000000931323)"
     target_out = f"scale(scale(keepLastValue({metric_out}), -8), 0.000000000931323)"
-    query = f"{query_base}&from=-1Y&target={target_in}&target={target_out}"
+    query = f"{query_base}&from={period}&target={target_in}&target={target_out}"
 
     r = requests.get(query)
     # graphs[period][inout]['graph'] = b64encode(r.content).decode('utf-8')
@@ -526,7 +530,7 @@ def get_graphite_nic_graph(nic, graphite_render_host=None):
     return graph_data
 
 
-def get_graphite_service_graph(service, graphite_render_host=None):
+def get_graphite_service_graph(service, graphite_render_host=None, period="-1Y"):
     if graphite_render_host is None:
         return None
 
@@ -539,7 +543,7 @@ def get_graphite_service_graph(service, graphite_render_host=None):
     target_in = f"scale(scale(keepLastValue({service_name}.*.*.in_octets), 8), 0.000000000931323)"
     target_out = f"scale(scale(keepLastValue({service_name}.*.*.out_octets), -8), 0.000000000931323)"
     # target = f'cactiStyle(alias(scale(keepLastValue({metric}),8),"{inout.title()}"),"si","gb")'
-    query = f"{query_base}&from=-1Y&target={target_in}&target={target_out}"
+    query = f"{query_base}&from={period}&target={target_in}&target={target_out}"
 
     r = requests.get(query)
     # graphs[period][inout]['graph'] = b64encode(r.content).decode('utf-8')
@@ -560,7 +564,7 @@ def get_graphite_service_graph(service, graphite_render_host=None):
     return graph_data
 
 
-def get_graphite_service_graph_plotly(service, graphite_render_host=None):
+def get_graphite_service_graph_plotly(service, graphite_render_host=None, period="-1Y"):
     if graphite_render_host is None:
         return None
 
@@ -575,7 +579,7 @@ def get_graphite_service_graph_plotly(service, graphite_render_host=None):
     target_in = f"scale(scale(keepLastValue({service_name}.*.*.in_octets), 8), 0.000000000931323)"
     target_out = f"scale(scale(keepLastValue({service_name}.*.*.out_octets), -8), 0.000000000931323)"
     # target = f'cactiStyle(alias(scale(keepLastValue({metric}),8),"{inout.title()}"),"si","gb")'
-    query = f"{query_base}&from=-1Y&target={target_in}&target={target_out}"
+    query = f"{query_base}&from={period}&target={target_in}&target={target_out}"
 
     r = requests.get(query)
     # graphs[period][inout]['graph'] = b64encode(r.content).decode('utf-8')

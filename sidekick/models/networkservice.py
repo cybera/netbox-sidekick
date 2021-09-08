@@ -173,6 +173,15 @@ class NetworkService(ChangeLoggedModel):
         null=True,
     )
 
+    accounting_profile = models.ForeignKey(
+        'sidekick.AccountingProfile',
+        on_delete=models.PROTECT,
+        verbose_name='Accounting Profile',
+        help_text='The accounting profile applied to this service',
+        blank=True,
+        null=True,
+    )
+
     class Meta:
         ordering = ['member', 'network_service_type']
         verbose_name = 'Network Service'

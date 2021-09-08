@@ -40,6 +40,12 @@ class AccountingSource(ChangeLoggedModel):
     def graphite_name(self):
         return slugify(self.name)
 
+    def graphite_path_name(self):
+        return f"accounting.{slugify(self.name)}"
+
+    def graphite_full_path_name(self):
+        return f"{self.graphite_path_name()}.{slugify(self.destination)}"
+
     def graphite_destination_name(self):
         return slugify(self.destination)
 

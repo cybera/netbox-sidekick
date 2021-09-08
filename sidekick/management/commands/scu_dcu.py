@@ -18,6 +18,12 @@ from sidekick.utils import (
 )
 
 
+scudcu_map = {
+    'scu': 'in_octets',
+    'dcu': 'out_octets',
+}
+
+
 class Command(BaseCommand):
     help = "Update SCU/DCU Accounting Data"
 
@@ -113,7 +119,7 @@ class Command(BaseCommand):
                         accounting_source.graphite_destination_name())
 
                     for cat in ['scu', 'dcu']:
-                        graphite_name = f"{graphite_prefix}.{cat}"
+                        graphite_name = f"{graphite_prefix}.{scudcu_map[cat]}"
                         if options['dry_run']:
                             self.stdout.write(f"{graphite_name} {results[cat]}")
                         else:

@@ -16,10 +16,10 @@ class NICListView(ListAPIView):
     def get_queryset(self):
         device = self.kwargs.get('device', None)
         if device is not None:
-            nics = NIC.objects.filter(interface__device__id=device)
+            nics = NIC.objects.filter(interface__device__id=device).order_by('-last_updated')
 
             name = self.request.query_params.get('name', None)
             if name is not None:
-                nics = nics.filter(interface__name=name)
+                nics = nics.filter(interface__name=name).order_by('-last_updated')
 
             return nics

@@ -296,7 +296,7 @@ class Command(BaseCommand):
 
                 existing_interface = existing_interfaces[iface_name]
                 if options['dry_run']:
-                    self.stdout.write(f"Would have updated counters for {existing_interface.name}")
+                    self.stdout.write(f"Would have updated counters for {existing_interface.name}: {iface_details}")
                 else:
                     nic = NIC(
                         interface=existing_interface,
@@ -312,6 +312,12 @@ class Command(BaseCommand):
                         out_errors=iface_details['ifOutErrors'],
                         in_errors=iface_details['ifInErrors'],
                     )
+
+                    if 'in_rate' in iface_details:
+                        nic.in_rate = iface_details['in_rate']
+                    if 'out_rate' in iface_details:
+                        nic.out_rate = iface_details['out_rate']
+
                     nic.save()
 
                 # Send the metrics to Graphite if graphite_host has been set.

@@ -102,6 +102,12 @@ OIDs = [
     ObjectType(ObjectIdentity('IP-MIB', 'ipAdEntNetMask')),
     ObjectType(ObjectIdentity('IP-MIB', 'ipAdEntIfIndex')),
     ObjectType(ObjectIdentity('IPV6-MIB', 'ipv6AddrPfxLength')),
+
+    # jnx ifHCIn1SecRate
+    ObjectType(ObjectIdentity('.1.3.6.1.4.1.2636.3.3.1.1.7')),
+
+    # jnx ifHCOut1SecRate
+    ObjectType(ObjectIdentity('.1.3.6.1.4.1.2636.3.3.1.1.8')),
 ]
 
 ACCOUNTING_OIDS = [
@@ -312,6 +318,9 @@ def snmpwalk_bulk(ipaddress, community):
     ipv4_re = r'^1\.3\.6\.1\.2\.1\.4\.20\.1\.2\.(\d+\.\d+\.\d+\.\d+)'
     ipv4_mask_re = r'^1\.3\.6\.1\.2\.1\.4\.20\.1\.3\.(\d+\.\d+\.\d+\.\d+)'
 
+    jnxifHCIn1SecRate_re = r'.*2636\.3\.3\.1\.1\.7'
+    jnxifHCOut1SecRate_re = r'.*2636\.3\.3\.1\.1\.8'
+
     for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
             SnmpEngine(),
             CommunityData(community),
@@ -332,6 +341,22 @@ def snmpwalk_bulk(ipaddress, community):
 
     for row in data:
         for r in row:
+            # Match the jnx-specific entries
+            match = re.match(jnxifHCIn1SecRate_re, f"{r[0]}")
+            if match:
+                index = f"{r[0]}".split('.')[-1]
+                if index not in results:
+                    results[index] = {}
+                results[index]['in_rate'] = r[1].prettyPrint()
+
+            # Match the jnx-specific entries
+            match = re.match(jnxifHCOut1SecRate_re, f"{r[0]}")
+            if match:
+                index = f"{r[0]}".split('.')[-1]
+                if index not in results:
+                    results[index] = {}
+                results[index]['out_rate'] = r[1].prettyPrint()
+
             # Match the format IF-MIB::FOO
             match = re.match(oid_re, str(r[0].prettyPrint()))
             if match:

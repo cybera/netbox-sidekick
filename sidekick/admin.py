@@ -316,6 +316,7 @@ class NICAdmin(admin.ModelAdmin):
                 'out_octets', 'in_octets', 'out_unicast_packets', 'in_unicast_packets',
                 'out_nunicast_packets', 'in_nunicast_packets',
                 'out_errors', 'in_errors',
+                'out_rate', 'in_rate',
             ),
         }),
     )

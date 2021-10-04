@@ -27,6 +27,18 @@ class NIC(ChangeLoggedModel):
         default=True,
     )
 
+    out_rate = models.BigIntegerField(
+        verbose_name="Out Rate",
+        help_text="Out Rate",
+        default=0,
+    )
+
+    in_rate = models.BigIntegerField(
+        verbose_name="In Rate",
+        help_text="In Rate",
+        default=0,
+    )
+
     out_octets = models.BigIntegerField(
         verbose_name="Out Octets",
         help_text="Out Octets",

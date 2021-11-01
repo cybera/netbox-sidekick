@@ -226,7 +226,10 @@
         </tr>
       </table>
     </div>
+  {% endfor %}
+  {% endif %}
   </div>
+  {% endfor %}
 
   <div class="col-md-6">
     <div class="panel panel-default">
@@ -234,43 +237,83 @@
         <strong>Graphs</strong>
       </div>
       <table class="table table-hover panel-body attr-table">
-        {{ graph_data.data|json_script:"graph_data" }}
         <tr>
           <td>
             <center><h4>{{ graph_data.title }}</h4></center>
             <div id="graph"></div>
-            <script type="text/javascript">
-            let data = JSON.parse(document.getElementById('graph_data').textContent);
-
-            let opts = {
-              width: 600,
-              height: 350,
-              series: [
-                {},
-                {
-                  label: "In",
-                  stroke: "#2E7D32",
-                  fill: "#66BB6A",
-                },
-                {
-                  label: "Out",
-                  stroke: "#1565C0",
-                  fill: "#42A5F5",
-                  value: (self, rawValue) => rawValue.toFixed(3) * -1,
-                },
-              ],
-            };
-
-            let uplot = new uPlot(opts, data, document.getElementById('graph'));
-						</script>
           </td>
         </tr>
       </table>
     </div>
   </div>
 </div>
-{% endfor %}
-{% endif %}
+{% endblock %}
 
-{% endfor %}
+{% block javascript %}
+<script type="text/javascript">
+  function bits(bits) {
+    if (bits == 0) return '';
+    if (bits < 0) bits *= -1;
+    var s = ['bits', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb'];
+    var e = Math.floor(Math.log(bits)/Math.log(1000));
+    var value = ((bits/Math.pow(1000, Math.floor(e))).toFixed(2));
+    e = (e<0) ? (-e) : e;
+    value += ' ' + s[e];
+    return value;
+  }
+
+  function getSize(div) {
+    var v = '#' + div;
+    return {
+      height: 300,
+      width: $(v).width(),
+    }
+  }
+
+  $(document).ready(function() {
+    $.ajax({
+      url: "{% url 'plugins:sidekick:network_service_graphite_data' pk=object.pk %}",
+      dataType: 'json',
+      success: function(json) {
+        let data = json['graph_data']['data'];
+        let size = getSize('graph');
+
+        let opts = {
+          width: size.width,
+          height: size.height,
+          axes: [
+            {},
+            {
+              scale: "bits",
+              size: 75,
+              values: (self, ticks) => ticks.map(rawValue => bits(rawValue)),
+            },
+          ],
+          series: [
+            {},
+            {
+              label: "In",
+              stroke: "#2E7D32",
+              fill: "#66BB6A",
+              scale: "bits",
+              value: (self, rawValue) => bits(rawValue),
+            },
+            {
+              label: "Out",
+              stroke: "#1565C0",
+              fill: "#42A5F5",
+              scale: "bits",
+              value: (self, rawValue) => bits(rawValue * -1),
+            },
+          ],
+        };
+
+        let u = new uPlot(opts, data, document.getElementById('graph'));
+        window.addEventListener("resize", e => {
+            u.setSize(getSize('graph'));
+        });
+      }
+    });
+  });
+</script>
 {% endblock %}

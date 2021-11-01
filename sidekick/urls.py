@@ -66,11 +66,17 @@ urlpatterns = [
     # Network Service Group Details
     path('network_service_groups/<int:pk>/', views.NetworkServiceGroupDetailView.as_view(), name='networkservicegroup_detail'),
 
+    # Network Service Graphite data
+    path('network_service/graphite/<int:pk>', views.NetworkServiceGraphiteDataView.as_view(), name='network_service_graphite_data'),
+
     # NIC Index
     path('nics/', views.NICIndexView.as_view(), name='nic_index'),
 
     # NIC Details
     path('nics/<int:pk>', views.NICDetailView.as_view(), name='nic_detail'),
+
+    # NIC Graphite data
+    path('nics/graphite/<int:pk>', views.NICGraphiteDataView.as_view(), name='nic_graphite_data'),
 
     # Routing Type Index
     path('routing_types/', views.RoutingTypeIndexView.as_view(), name='routingtype_index'),

@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.views import View
 from django.views.generic import DetailView
 
 from django_filters.views import FilterView
@@ -155,17 +157,6 @@ class NetworkServiceDetailView(PermissionRequiredMixin, DetailView):
     context_object_name = 'ns'
     template_name = 'sidekick/networkservice/networkservice.html'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        ns = NetworkService.objects.get(pk=self.kwargs['pk'])
-
-        graphite_render_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_render_host', None)
-        graph_data = get_graphite_service_graph(ns, graphite_render_host)
-        context['graph_data'] = graph_data
-
-        return context
-
 
 # Network Service Group Index
 class NetworkServiceGroupIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
@@ -194,3 +185,20 @@ class NetworkServiceGroupDetailView(PermissionRequiredMixin, DetailView):
         context['table'] = table
 
         return context
+
+
+# Service graphite data
+class NetworkServiceGraphiteDataView(PermissionRequiredMixin, View):
+    permission_required = 'sidekick.view_service'
+    model = NetworkService
+
+    def get(self, request, pk):
+        graphite_render_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_render_host', None)
+        if graphite_render_host is None:
+            return JsonResponse({})
+
+        ns = NetworkService.objects.get(pk=self.kwargs['pk'])
+        graph_data = get_graphite_service_graph(ns, graphite_render_host)
+        return JsonResponse({
+            'graph_data': graph_data,
+        })

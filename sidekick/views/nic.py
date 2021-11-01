@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.http import JsonResponse
+from django.views import View
 from django.views.generic import DetailView
 
 from django_filters.views import FilterView
@@ -48,8 +50,22 @@ class NICDetailView(PermissionRequiredMixin, DetailView):
         if len(nics) > 0:
             context['nic'] = nics[0]
 
-            graphite_render_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_render_host', None)
-            graph_data = get_graphite_nic_graph(nics[0], graphite_render_host)
-            context['graph_data'] = graph_data
-
         return context
+
+
+# NIC graphite data
+class NICGraphiteDataView(PermissionRequiredMixin, View):
+    permission_required = 'sidekick.view_nic'
+    model = Interface
+
+    def get(self, request, pk):
+        graphite_render_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_render_host', None)
+        if graphite_render_host is None:
+            return JsonResponse({})
+
+        nics = NIC.objects.filter(interface__id=pk)
+        if len(nics) > 0:
+            graph_data = get_graphite_nic_graph(nics[0], graphite_render_host)
+            return JsonResponse({
+                'graph_data': graph_data,
+            })

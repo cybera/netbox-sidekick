@@ -14,10 +14,12 @@ from .networkservice import (  # noqa: F401
     LogicalSystemIndexView, LogicalSystemDetailView,
     NetworkServiceTypeIndexView, NetworkServiceTypeDetailView,
     NetworkServiceIndexView, NetworkServiceDetailView,
+    NetworkServiceGraphiteDataView,
     NetworkServiceGroupIndexView, NetworkServiceGroupDetailView,
     RoutingTypeIndexView, RoutingTypeDetailView,
 )
 
 from .nic import (  # noqa: F401
     NICIndexView, NICDetailView,
+    NICGraphiteDataView,
 )

@@ -347,7 +347,9 @@ def snmpwalk_bulk(ipaddress, community):
                 index = f"{r[0]}".split('.')[-1]
                 if index not in results:
                     results[index] = {}
-                results[index]['in_rate'] = r[1].prettyPrint()
+                in_rate = r[1].prettyPrint()
+                if in_rate != "No more variables left in this MIB View":
+                    results[index]['in_rate'] = in_rate
 
             # Match the jnx-specific entries
             match = re.match(jnxifHCOut1SecRate_re, f"{r[0]}")
@@ -355,7 +357,9 @@ def snmpwalk_bulk(ipaddress, community):
                 index = f"{r[0]}".split('.')[-1]
                 if index not in results:
                     results[index] = {}
-                results[index]['out_rate'] = r[1].prettyPrint()
+                out_rate = r[1].prettyPrint()
+                if out_rate != "No more variables left in this MIB View":
+                    results[index]['out_rate'] = r[1].prettyPrint()
 
             # Match the format IF-MIB::FOO
             match = re.match(oid_re, str(r[0].prettyPrint()))
@@ -532,8 +536,8 @@ def get_graphite_nic_graph(nic, graphite_render_host=None, period="-1Y"):
     graph_data['title'] = "Last Year - GB"
     metric_in = f"{carbon_name}.in_octets"
     metric_out = f"{carbon_name}.out_octets"
-    target_in = f"scale(scale(keepLastValue({metric_in}), 8), 0.000000000931323)"
-    target_out = f"scale(scale(keepLastValue({metric_out}), -8), 0.000000000931323)"
+    target_in = f"scale(keepLastValue(removeBelowValue(removeAboveValue({metric_in}, 12500000000), 0)), 8)"
+    target_out = f"scale(keepLastValue(removeBelowValue(removeAboveValue({metric_out}, 12500000000), 0)), -8)"
     query = f"{query_base}&from={period}&target={target_in}&target={target_out}"
 
     r = requests.get(query)
@@ -565,17 +569,18 @@ def get_graphite_service_graph(service, graphite_render_host=None, period="-1Y")
 
     graph_data = {}
     graph_data['title'] = "Last Year - GB"
-    target_in = f"scale(scale(keepLastValue({service_name}.*.*.in_octets), 8), 0.000000000931323)"
-    target_out = f"scale(scale(keepLastValue({service_name}.*.*.out_octets), -8), 0.000000000931323)"
+    target_in = f"scale(keepLastValue(removeBelowValue(removeAboveValue({service_name}.*.*.in_octets, 12500000000), 0)), 8)"
+    target_out = f"scale(keepLastValue(removeBelowValue(removeAboveValue({service_name}.*.*.out_octets, 12500000000), 0)), -8)"
     # target = f'cactiStyle(alias(scale(keepLastValue({metric}),8),"{inout.title()}"),"si","gb")'
     query = f"{query_base}&from={period}&target={target_in}&target={target_out}"
 
     r = requests.get(query)
     # graphs[period][inout]['graph'] = b64encode(r.content).decode('utf-8')
     results = json.loads(r.content.decode('utf-8'))
-    data = [[], [], []]
     if len(results) == 0:
         return None
+
+    data = [[], [], []]
 
     for d in results[0]['datapoints']:
         data[0].append(d[1])

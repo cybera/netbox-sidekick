@@ -14,6 +14,8 @@ NIC_LINK = """
     <a href="{{ record.get_absolute_url }}">{{ record.interface.name }}</a>
 """
 
+DESCRIPTION = "{{ record.interface.description }}"
+
 
 class NICTable(BaseTable):
     pk = ToggleColumn()
@@ -25,6 +27,11 @@ class NICTable(BaseTable):
     device = tables.TemplateColumn(
         template_code=DEVICE_LINK,
         verbose_name='Device',
+    )
+
+    description = tables.TemplateColumn(
+        template_code=DESCRIPTION,
+        verbose_name='Description',
     )
 
     class Meta(BaseTable.Meta):

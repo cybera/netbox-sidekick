@@ -33,11 +33,16 @@ class CurrentBandwidthView(APIView):
             result = {}
 
             traffic_cap = bp.traffic_cap
+            result["member_name"] = ap.member.name
             result['traffic_cap'] = traffic_cap
 
             result['accounting_sources'] = {}
             for accounting_source in ap.accounting_sources.all():
+                result['accounting_sources'][f"{accounting_source}"] = {}
+                result['accounting_sources'][f"{accounting_source}"]["name"] = accounting_source.name
+                result['accounting_sources'][f"{accounting_source}"]["destination"] = accounting_source.destination
+
                 current_rate = accounting_source.get_current_rate()
-                result['accounting_sources'][f"{accounting_source}"] = current_rate
+                result['accounting_sources'][f"{accounting_source}"]["current_rate"] = current_rate
 
         return Response(result)

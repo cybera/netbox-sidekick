@@ -95,7 +95,9 @@ class Command(BaseCommand):
             # For each device that is not supposed to be ignored,
             # add that interface to the device if it doesn't already exist.
             for iface_index, iface_details in device_info.items():
-                iface_name = iface_details['ifName']
+                iface_name = iface_details.get('ifName', None)
+                if iface_name is None:
+                    continue
                 # self.stdout.write(f"{iface_details['name']}: {iface_details['oper_status']}")
                 # continue
 
@@ -190,7 +192,9 @@ class Command(BaseCommand):
             # For each interface that is not supposed to be ignored,
             # add the IP address to the interface if it doesn't already exist.
             for iface_index, iface_details in device_info.items():
-                iface_name = iface_details['ifName']
+                iface_name = iface_details.get('ifName', None)
+                if iface_name is None:
+                    continue
 
                 if not any(i in iface_name for i in VALID_INTERFACE_NAMES):
                     continue
@@ -287,7 +291,10 @@ class Command(BaseCommand):
             # For each interface that is not supposed to be ignored,
             # store the counters as a NIC object.
             for iface_index, iface_details in device_info.items():
-                iface_name = iface_details['ifName']
+                iface_name = iface_details.get('ifName', None)
+                if iface_name is None:
+                    continue
+
                 if not any(i in iface_name for i in VALID_INTERFACE_NAMES):
                     continue
 

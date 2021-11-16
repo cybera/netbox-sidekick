@@ -126,6 +126,9 @@ VALID_INTERFACE_NAMES = [
     # Arista
     'Ethernet', 'Vlan',
 
+    # Cisco
+    'Vl', 'Gi', 'Nu', 'Po', 'StackPort', 'Te',
+
     # Juniper
     'ae', 'et', 'ge', 'lt', 'xe',
 ]

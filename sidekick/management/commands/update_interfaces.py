@@ -146,8 +146,13 @@ class Command(BaseCommand):
                         existing_interface.description = _descr
                         changed = True
 
+                    admin_status = f"{iface_details['ifAdminStatus']}"
+                    if admin_status == "up":
+                        admin_status = 1
+                    if admin_status == "down":
+                        admin_status = 0
+
                     iface_status = False
-                    admin_status = iface_details['ifAdminStatus']
                     oper_status = iface_details['ifOperStatus']
                     if admin_status == 1 and oper_status == 1:
                         iface_status = True
@@ -169,14 +174,24 @@ class Command(BaseCommand):
                     if options['dry_run']:
                         self.stdout.write(f"Would have added {iface_name}")
                     else:
+                        admin_status = f"{iface_details['ifAdminStatus']}"
+                        if admin_status == "down":
+                            admin_status = False
+                        if admin_status == "up":
+                            admin_status = True
+
+                        mtu = iface_details.get('ifMtu', 0)
+                        if 'No more variables' in f"{mtu}":
+                            mtu = 0
+
                         iface = Interface(
                             device=device,
-                            description=iface_details['ifDescr'],
+                            description=iface_details.get('ifDescr', None),
                             name=iface_name,
                             type=iface_type,
-                            enabled=iface_details['ifAdminStatus'],
-                            mac_address=iface_details['ifPhysAddress'],
-                            mtu=iface_details['ifMtu'],
+                            enabled=admin_status,
+                            mac_address=iface_details.get('ifPhysAddress', None),
+                            mtu=mtu,
                             mode=iface_mode,
                             untagged_vlan=iface_untagged_vlan,
                         )
@@ -305,19 +320,59 @@ class Command(BaseCommand):
                 if options['dry_run']:
                     self.stdout.write(f"Would have updated counters for {existing_interface.name}: {iface_details}")
                 else:
+                    admin_status = iface_details.get('ifAdminStatus', 0)
+                    if 'No more variables' in f"{admin_status}":
+                        admin_status = 0
+
+                    oper_status = iface_details.get('ifOperStatus', 0)
+                    if 'No more variables' in f"{oper_status}":
+                        oper_status = 0
+
+                    out_octets = iface_details.get('ifHCOutOctets', 0)
+                    if 'No more variables' in f"{out_octets}":
+                        out_octets = 0
+
+                    in_octets = iface_details.get('ifHCInOctets', 0)
+                    if 'No more variables' in f"{in_octets}":
+                        in_octets = 0
+
+                    out_unicast_packets = iface_details.get('ifHCOutUcastPkts', 0)
+                    if 'No more variables' in f"{out_unicast_packets}":
+                        out_unicast_packets = 0
+
+                    in_unicast_packets = iface_details.get('ifHCInUcastPkts', 0)
+                    if 'No more variables' in f"{in_unicast_packets}":
+                        in_unicast_packets = 0
+
+                    out_nunicast_packets = iface_details.get('ifOutNUcastPkts', 0)
+                    if 'No more variables' in f"{out_nunicast_packets}":
+                        out_nunicast_packets = 0
+
+                    in_nunicast_packets = iface_details.get('ifInNUcastPkts', 0),
+                    if 'No more variables' in f"{in_nunicast_packets}":
+                        in_nunicast_packets = 0
+
+                    out_errors = iface_details.get('ifOutErrors', 0)
+                    if 'No more variables' in f"{out_errors}":
+                        out_errors = 0
+
+                    in_errors = iface_details.get('ifInErrors', 0)
+                    if 'No more variables' in f"{in_errors}":
+                        in_errors = 0
+
                     nic = NIC(
                         interface=existing_interface,
                         interface_id=existing_interface.id,
-                        admin_status=iface_details['ifAdminStatus'],
-                        oper_status=iface_details['ifOperStatus'],
-                        out_octets=iface_details['ifHCOutOctets'],
-                        in_octets=iface_details['ifHCInOctets'],
-                        out_unicast_packets=iface_details['ifHCOutUcastPkts'],
-                        in_unicast_packets=iface_details['ifHCInUcastPkts'],
-                        out_nunicast_packets=iface_details['ifOutNUcastPkts'],
-                        in_nunicast_packets=iface_details['ifInNUcastPkts'],
-                        out_errors=iface_details['ifOutErrors'],
-                        in_errors=iface_details['ifInErrors'],
+                        admin_status=admin_status,
+                        oper_status=oper_status,
+                        out_octets=out_octets,
+                        in_octets=in_octets,
+                        out_unicast_packets=out_unicast_packets,
+                        in_unicast_packets=in_unicast_packets,
+                        out_nunicast_packets=out_nunicast_packets,
+                        in_nunicast_packets=in_unicast_packets,
+                        out_errors=out_errors,
+                        in_errors=in_errors,
                     )
 
                     if 'in_rate' in iface_details:

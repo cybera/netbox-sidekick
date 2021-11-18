@@ -127,7 +127,7 @@ VALID_INTERFACE_NAMES = [
     'Ethernet', 'Vlan',
 
     # Cisco
-    'Vl', 'Gi', 'Nu', 'Po', 'StackPort', 'Te',
+    'Fa', 'Gi', 'Nu', 'Po', 'StackPort', 'Te', 'Vl',
 
     # Juniper
     'ae', 'et', 'ge', 'lt', 'xe',

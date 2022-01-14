@@ -88,7 +88,7 @@ class Command(BaseCommand):
             # If we're able to connect,
             # build a list of interface names already on the device.
             existing_interfaces = {}
-            for i in device.vc_interfaces.all():
+            for i in device.vc_interfaces():
                 existing_interfaces[i.name] = i
 
             # Obtain the list of interfaces.
@@ -200,7 +200,7 @@ class Command(BaseCommand):
             # To account for one or more new interfaces being added,
             # build a list of interface names already on the device.
             existing_interfaces = {}
-            for i in device.vc_interfaces.all():
+            for i in device.vc_interfaces():
                 existing_interfaces[i.name] = i
 
             # Obtain the list of IP addresses on each interface.

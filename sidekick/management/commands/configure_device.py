@@ -33,7 +33,7 @@ class Command(BaseCommand):
         if _ip is not None:
             # Make sure there's an interface named "mgmt"
             # If there isn't, then create one.
-            mgmt_iface = next((True for iface in device.vc_interfaces.all() if iface.name == 'mgmt'), None)
+            mgmt_iface = next((True for iface in device.vc_interfaces() if iface.name == 'mgmt'), None)
             if not mgmt_iface:
                 if options['dry_run']:
                     self.stdout.write('Would have created a managment interface called mgmt')

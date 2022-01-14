@@ -198,22 +198,22 @@
 
   $("#last_week").click(function() {
     clearGraphs();
-    renderGraph("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-7d");
+    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-7d");
   });
 
   $("#last_month").click(function() {
     clearGraphs();
-    renderGraph("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-30d");
+    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-30d");
   });
 
   $("#last_year").click(function() {
     clearGraphs();
-    renderGraph("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-1y");
+    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-1y");
   });
 
   $("#last_five").click(function() {
     clearGraphs();
-    renderGraph("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-5y");
+    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-5y");
   });
 
 </script>

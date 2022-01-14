@@ -7,7 +7,7 @@ from django.utils.text import slugify
 
 from dcim.models import Interface
 
-from extras.models import ChangeLoggedModel
+from netbox.models import ChangeLoggedModel
 
 
 # LogicalSystem represents a logical system in a network device.

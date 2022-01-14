@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
-from extras.models import ChangeLoggedModel
+from netbox.models import ChangeLoggedModel
 
 
 # AccountingSource represents an SCU/DCU source from a device.

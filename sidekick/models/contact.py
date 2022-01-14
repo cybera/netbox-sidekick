@@ -1,7 +1,7 @@
 from django.db import models
 from django.urls import reverse
 
-from extras.models import ChangeLoggedModel
+from netbox.models import ChangeLoggedModel
 
 
 # ContactType represents different types of contacts.

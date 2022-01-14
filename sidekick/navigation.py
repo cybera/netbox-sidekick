@@ -30,6 +30,10 @@ menu_items = (
         link_text='Logical Systems',
     ),
     PluginMenuItem(
+        link='plugins:sidekick:memberbandwidth_index',
+        link_text='Member Bandwidth',
+    ),
+    PluginMenuItem(
         link='plugins:sidekick:nic_index',
         link_text='Interfaces',
     ),

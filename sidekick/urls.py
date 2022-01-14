@@ -42,6 +42,24 @@ urlpatterns = [
     # Logical System Details
     path('logical_systems/<slug:slug>/', views.LogicalSystemDetailView.as_view(), name='logicalsystem_detail'),
 
+    # Member Bandwidth Report Index
+    path('member_bandwidth/', views.MemberBandwidthIndexView.as_view(), name='memberbandwidth_index'),
+
+    # Member Bandwidth Report Details
+    path('member_bandwidth/<int:pk>/', views.MemberBandwidthDetailView.as_view(), name='memberbandwidth_detail'),
+
+    # Member Bandwidth Services Data
+    path('member_bandwidth/graphite/services/<int:pk>', views.MemberBandwidthServicesDataView.as_view(), name='memberbandwidth_services_data'),
+
+    # Member Bandwidth Accounting Data
+    path('member_bandwidth/graphite/accounting/<int:pk>', views.MemberBandwidthAccountingDataView.as_view(), name='memberbandwidth_accounting_data'),
+
+    # Member Bandwidth Remaining Data
+    path('member_bandwidth/graphite/remaining/<int:pk>', views.MemberBandwidthRemainingDataView.as_view(), name='memberbandwidth_remaining_data'),
+
+    # Member Bandwidth Data
+    path('member_bandwidth/graphite/<int:pk>', views.MemberBandwidthDataView.as_view(), name='memberbandwidth_data'),
+
     # Network Service Type Index
     path('network_service_types/', views.NetworkServiceTypeIndexView.as_view(), name='networkservicetype_index'),
 

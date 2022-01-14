@@ -9,6 +9,15 @@ from .contact import (  # noqa: F401
     ContactIndexView, ContactDetailView,
 )
 
+from .memberbandwidth import (  # noqa: F401
+    MemberBandwidthIndexView,
+    MemberBandwidthServicesDataView,
+    MemberBandwidthAccountingDataView,
+    MemberBandwidthRemainingDataView,
+    MemberBandwidthDataView,
+    MemberBandwidthDetailView,
+)
+
 from .networkservice import (  # noqa: F401
     IPPrefixIndexView,
     LogicalSystemIndexView, LogicalSystemDetailView,

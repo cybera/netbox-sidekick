@@ -19,6 +19,7 @@ from pysnmp.hlapi import (
 from secrets.models import UserKey
 
 from sidekick.models import (
+    AccountingSource,
     NetworkService,
 )
 
@@ -597,39 +598,96 @@ def get_graphite_service_graph(service, graphite_render_host=None, period="-1Y")
     return graph_data
 
 
-def get_graphite_service_graph_plotly(service, graphite_render_host=None, period="-1Y"):
+def get_graphite_data(graphite_render_host, targets_in, targets_out, period="-1Y"):
     if graphite_render_host is None:
         return None
 
-    service_name = service.graphite_service_name()
-
-    query_base = f"{graphite_render_host}/render?format=json"
-
-    graph_data = {
-        'x': [],
-        'y': [],
-    }
-    target_in = f"scale(scale(keepLastValue({service_name}.*.*.in_octets), 8), 0.000000000931323)"
-    target_out = f"scale(scale(keepLastValue({service_name}.*.*.out_octets), -8), 0.000000000931323)"
-    # target = f'cactiStyle(alias(scale(keepLastValue({metric}),8),"{inout.title()}"),"si","gb")'
-    query = f"{query_base}&from={period}&target={target_in}&target={target_out}"
+    query = f"{graphite_render_host}/render?format=json&from={period}"
+    query = f"{query}&target=transformNull(scale(sum({','.join(targets_in)}), 8))"
+    query = f"{query}&target=transformNull(scale(sum({','.join(targets_out)}), -8))"
 
     r = requests.get(query)
-    # graphs[period][inout]['graph'] = b64encode(r.content).decode('utf-8')
     results = json.loads(r.content.decode('utf-8'))
     if len(results) == 0:
         return None
 
-    for d in results[0]['datapoints']:
-        graph_data['x'].append(d[1])
-        graph_data['y'].append(d[0])
+    graph_data = {}
+    data = [[], [], []]
 
-    # for d in results[1]['datapoints']:
-    #    data[2].append(d[0])
-    # graph_data['x'] = data
+    for d in results[0]['datapoints']:
+        data[0].append(d[1])
+        data[1].append(d[0])
+
+    for d in results[1]['datapoints']:
+        data[2].append(d[0])
+
+    graph_data['data'] = data
     # graph_data['query'] = query
 
     return graph_data
+
+
+def get_graphite_service_data(graphite_render_host, services, period="-1Y"):
+    if graphite_render_host is None:
+        return None
+
+    targets_in = []
+    targets_out = []
+    for s in services:
+        service = NetworkService.objects.get(id=s)
+        name = service.graphite_service_name()
+        targets_in.append(f"keepLastValue(removeBelowValue(removeAboveValue({name}.*.*.in_octets, 12500000000), 0))")
+        targets_out.append(f"keepLastValue(removeBelowValue(removeAboveValue({name}.*.*.out_octets, 12500000000), 0))")
+
+    return get_graphite_data(graphite_render_host, targets_in, targets_out, period)
+
+
+def get_graphite_accounting_data(graphite_render_host, accounting, period="-1Y"):
+    if graphite_render_host is None:
+        return None
+
+    targets_in = []
+    targets_out = []
+    for a in accounting:
+        acct = AccountingSource.objects.get(id=a)
+        name = acct.graphite_full_path_name()
+        targets_in.append(f"keepLastValue(removeBelowValue(removeAboveValue({name}.in_octets, 12500000000), 0))")
+        targets_out.append(f"keepLastValue(removeBelowValue(removeAboveValue({name}.out_octets, 12500000000), 0))")
+
+    return get_graphite_data(graphite_render_host, targets_in, targets_out, period)
+
+
+def get_graphite_remaining_data(graphite_render_host, services, period="-1Y"):
+    if graphite_render_host is None:
+        return None
+
+    targets_in = []
+    targets_out = []
+    for s in services:
+        service = NetworkService.objects.get(id=s)
+        name = service.graphite_service_name()
+        if service.accounting_profile:
+            acct_sources_in = []
+            acct_sources_out = []
+            for a in service.accounting_profile.accounting_sources.all():
+                acct_name = a.graphite_full_path_name()
+                acct_sources_in.append(f"keepLastValue({acct_name}.in_octets)")
+                acct_sources_out.append(f"keepLastValue({acct_name}.out_octets)")
+
+            targets_in.append(f"removeBelowValue(removeAboveValue(diffSeries(keepLastValue({name}.*.*.in_octets), {','.join(acct_sources_in)}), 12500000000), 0)")
+            targets_out.append(f"removeBelowValue(removeAboveValue(diffSeries(keepLastValue({name}.*.*.out_octets), {','.join(acct_sources_out)}), 12500000000), 0)")
+        else:
+            targets_in.append(f"keepLastValue({name}.*.*.in_octets)")
+            targets_out.append(f"keepLastValue({name}.*.*.out_octets)")
+
+    return get_graphite_data(graphite_render_host, targets_in, targets_out, period)
+
+
+def get_period(request):
+    period = request.GET.get('period', '-7d')
+    if period not in ['-1d', '-7d', '-30d', '-1y', '-5y']:
+        return None
+    return period
 
 
 def get_all_ip_prefixes():

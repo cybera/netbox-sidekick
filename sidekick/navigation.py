@@ -31,7 +31,7 @@ menu_items = (
     ),
     PluginMenuItem(
         link='plugins:sidekick:memberbandwidth_index',
-        link_text='Member Bandwidth',
+        link_text='Member Bandwidth Usage Report',
     ),
     PluginMenuItem(
         link='plugins:sidekick:nic_index',

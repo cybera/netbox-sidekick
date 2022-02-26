@@ -3,6 +3,7 @@ import csv
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 
+from dcim.models import Site
 from tenancy.models import Tenant
 
 from sidekick.utils import MEMBER_TYPES
@@ -67,18 +68,6 @@ class Command(BaseCommand):
                     if dry_run or not quiet:
                         self.stdout.write(f"Changing member_type of {name} to {member_type}")
 
-                if 'latitude' not in tenant.cf or tenant.cf['latitude'] != latitude:
-                    changed = True
-                    tenant.cf['latitude'] = latitude
-                    if dry_run or not quiet:
-                        self.stdout.write(f"Changing latitude of {name} to {latitude}")
-
-                if 'longitude' not in tenant.cf or tenant.cf['longitude'] != longitude:
-                    changed = True
-                    tenant.cf['longitude'] = longitude
-                    if dry_run or not quiet:
-                        self.stdout.write(f"Changing latitude of {name} to {longitude}")
-
                 if not dry_run and changed:
                     self.stdout.write(f"Updated Tenant: {name}")
                     tenant.save()
@@ -98,8 +87,48 @@ class Command(BaseCommand):
                     comments=comments,
                 )
                 tenant.cf['member_type'] = member_type
-                tenant.cf['latitude'] = latitude
-                tenant.cf['longitude'] = longitude
                 tenant.save()
 
                 self.stdout.write(f"Created Tenant: {name}")
+
+            # See if there is an existing site.
+            # If there is, compare values and update as needed.
+            # If there isn't, create one.
+            try:
+                changed = False
+                site = Site.objects.get(name=name)
+
+                if site.latitude != latitude:
+                    changed = True
+                    site.latitude = latitude
+                    if dry_run or not quiet:
+                        self.stdout.write(f"Changing latitude of Site {name} to {latitude}")
+
+                if site.longitude != longitude:
+                    changed = True
+                    site.longitude = longitude
+                    if dry_run or not quiet:
+                        self.stdout.write(f"Changing longitude of Site {name} to {longitude}")
+
+                if not dry_run and changed:
+                    self.stdout.write(f"Updated Site: {name}")
+                    site.save()
+
+            except Site.MultipleObjectsReturned:
+                self.stdout.write(f"WARNING: Multiple sites found for {name}. Skipping.")
+                continue
+            except Site.DoesNotExist:
+                if options['dry_run']:
+                    self.stdout.write(f"Would have created Site: {name}")
+                    continue
+
+                site = Site.objects.create(
+                    name=name,
+                    tenant=tenant,
+                    slug=slugify(name),
+                    latitude=latitude,
+                    longitude=longitude,
+                )
+                site.save()
+
+                self.stdout.write(f"Created Site: {name}")

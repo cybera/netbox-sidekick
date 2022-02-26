@@ -102,7 +102,7 @@ class NetworkService(ChangeLoggedModel):
     name = models.CharField(
         max_length=255,
         verbose_name='Name',
-        help_text='A descriptive name for the network service',
+        help_text='A descriptive name for the network service. Example: "Calgary - Primary"',
     )
 
     network_service_type = models.ForeignKey(

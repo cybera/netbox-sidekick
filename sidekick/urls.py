@@ -42,6 +42,9 @@ urlpatterns = [
     # Logical System Details
     path('logical_systems/<slug:slug>/', views.LogicalSystemDetailView.as_view(), name='logicalsystem_detail'),
 
+    # Member Create
+    path('member/create', views.MemberCreateView.as_view(), name='member_create'),
+
     # Member Bandwidth Report Index
     path('member_bandwidth/', views.MemberBandwidthIndexView.as_view(), name='memberbandwidth_index'),
 

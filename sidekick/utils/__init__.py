@@ -49,6 +49,13 @@ MEMBER_TYPES = [
     'Post-Secondary Institution',
 ]
 
+MEMBER_TYPE_CHOICES = [
+    ('Enterprise', 'Enterprise'),
+    ('Government/Not For Profit', 'Government/Not For Profit'),
+    ('K-12 School Districts', 'K-12 School Districts'),
+    ('Post-Secondary Institution', 'Post-Secondary Institution'),
+]
+
 NETMASKS = {
     '0.0.0.0': '0', '128.0.0.0': '1', '192.0.0.0': '2', '224.0.0.0': '3',
     '240.0.0.0': '4', '248.0.0.0': '5', '252.0.0.0': '6', '254.0.0.0': '7',

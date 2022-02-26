@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block title %}Create New Member{% endblock %}
+
+{% block header %}
+<div class="row noprint">
+  <div class="col-sm-12 col-md-12">
+    <ol class="breadcrumb">
+      <li><a href="{% url 'plugins:sidekick:member_create' %}">Create New Member</a></li>
+    </ol>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <strong>Create a New Member</strong>
+      </div>
+
+      <div class="panel-body">
+
+        {% if form.errors %}
+          {% for field in form %}
+            {% for error in field.errors %}
+              <div class="alert alert-danger">
+                <strong>{{ error|escape }}</strong>
+              </div>
+            {% endfor %}
+          {% endfor %}
+        {% endif %}
+
+        <form action="/plugins/sidekick/member/create" method="post">
+          {% csrf_token %}
+          {% for field in form %}
+            <div class="form-group">
+              <label class="col-md-4 control-label">{{ field.label }}</label>
+              <div class="col-md-8">
+                {{ field }}
+                {% if field.help_text %}
+                  <span class="help-block">{{ field.help_text }}</span>
+                {% endif %}
+              </div>
+              <br>
+              <br>
+            </div>
+          {% endfor %}
+          <input type="submit" value="Create">
+        </form>
+      </div>
+  </div>
+</div>
+
+{% endblock %}

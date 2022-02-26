@@ -9,6 +9,10 @@ from .contact import (  # noqa: F401
     ContactIndexView, ContactDetailView,
 )
 
+from .member import (  # noqa: F401
+    MemberCreateView,
+)
+
 from .memberbandwidth import (  # noqa: F401
     MemberBandwidthIndexView,
     MemberBandwidthDataView,

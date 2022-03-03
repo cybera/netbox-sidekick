@@ -163,6 +163,10 @@ class AccountingProfile(ChangeLoggedModel):
         return self.bandwidthprofile_set.filter(
             effective_date__lte=timezone.now()).order_by('-effective_date').first()
 
+    def get_bandwidth_history(self):
+        return self.bandwidthprofile_set.filter(
+            effective_date__lte=timezone.now()).order_by('-effective_date')[1:]
+
 
 # BandwidthProfile represents a bandwidth setting for a member.
 class BandwidthProfile(ChangeLoggedModel):

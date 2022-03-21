@@ -1,12 +1,11 @@
 import json
 import netaddr
+import onepasswordconnectsdk
 import re
 import requests
 import rrdtool
 import time
 import whisper
-
-from django.contrib.auth.models import User
 
 from pysnmp.hlapi import (
     getCmd, nextCmd,
@@ -15,8 +14,6 @@ from pysnmp.hlapi import (
     SnmpEngine,
     UdpTransportTarget,
 )
-
-from secrets.models import UserKey
 
 from sidekick.models import (
     AccountingSource,
@@ -142,30 +139,25 @@ VALID_INTERFACE_NAMES = [
 ]
 
 
-def decrypt_secret(device, name, user, private_key_path):
-    private_key = None
-    with open(private_key_path) as f:
-        private_key = f.read()
+def decrypt_1pw_secret(token_path, host, vault, device, field):
+    token = None
+    with open(token_path) as f:
+        token = f.read().strip()
 
-    try:
-        _user = User.objects.get(username=user)
-    except User.DoesNotExist:
-        raise Exception(f"Unable to find user {user}")
+    client = onepasswordconnectsdk.client.new_client(
+        host, token)
 
-    try:
-        user_key = UserKey.objects.get(user=_user)
-    except UserKey.DoesNotExist:
-        raise Exception(f"Unable to find UserKey for {user}")
+    secret = None
+    item = client.get_item(device, vault)
+    for _v in item.fields:
+        if _v.label == field:
+            secret = _v.value
+            break
 
-    master_key = user_key.get_master_key(private_key)
-    if master_key is None:
-        raise Exception(f"Invalid private key {private_key_path}")
+    if secret is None:
+        raise Exception("Unable to find secret: {field}")
 
-    secret = device.secrets.filter(name=name)
-    if len(secret) == 1:
-        s = secret[0]
-        s.decrypt(master_key)
-        return s.plaintext
+    return secret
 
 
 def snmpget(ipaddress, community, oid):

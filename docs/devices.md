@@ -8,28 +8,23 @@ devices in a way compatible with Sidekick.
 Adding all details about a network device can be tedious. Sidekick attempts to
 help with this by automating some parts.
 
-## NetBox Secrets
+## NetBox Credentials
 
-In order to help with this automation, you'll need to have NetBox configured to
-store Secrets. Documentation about that can be found
-[here](https://netbox.readthedocs.io/en/stable/core-functionality/secrets/).
+In order to help with this automation, you'll need to store device credentials
+in 1Password.
 
-It's best if you create two User Keys. The first User Key is used to
-approve/activate additional keys. This should be considered more of an admin
-action. Store the details about this user's keys in a safe place.
-
-The second User Key should be assigned to a "dummy" user in NetBox called,
-for example, `network`. Create a private/public key pair for this user and
-store it somewhere on the server where NetBox is running (for example,
-`/opt/netbox/.ssh/id_rsa` and `/opt/netbox/.ssh/id_rsa.pub`).
+Currently, Sidekick uses [1Password Connect](https://developer.1password.com/docs/connect)
+to connect to 1Password and retrieve device credentials. You will need
+to have 1Password Connect configured appropriately for this to work.
 
 Once this is configured, add the following to your NetBox configuration file:
 
 ```
 PLUGINS_CONFIG = {
     'sidekick': {
-        'secret_user': 'network',
-        'secret_private_key_path': '/opt/netbox/.ssh/id_rsa',
+      '1pw_connect_host': 'https://example.com:8080',
+      '1pw_connect_token_path': '/opt/netbox/.op/1pwconnect_token',
+      '1pw_connect_readonly_vault': 'network',
     }
 }
 ```
@@ -47,15 +42,10 @@ To add a device, do the following:
    * Set the Device Type.
    * Set the Platform to the Network Operating System of the device.
 
-2. Once this basic information is added, you'll next want to add two Secrets.
-   * In the Device details page, click the "Add secret" button.
-   * Add a Secret of type "SNMPv2 Community" with a name of "snmp" and data
-     of the SNMP community that can be used to connect to the device using SNMP.
-
 ## Configuring a Device
 
-You should now have a device with some basic information and some Secrets. You
-can now use a built-in Sidekick management command that will do the following:
+You should now have a device with some basic information. You can now use a
+built-in Sidekick management command that will do the following:
 
 * Create an interface called "mgmt" and assign it an IP address used to connect
   to the device via SNMP.
@@ -90,8 +80,7 @@ device is "up", enabled, and various counters of the Interface that can be
 used for metrics.
 
 Importing this information is done via SNMP and requires a device to have
-some key "Secrets" configured. See the above section on Devices for how to
-do this.
+credentials configured. See the above section on Devices for how to do this.
 
 Once these secrets have been added to a device, you can run a command called
 `update_interfaces` to import the operational data about an interface.

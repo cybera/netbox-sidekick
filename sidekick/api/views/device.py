@@ -11,7 +11,7 @@ from napalm import get_network_driver
 
 from netbox.api.authentication import TokenAuthentication
 
-from sidekick.utils import decrypt_secret
+from sidekick.utils import decrypt_1pw_secret
 
 
 class DeviceCheckAccessView(APIView):
@@ -38,26 +38,23 @@ class DeviceCheckAccessView(APIView):
             raise Http404
 
         # Determine the NAPALM driver to use
-        napalm_driver = None
-        if device.platform.name == 'Juniper Junos':
-            napalm_driver = 'junos'
-        if device.platform.name == 'Arista EOS':
-            napalm_driver = 'eos'
+        napalm_driver = device.platform.name
 
         # Get the information to decrypt the device's credentials.
-        secret_username = settings.PLUGINS_CONFIG['sidekick'].get('secret_user', None)
-        private_key_path = settings.PLUGINS_CONFIG['sidekick'].get('secret_private_key_path', None)
+        onepw_host = settings.PLUGINS_CONFIG['sidekick'].get('1pw_connect_host', None)
+        onepw_token_path = settings.PLUGINS_CONFIG['sidekick'].get('1pw_connect_token_path', None)
+        onepw_vault = settings.PLUGINS_CONFIG['sidekick'].get('1pw_connect_readonly_vault', None)
 
         # Ensure we have everything to connect to the device.
-        if napalm_driver is None or secret_username is None or private_key_path is None:
+        if napalm_driver is None or onepw_host is None or onepw_token_path is None or onepw_vault is None:
             raise Http404
 
         _mgmt_ip = "%s" % (mgmt_ip.address.ip)
 
         # Attempt to decrypt the device's credentials.
         try:
-            username = decrypt_secret(device, 'username', secret_username, private_key_path)
-            password = decrypt_secret(device, 'password', secret_username, private_key_path)
+            username = decrypt_1pw_secret(onepw_token_path, onepw_host, onepw_vault, f"{device}", 'username')
+            password = decrypt_1pw_secret(onepw_token_path, onepw_host, onepw_vault, f"{device}", 'password')
         except Exception:
             raise Http404
 

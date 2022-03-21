@@ -13,7 +13,7 @@ from sidekick.models import (
 )
 
 from sidekick.utils import (
-    decrypt_secret,
+    decrypt_1pw_secret,
     snmpwalk_bulk_accounting,
 )
 
@@ -45,20 +45,23 @@ class Command(BaseCommand):
 
         # Determine the information needed to connect to the device.
         mgmt_ip = device.primary_ip4
-        secret_username = settings.PLUGINS_CONFIG['sidekick'].get('secret_user', None)
-        private_key_path = settings.PLUGINS_CONFIG['sidekick'].get('secret_private_key_path', None)
+        onepw_host = settings.PLUGINS_CONFIG['sidekick'].get('1pw_connect_host', None)
+        onepw_token_path = settings.PLUGINS_CONFIG['sidekick'].get('1pw_connect_token_path', None)
+        onepw_vault = settings.PLUGINS_CONFIG['sidekick'].get('1pw_connect_readonly_vault', None)
 
         # If all of the connection information was found,
         # attempt to decrypt the connection credentials,
         # connect to the device, and inventory the interfaces.
         if mgmt_ip is not None and \
-           secret_username is not None and \
-           private_key_path is not None:
+           onepw_host is not None and \
+           onepw_token_path is not None and \
+           onepw_vault is not None:
 
             _mgmt_ip = "%s" % (mgmt_ip.address.ip)
 
             try:
-                snmp = decrypt_secret(device, 'snmp', secret_username, private_key_path)
+                snmp = decrypt_1pw_secret(onepw_token_path, onepw_host, onepw_vault, f"{device}", 'snmp')
+
             except Exception as e:
                 self.stdout.write(f"Unable to decrypt snmp secret: {e}")
 

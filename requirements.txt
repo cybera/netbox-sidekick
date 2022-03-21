@@ -3,6 +3,7 @@ backports-datetime-fromisoformat
 django-extensions
 flake8
 graphyte
+git+https://github.com/1Password/connect-sdk-python
 pysnmp
 python-dateutil
 rrdtool

@@ -24,7 +24,7 @@ There are two ways to import Accounting Sources:
 It's best to have the import script run at a regular interval, similar to the
 `update_interfaces` script.
 
-To run this script, you need to have NetBox and Sidekick configured with "Secrets"
+To run this script, you need to have NetBox and Sidekick configured with credentials
 as described in the [Devices](./devices.md) doc. Once configured, you can run the
 script by doing the following:
 

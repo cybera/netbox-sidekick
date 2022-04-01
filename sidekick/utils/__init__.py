@@ -16,7 +16,7 @@ from pysnmp.hlapi import (
 )
 
 from sidekick.models import (
-    AccountingSource,
+    AccountingProfile,
     NetworkService,
 )
 
@@ -539,8 +539,8 @@ def get_graphite_nic_graph(nic, graphite_render_host=None, period="-1Y"):
     graph_data['title'] = "Last Year - GB"
     metric_in = f"{carbon_name}.in_octets"
     metric_out = f"{carbon_name}.out_octets"
-    target_in = f"scale(keepLastValue(removeBelowValue(removeAboveValue({metric_in}, 12500000000), 0)), 8)"
-    target_out = f"scale(keepLastValue(removeBelowValue(removeAboveValue({metric_out}, 12500000000), 0)), -8)"
+    target_in = f"scale(keepLastValue(removeBelowValue(removeAboveValue({metric_in}, 125000000000), 0)), 8)"
+    target_out = f"scale(keepLastValue(removeBelowValue(removeAboveValue({metric_out}, 125000000000), 0)), -8)"
     query = f"{query_base}&from={period}&target={target_in}&target={target_out}"
 
     r = requests.get(query)
@@ -572,8 +572,8 @@ def get_graphite_service_graph(service, graphite_render_host=None, period="-1Y")
 
     graph_data = {}
     graph_data['title'] = "Last Year - GB"
-    target_in = f"scale(keepLastValue(removeBelowValue(removeAboveValue({service_name}.*.*.in_octets, 12500000000), 0)), 8)"
-    target_out = f"scale(keepLastValue(removeBelowValue(removeAboveValue({service_name}.*.*.out_octets, 12500000000), 0)), -8)"
+    target_in = f"scale(keepLastValue(removeBelowValue(removeAboveValue({service_name}.*.*.in_octets, 125000000000), 0)), 8)"
+    target_out = f"scale(keepLastValue(removeBelowValue(removeAboveValue({service_name}.*.*.out_octets, 125000000000), 0)), -8)"
     # target = f'cactiStyle(alias(scale(keepLastValue({metric}),8),"{inout.title()}"),"si","gb")'
     query = f"{query_base}&from={period}&target={target_in}&target={target_out}"
 
@@ -601,14 +601,20 @@ def get_graphite_data(graphite_render_host, targets_in, targets_out, period="-1Y
     if graphite_render_host is None:
         return None
 
+    targets_in = ','.join(targets_in)
+    targets_out = ','.join(targets_out)
+
     query = f"{graphite_render_host}/render?format=json&from={period}"
-    query = f"{query}&target=transformNull(scale(sum({','.join(targets_in)}), 8))"
-    query = f"{query}&target=transformNull(scale(sum({','.join(targets_out)}), -8))"
+    query = f"{query}&target=transformNull(scale(keepLastValue(removeBelowValue(removeAboveValue(sum({targets_in}), 125000000000), 0)), 8))"
+    query = f"{query}&target=transformNull(scale(keepLastValue(removeBelowValue(removeAboveValue(sum({targets_out}), 125000000000), 0)), -8))"
 
     r = requests.get(query)
     results = json.loads(r.content.decode('utf-8'))
     if len(results) == 0:
-        return None
+        results = [
+            {'datapoints': [[0, 0]]},
+            {'datapoints': [[0, 0]]},
+        ]
 
     graph_data = {}
     data = [[], [], []]
@@ -621,7 +627,7 @@ def get_graphite_data(graphite_render_host, targets_in, targets_out, period="-1Y
         data[2].append(d[0])
 
     graph_data['data'] = data
-    # graph_data['query'] = query
+    graph_data['query'] = query
 
     return graph_data
 
@@ -633,10 +639,9 @@ def get_graphite_service_data(graphite_render_host, services, period="-1Y"):
     targets_in = []
     targets_out = []
     for s in services:
-        service = NetworkService.objects.get(id=s)
-        name = service.graphite_service_name()
-        targets_in.append(f"keepLastValue(removeBelowValue(removeAboveValue({name}.*.*.in_octets, 12500000000), 0))")
-        targets_out.append(f"keepLastValue(removeBelowValue(removeAboveValue({name}.*.*.out_octets, 12500000000), 0))")
+        name = s.graphite_service_name()
+        targets_in.append(f"{name}.*.*.in_octets")
+        targets_out.append(f"{name}.*.*.out_octets")
 
     return get_graphite_data(graphite_render_host, targets_in, targets_out, period)
 
@@ -647,11 +652,10 @@ def get_graphite_accounting_data(graphite_render_host, accounting, period="-1Y")
 
     targets_in = []
     targets_out = []
-    for a in accounting:
-        acct = AccountingSource.objects.get(id=a)
+    for acct in accounting:
         name = acct.graphite_full_path_name()
-        targets_in.append(f"keepLastValue(removeBelowValue(removeAboveValue({name}.in_octets, 12500000000), 0))")
-        targets_out.append(f"keepLastValue(removeBelowValue(removeAboveValue({name}.out_octets, 12500000000), 0))")
+        targets_in.append(f"{name}.in_octets")
+        targets_out.append(f"{name}.out_octets")
 
     return get_graphite_data(graphite_render_host, targets_in, targets_out, period)
 
@@ -662,31 +666,23 @@ def get_graphite_remaining_data(graphite_render_host, services, period="-1Y"):
 
     targets_in = []
     targets_out = []
-    for s in services:
-        service = NetworkService.objects.get(id=s)
+    for service in services:
         name = service.graphite_service_name()
-        if service.accounting_profile:
+        if service.accounting_profile and len(service.accounting_profile.accounting_sources.all()) > 0:
             acct_sources_in = []
             acct_sources_out = []
             for a in service.accounting_profile.accounting_sources.all():
                 acct_name = a.graphite_full_path_name()
-                acct_sources_in.append(f"keepLastValue({acct_name}.in_octets)")
-                acct_sources_out.append(f"keepLastValue({acct_name}.out_octets)")
+                acct_sources_in.append(f"{acct_name}.in_octets")
+                acct_sources_out.append(f"{acct_name}.out_octets")
 
-            targets_in.append(f"removeBelowValue(removeAboveValue(diffSeries(keepLastValue({name}.*.*.in_octets), {','.join(acct_sources_in)}), 12500000000), 0)")
-            targets_out.append(f"removeBelowValue(removeAboveValue(diffSeries(keepLastValue({name}.*.*.out_octets), {','.join(acct_sources_out)}), 12500000000), 0)")
+            targets_in.append(f"diffSeries({name}.*.*.in_octets, {','.join(acct_sources_in)})")
+            targets_out.append(f"diffSeries({name}.*.*.out_octets, {','.join(acct_sources_out)})")
         else:
-            targets_in.append(f"keepLastValue({name}.*.*.in_octets)")
-            targets_out.append(f"keepLastValue({name}.*.*.out_octets)")
+            targets_in.append(f"{name}.*.*.in_octets")
+            targets_out.append(f"{name}.*.*.out_octets")
 
     return get_graphite_data(graphite_render_host, targets_in, targets_out, period)
-
-
-def get_period(request):
-    period = request.GET.get('period', '-7d')
-    if period not in ['-1d', '-7d', '-30d', '-1y', '-5y']:
-        return None
-    return period
 
 
 def get_all_ip_prefixes():
@@ -703,3 +699,27 @@ def get_all_ip_prefixes():
                 prefixes[member_id]['prefixes'].append(prefix)
         prefixes[member_id]['prefixes'].sort()
     return prefixes
+
+
+def get_services(member):
+    services = []
+    for s in NetworkService.objects.filter(member__id=member.id):
+        services.append(s)
+
+    return services
+
+
+def get_accounting_sources(member):
+    accounting_sources = []
+    for a in AccountingProfile.objects.filter(member__id=member.id):
+        for acct_source in a.accounting_sources.all():
+            accounting_sources.append(acct_source)
+
+    return accounting_sources
+
+
+def get_period(request):
+    period = request.GET.get('period', '-7d')
+    if period not in ['-1d', '-7d', '-30d', '-1y', '-5y']:
+        return None
+    return period

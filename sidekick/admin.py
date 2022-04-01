@@ -135,12 +135,14 @@ class NetworkServiceAdmin(admin.ModelAdmin):
 
 @admin.register(NetworkServiceGroup)
 class NetworkServiceGroupAdmin(admin.ModelAdmin):
+    prepopulated_fields = {"slug": ("name",)}
+
     filter_horizontal = ('network_services',)
 
     fieldsets = (
         (None, {
             'fields': (
-                'name', 'description', 'network_services',),
+                'name', 'slug', 'description', 'network_services',),
         }),
     )
 

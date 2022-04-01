@@ -188,7 +188,11 @@ class NetworkService(ChangeLoggedModel):
         verbose_name_plural = 'Network Services'
 
     def __str__(self):
-        return f"{self.member.name}: {self.name}"
+        v = f"{self.member.name}: {self.name}"
+        if not self.active:
+            v = f"{v} (inactive)"
+
+        return v
 
     def get_absolute_url(self):
         return reverse('plugins:sidekick:networkservice_detail', args=[self.pk])

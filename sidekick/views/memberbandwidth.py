@@ -9,32 +9,12 @@ from sidekick.tables import (
 )
 
 from sidekick.models import (
-    AccountingProfile,
     NetworkService,
 )
 
 from sidekick import utils
 
 from tenancy.models import Tenant
-
-
-def get_services(member):
-    services = []
-    accounting_sources = []
-    for s in NetworkService.objects.filter(member__id=member.id):
-        services.append(s.id)
-    for a in AccountingProfile.objects.filter(member__id=member.id):
-        for acct_source in a.accounting_sources.all():
-            accounting_sources.append(acct_source.id)
-
-    return (services, accounting_sources)
-
-
-def get_period(request):
-    period = request.GET.get('period', '-7d')
-    if period not in ['-1d', '-7d', '-30d', '-1y', '-5y']:
-        return None
-    return period
 
 
 class MemberBandwidthIndexView(PermissionRequiredMixin, SingleTableView):
@@ -57,7 +37,7 @@ class MemberBandwidthDetailView(PermissionRequiredMixin, SingleTableView):
         member = Tenant.objects.get(id=self.kwargs['pk'])
         context['member'] = member
 
-        (services, accounting_sources) = get_services(member)
+        accounting_sources = utils.get_accounting_sources(member)
         if len(accounting_sources) > 0:
             context['accounting'] = True
 
@@ -74,21 +54,32 @@ class MemberBandwidthDataView(PermissionRequiredMixin, View):
             return JsonResponse({})
 
         member = Tenant.objects.get(pk=pk)
-        (services, accounting_sources) = get_services(member)
-        period = get_period(request)
+        services = utils.get_services(member)
+        accounting_sources = utils.get_accounting_sources(member)
+        period = utils.get_period(request)
         service_data = utils.get_graphite_service_data(graphite_render_host, services, period)
         accounting_data = utils.get_graphite_accounting_data(graphite_render_host, accounting_sources, period)
         remaining_data = utils.get_graphite_remaining_data(graphite_render_host, services, period)
 
         graph_data = {
             'service_data': service_data['data'],
-            'remaining_data': remaining_data['data'],
+            'remaining_data': [service_data['data'][0], [0], [0]],
             'accounting_data': [service_data['data'][0], [0], [0]],
+        }
+
+        queries = {
+            'service_data': service_data['query'],
+            'remaining_data': remaining_data['query'],
+            'accounting_data': accounting_data['query'],
         }
 
         if accounting_data is not None and 'data' in accounting_data:
             graph_data['accounting_data'] = accounting_data['data']
 
+        if remaining_data is not None and 'data' in remaining_data:
+            graph_data['remaining_data'] = remaining_data['data']
+
         return JsonResponse({
             'graph_data': graph_data,
+            'queries': queries,
         })

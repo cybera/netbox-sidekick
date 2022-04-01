@@ -66,6 +66,9 @@ urlpatterns = [
     # Network Service Details
     path('network_services/<int:pk>/', views.NetworkServiceDetailView.as_view(), name='networkservice_detail'),
 
+    # Network Service Graphite data
+    path('network_service/graphite/<int:pk>', views.NetworkServiceGraphiteDataView.as_view(), name='network_service_graphite_data'),
+
     # Network Service Device Index
     path('network_service_devices/', views.NetworkServiceIndexView.as_view(), name='networkservicedevice_index'),
 
@@ -78,8 +81,8 @@ urlpatterns = [
     # Network Service Group Details
     path('network_service_groups/<int:pk>/', views.NetworkServiceGroupDetailView.as_view(), name='networkservicegroup_detail'),
 
-    # Network Service Graphite data
-    path('network_service/graphite/<int:pk>', views.NetworkServiceGraphiteDataView.as_view(), name='network_service_graphite_data'),
+    # Network Service Group Graphite Data
+    path('network_service_groups/graphite/<int:pk>', views.NetworkServiceGroupGraphiteDataView.as_view(), name='networkservicegroup_data'),
 
     # NIC Index
     path('nics/', views.NICIndexView.as_view(), name='nic_index'),

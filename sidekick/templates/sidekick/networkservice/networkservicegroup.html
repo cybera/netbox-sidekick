@@ -4,6 +4,8 @@
 {% block title %}{{ logical_system }}{% endblock %}
 
 {% block header %}
+<script src="https://leeoniya.github.io/uPlot/dist/uPlot.iife.min.js"></script>
+<link rel="stylesheet" href="https://leeoniya.github.io/uPlot/dist/uPlot.min.css" />
 <div class="row noprint">
   <div class="col-sm-8 col-md-9">
     <ol class="breadcrumb">
@@ -30,28 +32,194 @@
 
 {% block content %}
 <div class="row">
-  <div class="col-md-6">
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <strong>Network Service Group</strong>
+  <div class="col-md-12">
+    <a href="#" id="last_day">Last Day</a> |
+    <a href="#" id="last_week">Last Week</a> |
+    <a href="#" id="last_month">Last Month</a> |
+    <a href="#" id="last_year">Last Year</a> |
+    <a href="#" id="last_five">Last Five Years</a>
+    <hr>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card mb-4 rounded-2">
+      <div class="card-header py-2">
+        <h6>Total Traffic</h6>
       </div>
-      <table class="table table-hover panel-body attr-table">
-        <tr>
-          <td>Name</td>
-          <td>{{ object.name }}</td>
-        </tr>
-        <tr>
-          <td>Description</td>
-          <td>{{ object.description }}</td>
-        </tr>
-      </table>
+      <div class="card-body">
+        <div id="service_graph"></div>
+      </div>
     </div>
   </div>
 
-  <div class="col-md-6">
+  <div class="col-md-4">
+    <div class="card mb-4 rounded-2">
+      <div class="card-header py-2">
+        <h6>Total Peering and R&E</h6>
+      </div>
+      <div class="card-body">
+        <div id="remaining_graph"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card mb-4 rounded-2">
+      <div class="card-header py-2">
+        <h6>Total Transit</h6>
+      </div>
+      <div class="card-body">
+        <div id="accounting_graph"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-12">
+    <br><br>
     <div class="panel panel-default">
       {% render_table table %}
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block javascript %}
+<script type="text/javascript">
+  function bits(bits) {
+    if (bits == 0) return 0;
+    if (bits < 0) bits *= -1;
+    var s = ['bits', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb'];
+    var e = Math.floor(Math.log(bits)/Math.log(1000));
+    var value = ((bits/Math.pow(1000, Math.floor(e))).toFixed(2));
+    e = (e<0) ? (-e) : e;
+    value += ' ' + s[e];
+    return value;
+  }
+
+  function getSize(div) {
+    var v = '#' + div;
+    return {
+      height: 300,
+      width: $(v).width(),
+    }
+  }
+
+  function clearGraphs() {
+    $("#service_graph").empty();
+    $("#accounting_graph").empty();
+    $("#remaining_graph").empty();
+  }
+
+  function renderGraphs(url) {
+    return $.ajax({
+      url: url,
+      dataType: 'json',
+      success: function(json) {
+        let size = getSize('service_graph');
+        let mooSync = uPlot.sync("moo");
+
+        let service_data = json['graph_data']['service_data'];
+        let accounting_data = json['graph_data']['accounting_data'];
+        let remaining_data = json['graph_data']['remaining_data'];
+        let all_data = [].concat(service_data[1], service_data[2], accounting_data[1], accounting_data[2], remaining_data[1], remaining_data[2]);
+
+        let max = Math.round(Math.max(...all_data));
+        let min = Math.round(Math.min(...all_data));
+
+        const matchSyncKeys = (own, ext) => own == ext;
+        const cursorOpts = {
+            lock: true,
+            focus: {
+                prox: 16,
+            },
+            sync: {
+                key: mooSync.key,
+                setSeries: true,
+                match: [matchSyncKeys, matchSyncKeys],
+            },
+        };
+
+        let opts = {
+          height: size.height,
+          width: size.width,
+          cursor: cursorOpts,
+          axes: [
+            {},
+            {
+              scale: "bits",
+              size: 95,
+              values: (self, ticks) => ticks.map(rawValue => bits(rawValue)),
+            },
+          ],
+          series: [
+            {},
+            {
+              label: "In",
+              stroke: "#2E7D32",
+              fill: "#66BB6A",
+              scale: "bits",
+              value: (self, rawValue) => bits(rawValue),
+            },
+            {
+              label: "Out",
+              stroke: "#1565C0",
+              fill: "#42A5F5",
+              scale: "bits",
+              value: (self, rawValue) => bits(rawValue * -1),
+            },
+          ],
+          scales: {
+            "bits": {
+              auto: false,
+              range: [min, max],
+            },
+          },
+        };
+
+        let service_graph = new uPlot(opts, service_data, document.getElementById('service_graph'));
+        window.addEventListener("resize", e => {
+          service_graph.setSize(getSize('service_graph'));
+        });
+
+        let accounting_graph = new uPlot(opts, accounting_data, document.getElementById('accounting_graph'));
+        window.addEventListener("resize", e => {
+          accounting_graph.setSize(getSize('accounting_graph'));
+        });
+
+        let remaining_graph = new uPlot(opts, remaining_data, document.getElementById('remaining_graph'));
+        window.addEventListener("resize", e => {
+          remaining_graph.setSize(getSize('remaining_graph'));
+        });
+      }
+    });
+  }
+
+  $(document).ready(renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}"));
+
+  $("#last_day").click(function() {
+    clearGraphs();
+    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-1d");
+  });
+
+  $("#last_week").click(function() {
+    clearGraphs();
+    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-7d");
+  });
+
+  $("#last_month").click(function() {
+    clearGraphs();
+    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-30d");
+  });
+
+  $("#last_year").click(function() {
+    clearGraphs();
+    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-1y");
+  });
+
+  $("#last_five").click(function() {
+    clearGraphs();
+    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-5y");
+  });
+
+</script>
 {% endblock %}

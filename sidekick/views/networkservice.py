@@ -29,8 +29,14 @@ from sidekick.models import (
 )
 
 from sidekick.utils import (
+    get_accounting_sources,
     get_all_ip_prefixes,
+    get_graphite_accounting_data,
+    get_graphite_remaining_data,
+    get_graphite_service_data,
     get_graphite_service_graph,
+    get_period,
+    get_services,
 )
 
 
@@ -187,7 +193,7 @@ class NetworkServiceGroupDetailView(PermissionRequiredMixin, DetailView):
         return context
 
 
-# Service graphite data
+# Network Service graphite data
 class NetworkServiceGraphiteDataView(PermissionRequiredMixin, View):
     permission_required = 'sidekick.view_service'
     model = NetworkService
@@ -201,4 +207,54 @@ class NetworkServiceGraphiteDataView(PermissionRequiredMixin, View):
         graph_data = get_graphite_service_graph(ns, graphite_render_host)
         return JsonResponse({
             'graph_data': graph_data,
+        })
+
+
+# Network Service Group graphite data
+class NetworkServiceGroupGraphiteDataView(PermissionRequiredMixin, View):
+    permission_required = 'sidekick.view_service'
+    model = NetworkServiceGroup
+
+    def get(self, request, pk):
+        graphite_render_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_render_host', None)
+        if graphite_render_host is None:
+            return JsonResponse({})
+
+        service_group = NetworkServiceGroup.objects.get(pk=self.kwargs['pk'])
+        all_members = []
+        all_services = []
+        all_accounting_sources = []
+        for network_service in service_group.network_services.all():
+            member = network_service.member
+            if member.name not in all_members:
+                all_members.append(member.name)
+                all_services.extend(get_services(member))
+                all_accounting_sources.extend(get_accounting_sources(member))
+
+        period = get_period(request)
+        service_data = get_graphite_service_data(graphite_render_host, all_services, period)
+        accounting_data = get_graphite_accounting_data(graphite_render_host, all_accounting_sources, period)
+        remaining_data = get_graphite_remaining_data(graphite_render_host, all_services, period)
+
+        graph_data = {
+            'service_data': service_data['data'],
+            'remaining_data': [service_data['data'][0], [0], [0]],
+            'accounting_data': [service_data['data'][0], [0], [0]],
+        }
+
+        queries = {
+            'service_data': service_data['query'],
+            'remaining_data': remaining_data['query'],
+            'accounting_data': accounting_data['query'],
+        }
+
+        if accounting_data is not None and 'data' in accounting_data:
+            graph_data['accounting_data'] = accounting_data['data']
+
+        if remaining_data is not None and 'data' in remaining_data:
+            graph_data['remaining_data'] = remaining_data['data']
+
+        return JsonResponse({
+            'graph_data': graph_data,
+            'queries': queries,
         })

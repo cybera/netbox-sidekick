@@ -1,6 +1,8 @@
 import django_filters
+
 import netaddr
 
+from django.core.validators import EMPTY_VALUES
 from django.db.models import Q
 
 from sidekick.models import (
@@ -9,6 +11,16 @@ from sidekick.models import (
     NetworkService,
     NetworkServiceGroup,
 )
+
+
+class EmptyStringFilter(django_filters.BooleanFilter):
+    def filter(self, qs, value):
+        if value in EMPTY_VALUES:
+            return qs
+
+        exclude = self.exclude ^ (value is False)
+        method = qs.exclude if exclude else qs.filter
+        return method(**{self.field_name: True})
 
 
 class LogicalSystemFilterSet(django_filters.FilterSet):
@@ -77,6 +89,8 @@ class NetworkServiceFilterSet(django_filters.FilterSet):
         label='IP Address',
     )
 
+    active = EmptyStringFilter(field_name='active')
+
     class Meta:
         model = NetworkService
         fields = ['member', 'member_site', 'network_service_type', 'ip_address', 'active']
@@ -94,6 +108,7 @@ class NetworkServiceFilterSet(django_filters.FilterSet):
             {'class': 'netbox-select2-static form-control'})
         self.filters['network_service_type'].field.widget.attrs.update(
             {'class': 'netbox-select2-static form-control'})
+        self.form.initial['active'] = True
 
     def search(self, queryset, name, value):
         if not value.strip():
@@ -134,6 +149,9 @@ class NetworkServiceFilterSet(django_filters.FilterSet):
     def qs(self):
         parent = super().qs
         active = self.request.GET.get('active', 'true')
+        if active.lower() == 'unknown':
+            return parent.filter()
+
         if active.lower() == 'false':
             active = False
         else:

@@ -26,6 +26,7 @@ from .networkservice import (  # noqa: F401
     NetworkServiceIndexView, NetworkServiceDetailView,
     NetworkServiceGraphiteDataView,
     NetworkServiceGroupIndexView, NetworkServiceGroupDetailView,
+    NetworkServiceGroupGraphiteDataView,
     RoutingTypeIndexView, RoutingTypeDetailView,
 )
 

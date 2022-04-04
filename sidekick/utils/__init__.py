@@ -605,8 +605,8 @@ def get_graphite_data(graphite_render_host, targets_in, targets_out, period="-1Y
     targets_out = ','.join(targets_out)
 
     query = f"{graphite_render_host}/render?format=json&from={period}"
-    query = f"{query}&target=transformNull(scale(keepLastValue(removeBelowValue(removeAboveValue(sum({targets_in}), 125000000000), 0)), 8))"
-    query = f"{query}&target=transformNull(scale(keepLastValue(removeBelowValue(removeAboveValue(sum({targets_out}), 125000000000), 0)), -8))"
+    query = f"{query}&target=transformNull(scale(keepLastValue(removeBelowValue(sum({targets_in}), 0)), 8))"
+    query = f"{query}&target=transformNull(scale(keepLastValue(removeBelowValue(sum({targets_out}), 0)), -8))"
 
     r = requests.get(query)
     results = json.loads(r.content.decode('utf-8'))
@@ -640,8 +640,8 @@ def get_graphite_service_data(graphite_render_host, services, period="-1Y"):
     targets_out = []
     for s in services:
         name = s.graphite_service_name()
-        targets_in.append(f"{name}.*.*.in_octets")
-        targets_out.append(f"{name}.*.*.out_octets")
+        targets_in.append(f"removeAboveValue({name}.*.*.in_octets, 125000000000)")
+        targets_out.append(f"removeAboveValue({name}.*.*.out_octets, 125000000000)")
 
     return get_graphite_data(graphite_render_host, targets_in, targets_out, period)
 
@@ -654,8 +654,8 @@ def get_graphite_accounting_data(graphite_render_host, accounting, period="-1Y")
     targets_out = []
     for acct in accounting:
         name = acct.graphite_full_path_name()
-        targets_in.append(f"{name}.in_octets")
-        targets_out.append(f"{name}.out_octets")
+        targets_in.append(f"removeAboveValue({name}.in_octets, 125000000000)")
+        targets_out.append(f"removeAboveValue({name}.out_octets, 125000000000)")
 
     return get_graphite_data(graphite_render_host, targets_in, targets_out, period)
 
@@ -676,11 +676,11 @@ def get_graphite_remaining_data(graphite_render_host, services, period="-1Y"):
                 acct_sources_in.append(f"{acct_name}.in_octets")
                 acct_sources_out.append(f"{acct_name}.out_octets")
 
-            targets_in.append(f"diffSeries({name}.*.*.in_octets, {','.join(acct_sources_in)})")
-            targets_out.append(f"diffSeries({name}.*.*.out_octets, {','.join(acct_sources_out)})")
+            targets_in.append(f"removeAboveValue(diffSeries({name}.*.*.in_octets, {','.join(acct_sources_in)}), 125000000000)")
+            targets_out.append(f"removeAboveValue(diffSeries({name}.*.*.out_octets, {','.join(acct_sources_out)}), 125000000000)")
         else:
-            targets_in.append(f"{name}.*.*.in_octets")
-            targets_out.append(f"{name}.*.*.out_octets")
+            targets_in.append(f"removeAboveValue({name}.*.*.in_octets, 125000000000)")
+            targets_out.append(f"removeAboveValue({name}.*.*.out_octets, 125000000000)")
 
     return get_graphite_data(graphite_render_host, targets_in, targets_out, period)
 

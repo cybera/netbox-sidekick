@@ -1,12 +1,10 @@
 from .accounting import (  # noqa: F401
     AccountingProfileIndexView, AccountingProfileDetailView,
+    AccountingProfileEditView, AccountingProfileDeleteView,
     AccountingSourceIndexView, AccountingSourceDetailView,
+    AccountingSourceEditView, AccountingSourceDeleteView,
     BandwidthProfileIndexView, BandwidthProfileDetailView,
-)
-
-from .contact import (  # noqa: F401
-    ContactTypeIndexView, ContactTypeDetailView,
-    ContactIndexView, ContactDetailView,
+    BandwidthProfileEditView, BandwidthProfileDeleteView,
 )
 
 from .member import (  # noqa: F401
@@ -22,15 +20,21 @@ from .memberbandwidth import (  # noqa: F401
 from .networkservice import (  # noqa: F401
     IPPrefixIndexView,
     LogicalSystemIndexView, LogicalSystemDetailView,
+    LogicalSystemEditView, LogicalSystemDeleteView,
     NetworkServiceTypeIndexView, NetworkServiceTypeDetailView,
+    NetworkServiceTypeEditView, NetworkServiceTypeDeleteView,
     NetworkServiceIndexView, NetworkServiceDetailView,
+    NetworkServiceEditView, NetworkServiceDeleteView,
     NetworkServiceGraphiteDataView,
     NetworkServiceGroupIndexView, NetworkServiceGroupDetailView,
+    NetworkServiceGroupEditView, NetworkServiceGroupDeleteView,
     NetworkServiceGroupGraphiteDataView,
     RoutingTypeIndexView, RoutingTypeDetailView,
+    RoutingTypeEditView, RoutingTypeDeleteView,
 )
 
 from .nic import (  # noqa: F401
     NICIndexView, NICDetailView,
+    NICEditView, NICDeleteView,
     NICGraphiteDataView,
 )

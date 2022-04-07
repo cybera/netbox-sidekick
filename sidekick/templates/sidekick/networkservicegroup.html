@@ -1,81 +1,96 @@
-{% extends 'base/layout.html' %}
+{% extends 'generic/object.html' %}
+{% load helpers %}
+{% load plugins %}
 {% load render_table from django_tables2 %}
 
-{% block title %}Member Bandwidth Report for {{ member.name }}{% endblock %}
-
 {% block header %}
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 <script src="https://leeoniya.github.io/uPlot/dist/uPlot.iife.min.js"></script>
 <link rel="stylesheet" href="https://leeoniya.github.io/uPlot/dist/uPlot.min.css" />
-
-<div class="row noprint">
-  <div class="col-sm-8 col-md-9">
-    <ol class="breadcrumb">
-      <li><a href="{% url 'plugins:sidekick:memberbandwidth_index' %}">Member Bandwidth Report</a></li>
-      <li>{{ member.name }}</li>
-    </ol>
-  </div>
-  <div class="col-sm-4 col-md-3">
-    <form action="{% url 'plugins:sidekick:memberbandwidth_index' %}" method="get">
-      <div class="input-group">
-        <input type="text" name="q" class="form-control" />
-        <span class="input-group-btn">
-          <button type="submit" class="btn btn-primary">
-            <span class="fa fa-search" aria-hidden="true"></span>
-          </button>
-        </span>
-      </div>
-    </form>
-  </div>
-</div>
-<h1>Bandwidth Report for {{ member.name }}</h1>
-{% include 'sidekick/include/created_updated.html' with obj=member %}
-
 {% endblock %}
 
+{% block breadcrumbs %}
+  {{ block.super }}
+  {% if object.group %}
+    <li class="breadcrumb-item"><a href="{% url 'tenancy:contact_list' %}?group_id={{ object.group.pk }}">{{ object.group }}</a></li>
+  {% endif %}
+{% endblock breadcrumbs %}
+
 {% block content %}
-<div class="row">
-  <div class="col-md-12">
-    <a href="#" id="last_day">Last Day</a> |
-    <a href="#" id="last_week">Last Week</a> |
-    <a href="#" id="last_month">Last Month</a> |
-    <a href="#" id="last_year">Last Year</a> |
-    <a href="#" id="last_five">Last Five Years</a>
-    <hr>
-  </div>
-
-  <div class="col-md-4">
-    <div class="card mb-4 rounded-2">
-      <div class="card-header py-2">
-        <h6>Total Traffic</h6>
-      </div>
-      <div class="card-body">
-        <div id="service_graph"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-4">
-    <div class="card mb-4 rounded-2">
-      <div class="card-header py-2">
-        <h6>Total Peering and R&E</h6>
-      </div>
-      <div class="card-body">
-        <div id="remaining_graph"></div>
+  <div class="row">
+    <div class="col col-md-12">
+      <div class="card">
+        <h5 class="card-header">Network Service Group</h5>
+        <div class="card-body">
+          <table class="table table-hover attr-table">
+            <tr>
+              <td>Name</td>
+              <td>{{ object.name }}</td>
+            </tr>
+            <tr>
+              <td>Description</td>
+              <td>{{ object.description }}</td>
+            </tr>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="col-md-4">
-    <div class="card mb-4 rounded-2">
-      <div class="card-header py-2">
-        <h6>Total Transit</h6>
+  <div class="row">
+    <div class="col-md-12">
+      <a href="#" id="last_day">Last Day</a> |
+      <a href="#" id="last_week">Last Week</a> |
+      <a href="#" id="last_month">Last Month</a> |
+      <a href="#" id="last_year">Last Year</a> |
+      <a href="#" id="last_five">Last Five Years</a>
+      <hr>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card mb-4 rounded-2">
+        <div class="card-header py-2">
+          <h6>Total Traffic</h6>
+        </div>
+        <div class="card-body">
+          <div id="service_graph"></div>
+        </div>
       </div>
-      <div class="card-body">
-        <div id="accounting_graph"></div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card mb-4 rounded-2">
+        <div class="card-header py-2">
+          <h6>Total Peering and R&E</h6>
+        </div>
+        <div class="card-body">
+          <div id="remaining_graph"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card mb-4 rounded-2">
+        <div class="card-header py-2">
+          <h6>Total Transit</h6>
+        </div>
+        <div class="card-body">
+          <div id="accounting_graph"></div>
+        </div>
       </div>
     </div>
   </div>
-
+  <div class="row mb-3">
+    <div class="col col-md-12">
+      <div class="card">
+        <h5 class="card-header">Network Services</h5>
+        <div class="card-body table-responsive">
+          {% render_table networkservice_table %}
+        </div>
+      </div>
+      {% plugin_full_width_page object %}
+    </div>
+  </div>
 {% endblock %}
 
 {% block javascript %}
@@ -189,31 +204,31 @@
     });
   }
 
-  $(document).ready(renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}"));
+  $(document).ready(renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}"));
 
   $("#last_day").click(function() {
     clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-1d");
+    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-1d");
   });
 
   $("#last_week").click(function() {
     clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-7d");
+    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-7d");
   });
 
   $("#last_month").click(function() {
     clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-30d");
+    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-30d");
   });
 
   $("#last_year").click(function() {
     clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-1y");
+    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-1y");
   });
 
   $("#last_five").click(function() {
     clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-5y");
+    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-5y");
   });
 
 </script>

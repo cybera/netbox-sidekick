@@ -6,10 +6,21 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.views import APIView
 
 from netbox.api.authentication import TokenAuthentication
+from netbox.api.viewsets import NetBoxModelViewSet
+
+from sidekick.api.serializers import (
+    AccountingSourceSerializer,
+)
 
 from sidekick.models import (
     AccountingProfile,
+    AccountingSource,
 )
+
+
+class AccountingSourceViewSet(NetBoxModelViewSet):
+    queryset = AccountingSource.objects.all()
+    serializer_class = AccountingSourceSerializer
 
 
 class CurrentBandwidthView(APIView):

@@ -4,7 +4,7 @@ from extras.plugins import PluginConfig
 class SidekickConfig(PluginConfig):
     name = "sidekick"
     base_url = "sidekick"
-    verbose_name = "sidekick Additions for Netbox"
+    verbose_name = "Sidekick"
     description = "Additions and changes to Netbox to suit Cybera"
     version = "0.0.1"
     author = "sidekick"

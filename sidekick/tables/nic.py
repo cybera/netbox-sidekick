@@ -1,6 +1,6 @@
 import django_tables2 as tables
 
-from utilities.tables import BaseTable, ToggleColumn
+from netbox.tables import BaseTable, ToggleColumn
 
 from sidekick.models import (
     NIC,
@@ -36,7 +36,7 @@ class NICTable(BaseTable):
 
     class Meta(BaseTable.Meta):
         model = NIC
-        fields = ('pk',)
+        fields = ('pk', 'interface', 'device', 'description',)
 
     def order_interface(self, queryset, is_descending):
         field = 'interface__name'

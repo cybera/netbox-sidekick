@@ -1,13 +1,13 @@
 from django.db import models
 from django.urls import reverse
 
-from netbox.models import ChangeLoggedModel
+from netbox.models import NetBoxModel
 
 
 # NIC represents a Network Card / Interface of a device.
 #
 # This model acts as an extension to a NetBox Interface.
-class NIC(ChangeLoggedModel):
+class NIC(NetBoxModel):
     interface = models.ForeignKey(
         to='dcim.Interface',
         on_delete=models.PROTECT,

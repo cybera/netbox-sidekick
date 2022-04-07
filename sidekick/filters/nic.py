@@ -1,4 +1,6 @@
 import django_filters
+from netbox.filtersets import NetBoxModelFilterSet
+from netbox.forms import NetBoxModelFilterSetForm
 
 from django.db.models import Q
 
@@ -15,12 +17,7 @@ def devices(request):
     return Device.objects.filter(pk__in=devices)
 
 
-class NICFilterSet(django_filters.FilterSet):
-    q = django_filters.CharFilter(
-        method='search',
-        label='Search',
-    )
-
+class NICFilterSet(NetBoxModelFilterSet):
     device = django_filters.ModelChoiceFilter(
         label='Device',
         field_name='device',
@@ -30,23 +27,13 @@ class NICFilterSet(django_filters.FilterSet):
 
     class Meta:
         model = NIC
-        fields = ['device']
-
-    def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
-        super().__init__(
-            data=data, queryset=queryset, request=request, prefix=prefix)
-        self.filters['device'].field.widget.attrs.update(
-            {'class': 'netbox-select2-static form-control'})
+        fields = ('device',)
 
     def filter_device(self, queryset, name, value):
         return queryset.filter(
             Q(interface__device__name__icontains=value)
         ).order_by('interface__id').distinct('interface__id')
 
-    def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(interface__device__name__icontains=value) |
-            Q(interface__name__icontains=value)
-        ).order_by('interface__id').distinct('interface__id')
+
+class NICFilterSetForm(NetBoxModelFilterSetForm):
+    model = NIC

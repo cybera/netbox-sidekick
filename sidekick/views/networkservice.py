@@ -1,17 +1,34 @@
+from netbox.views.generic import (
+    ObjectView, ObjectListView,
+    ObjectEditView, ObjectDeleteView,
+)
+
 from django.conf import settings
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
 from django.views import View
-from django.views.generic import DetailView
 
-from django_filters.views import FilterView
 from django_tables2.views import SingleTableView
 
 from sidekick.filters import (
-    LogicalSystemFilterSet, RoutingTypeFilterSet,
-    NetworkServiceTypeFilterSet, NetworkServiceFilterSet,
+    LogicalSystemFilterSet,
+    LogicalSystemFilterSetForm,
+    RoutingTypeFilterSet,
+    RoutingTypeFilterSetForm,
+    NetworkServiceTypeFilterSet,
+    NetworkServiceTypeFilterSetForm,
+    NetworkServiceFilterSet,
+    NetworkServiceFilterSetForm,
     NetworkServiceGroupFilterSet,
+    NetworkServiceGroupFilterSetForm,
+)
+
+from sidekick.forms import (
+    RoutingTypeForm,
+    LogicalSystemForm,
+    NetworkServiceForm,
+    NetworkServiceTypeForm,
+    NetworkServiceGroupForm,
 )
 
 from sidekick.tables import (
@@ -22,7 +39,8 @@ from sidekick.tables import (
 )
 
 from sidekick.models import (
-    LogicalSystem, RoutingType,
+    LogicalSystem,
+    RoutingType,
     NetworkServiceType,
     NetworkService,
     NetworkServiceGroup,
@@ -44,12 +62,10 @@ from sidekick.utils import (
 class IPPrefixIndexView(PermissionRequiredMixin, SingleTableView):
     permission_required = 'sidekick.view_ipprefix'
     model = NetworkService
-    context_object_name = 'ns'
-    template_name = 'sidekick/networkservice/ipprefix_index.html'
+    template_name = 'sidekick/ipprefix_list.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
         prefixes = []
         for member_id, data in get_all_ip_prefixes().items():
             for prefix in data['prefixes']:
@@ -57,140 +73,162 @@ class IPPrefixIndexView(PermissionRequiredMixin, SingleTableView):
                     'prefix': prefix,
                     'member': data['member'],
                 })
-        table = IPPrefixTable(prefixes)
-        context['table'] = table
+        context['ipprefix_table'] = IPPrefixTable(prefixes)
 
         return context
 
 
 # Logical System Index
-class LogicalSystemIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
-    permission_required = 'sidekick.view_logicalsystem'
+class LogicalSystemIndexView(ObjectListView):
+    queryset = LogicalSystem.objects.all()
     model = LogicalSystem
-    table_class = LogicalSystemTable
-    filterset_class = LogicalSystemFilterSet
-    template_name = 'sidekick/networkservice/logicalsystem_index.html'
+    table = LogicalSystemTable
+    filterset = LogicalSystemFilterSet
+    filterset_form = LogicalSystemFilterSetForm
 
 
 # Logical System Details
-class LogicalSystemDetailView(PermissionRequiredMixin, DetailView):
-    permission_required = 'sidekick.view_logicalsystem'
-    model = LogicalSystem
-    template_name = 'sidekick/networkservice/logicalsystem.html'
+class LogicalSystemDetailView(ObjectView):
+    queryset = LogicalSystem.objects.all()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+    def get_extra_context(self, request, instance):
+        table = NetworkServiceTable(
+            NetworkService.objects.filter(
+                network_service_devices__network_service_l3__logical_system=instance.id))
 
-        logical_system = get_object_or_404(LogicalSystem, slug=self.kwargs['slug'])
-        context['logical_system'] = logical_system
+        return {'networkservice_table': table}
 
-        table = NetworkServiceTable(NetworkService.objects.filter(
-            network_service_devices__network_service_l3__logical_system=logical_system.id))
-        context['table'] = table
 
-        return context
+# Logical System Edit
+class LogicalSystemEditView(ObjectEditView):
+    queryset = LogicalSystem.objects.all()
+    form = LogicalSystemForm
+
+
+# Logical System Delete
+class LogicalSystemDeleteView(ObjectDeleteView):
+    queryset = LogicalSystem.objects.all()
 
 
 # Routing Type Index
-class RoutingTypeIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
-    permission_required = 'sidekick.view_routingtype'
+class RoutingTypeIndexView(ObjectListView):
+    queryset = RoutingType.objects.all()
     model = RoutingType
-    table_class = RoutingTypeTable
-    filterset_class = RoutingTypeFilterSet
-    template_name = 'sidekick/networkservice/routingtype_index.html'
+    table = RoutingTypeTable
+    filterset = RoutingTypeFilterSet
+    filterset_form = RoutingTypeFilterSetForm
 
 
 # Routing Type Details
-class RoutingTypeDetailView(PermissionRequiredMixin, DetailView):
-    permission_required = 'sidekick.view_routingtype'
-    model = RoutingType
-    template_name = 'sidekick/networkservice/routingtype.html'
+class RoutingTypeDetailView(ObjectView):
+    queryset = RoutingType.objects.all()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+    def get_extra_context(self, request, instance):
+        table = NetworkServiceTable(
+            NetworkService.objects.filter(
+                network_service_devices__network_service_l3__routing_type=instance.id))
 
-        routing_type = get_object_or_404(RoutingType, slug=self.kwargs['slug'])
-        context['routing_type'] = routing_type
+        return {'networkservice_table': table}
 
-        table = NetworkServiceTable(NetworkService.objects.filter(
-            network_service_devices__network_service_l3__routing_type=routing_type.id))
-        context['table'] = table
 
-        return context
+# Routing Type Edit
+class RoutingTypeEditView(ObjectEditView):
+    queryset = RoutingType.objects.all()
+    form = RoutingTypeForm
+
+
+# Routing Type Delete
+class RoutingTypeDeleteView(ObjectDeleteView):
+    queryset = RoutingType.objects.all()
 
 
 # Network Service Type Index
-class NetworkServiceTypeIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
-    permission_required = 'sidekick.view_networkservicetype'
+class NetworkServiceTypeIndexView(ObjectListView):
+    queryset = NetworkServiceType.objects.all()
     model = NetworkServiceType
-    table_class = NetworkServiceTypeTable
-    filterset_class = NetworkServiceTypeFilterSet
-    template_name = 'sidekick/networkservice/networkservicetype_index.html'
+    table = NetworkServiceTypeTable
+    filterset = NetworkServiceTypeFilterSet
+    filterset_form = NetworkServiceTypeFilterSetForm
 
 
 # Network Service Type Details
-class NetworkServiceTypeDetailView(PermissionRequiredMixin, DetailView):
-    permission_required = 'sidekick.view_networkservicetype'
-    model = NetworkServiceType
-    template_name = 'sidekick/networkservice/networkservicetype.html'
+class NetworkServiceTypeDetailView(ObjectView):
+    queryset = NetworkServiceType.objects.all()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+    def get_extra_context(self, request, instance):
+        table = NetworkServiceTable(
+            NetworkService.objects.filter(
+                network_service_type=instance.id))
 
-        nst = get_object_or_404(NetworkServiceType, slug=self.kwargs['slug'])
-        context['nst'] = nst
+        return {'networkservice_table': table}
 
-        table = NetworkServiceTable(NetworkService.objects.filter(
-            network_service_type=nst.id))
-        context['table'] = table
 
-        return context
+# Network Service Type Edit
+class NetworkServiceTypeEditView(ObjectEditView):
+    queryset = NetworkServiceType.objects.all()
+    form = NetworkServiceTypeForm
+
+
+# Network Service Type Delete
+class NetworkServiceTypeDeleteView(ObjectDeleteView):
+    queryset = NetworkServiceType.objects.all()
 
 
 # Network Service Index
-class NetworkServiceIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
-    permission_required = 'sidekick.view_networkservice'
+class NetworkServiceIndexView(ObjectListView):
+    queryset = NetworkService.objects.all()
     model = NetworkService
-    table_class = NetworkServiceTable
-    filterset_class = NetworkServiceFilterSet
-    template_name = 'sidekick/networkservice/networkservice_index.html'
+    table = NetworkServiceTable
+    filterset = NetworkServiceFilterSet
+    filterset_form = NetworkServiceFilterSetForm
 
 
 # Network Service Details
-class NetworkServiceDetailView(PermissionRequiredMixin, DetailView):
-    permission_required = 'sidekick.view_networkservice'
-    model = NetworkService
-    context_object_name = 'ns'
-    template_name = 'sidekick/networkservice/networkservice.html'
+class NetworkServiceDetailView(ObjectView):
+    queryset = NetworkService.objects.all()
+
+
+# Network Service Edit
+class NetworkServiceEditView(ObjectEditView):
+    queryset = NetworkService.objects.all()
+    form = NetworkServiceForm
+
+
+# Network Service Delete
+class NetworkServiceDeleteView(ObjectDeleteView):
+    queryset = NetworkService.objects.all()
 
 
 # Network Service Group Index
-class NetworkServiceGroupIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
-    permission_required = 'sidekick.view_networkservicegroup'
+class NetworkServiceGroupIndexView(ObjectListView):
+    queryset = NetworkServiceGroup.objects.all()
     model = NetworkServiceGroup
-    table_class = NetworkServiceGroupTable
-    filterset_class = NetworkServiceGroupFilterSet
-    template_name = 'sidekick/networkservice/networkservicegroup_index.html'
+    table = NetworkServiceGroupTable
+    filterset = NetworkServiceGroupFilterSet
+    filterset_form = NetworkServiceGroupFilterSetForm
 
 
 # Network Service Group Details
-class NetworkServiceGroupDetailView(PermissionRequiredMixin, DetailView):
-    permission_required = 'sidekick.view_networkservicegroup'
-    model = NetworkServiceGroup
-    context_object_name = 'nsg'
-    template_name = 'sidekick/networkservice/networkservicegroup.html'
+class NetworkServiceGroupDetailView(ObjectView):
+    queryset = NetworkServiceGroup.objects.all()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+    def get_extra_context(self, request, instance):
+        table = NetworkServiceTable(
+            NetworkService.objects.filter(
+                pk__in=instance.network_services.all()))
 
-        nsg = get_object_or_404(NetworkServiceGroup, pk=self.kwargs['pk'])
-        context['nsg'] = nsg
+        return {'networkservice_table': table}
 
-        table = NetworkServiceTable(NetworkService.objects.filter(
-            pk__in=nsg.network_services.all()))
-        context['table'] = table
 
-        return context
+# Network Service Group Edit
+class NetworkServiceGroupEditView(ObjectEditView):
+    queryset = NetworkServiceGroup.objects.all()
+    form = NetworkServiceGroupForm
+
+
+# Network Service Group Delete
+class NetworkServiceGroupDeleteView(ObjectDeleteView):
+    queryset = NetworkServiceGroup.objects.all()
 
 
 # Network Service graphite data

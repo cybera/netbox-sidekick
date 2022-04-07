@@ -1,0 +1,173 @@
+{% extends 'generic/object.html' %}
+{% load helpers %}
+{% load plugins %}
+{% load render_table from django_tables2 %}
+
+{% block header %}
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="https://leeoniya.github.io/uPlot/dist/uPlot.iife.min.js"></script>
+<link rel="stylesheet" href="https://leeoniya.github.io/uPlot/dist/uPlot.min.css" />
+{% endblock %}
+
+{% block breadcrumbs %}
+  {{ block.super }}
+  {% if object.group %}
+    <li class="breadcrumb-item"><a href="{% url 'tenancy:contact_list' %}?group_id={{ object.group.pk }}">{{ object.group }}</a></li>
+  {% endif %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+  <div class="row">
+    <div class="col col-md-7">
+      <div class="card">
+        <h5 class="card-header">Network Interface Details</h5>
+        <div class="card-body">
+          <table class="table table-hover attr-table">
+            <tr>
+              <td>Name</td>
+              <td>{{ object.name }}</td>
+            </tr>
+            <tr>
+              <td>Device</td>
+              <td><a href="{{ nic.interface.device.get_absolute_url }}">{{ object.enabled }}</a></td>
+            </tr>
+            <tr>
+              <td>Admin Status</td>
+              <td>{{ object.admin_status }}</td>
+            </tr>
+            <tr>
+              <td>Oper Status</td>
+              <td>{{ object.oper_status }}</td>
+            </tr>
+            <tr>
+              <td>In Octets</td>
+              <td>{{ object.in_octets }}</td>
+            </tr>
+            <tr>
+              <td>Out Octets</td>
+              <td>{{ object.out_octets }}</td>
+            </tr>
+            <tr>
+              <td>In Unicast Packets</td>
+              <td>{{ object.in_unicast_packets }}</td>
+            </tr>
+            <tr>
+              <td>Out Unicast Packets</td>
+              <td>{{ object.out_unicast_packets }}</td>
+            </tr>
+            <tr>
+              <td>In Nunicast Packets</td>
+              <td>{{ object.in_nunicast_packets }}</td>
+            </tr>
+            <tr>
+              <td>Out Nunicast Packets</td>
+              <td>{{ object.out_nunicast_packets }}</td>
+            </tr>
+            <tr>
+              <td>In Errors</td>
+              <td>{{ object.in_errors }}</td>
+            </tr>
+            <tr>
+              <td>Out Errors</td>
+              <td>{{ object.out_errors }}</td>
+            </tr>
+            <tr>
+              <td>In Rate</td>
+              <td>{{ object.in_rate }}</td>
+            </tr>
+            <tr>
+              <td>Out Rate</td>
+              <td>{{ object.out_rate }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col col-md-5">
+      <div class="card">
+        <div class="card-header">
+          <strong>Graphs</strong>
+        </div>
+        <div class="card-body">
+          <table class="table table-hover panel-body attr-table">
+            <tr>
+              <td>
+                <center><h4>{{ graph_data.title }}</h4></center>
+                <div id="graph"></div>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block javascript %}
+<script type="text/javascript">
+  function bits(bits) {
+    if (bits == 0) return '';
+    if (bits < 0) bits *= -1;
+    var s = ['bits', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb'];
+    var e = Math.floor(Math.log(bits)/Math.log(1000));
+    var value = ((bits/Math.pow(1000, Math.floor(e))).toFixed(2));
+    e = (e<0) ? (-e) : e;
+    value += ' ' + s[e];
+    return value;
+  }
+
+  function getSize(div) {
+    var v = '#' + div;
+    return {
+      height: 300,
+      width: $(v).width(),
+    }
+  }
+
+  $(document).ready(function() {
+    $.ajax({
+      url: "{% url 'plugins:sidekick:nic_graphite_data' pk=object.interface.pk %}",
+      dataType: 'json',
+      success: function(json) {
+        let data = json['graph_data']['data'];
+        let size = getSize('graph');
+
+        let opts = {
+          width: size.width,
+          height: size.height,
+          axes: [
+            {},
+            {
+              scale: "bits",
+              size: 75,
+              values: (self, ticks) => ticks.map(rawValue => bits(rawValue)),
+            },
+          ],
+          series: [
+            {},
+            {
+              label: "In",
+              stroke: "#2E7D32",
+              fill: "#66BB6A",
+              scale: "bits",
+              value: (self, rawValue) => bits(rawValue),
+            },
+            {
+              label: "Out",
+              stroke: "#1565C0",
+              fill: "#42A5F5",
+              scale: "bits",
+              value: (self, rawValue) => bits(rawValue * -1),
+            },
+          ],
+        };
+
+        let u = new uPlot(opts, data, document.getElementById('graph'));
+        window.addEventListener("resize", e => {
+          u.setSize(getSize('graph'));
+        });
+      }
+    });
+  });
+</script>
+{% endblock %}

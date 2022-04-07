@@ -1,14 +1,21 @@
-from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.shortcuts import get_object_or_404
-from django.views.generic import DetailView
+from netbox.views.generic import (
+    ObjectView, ObjectListView,
+    ObjectEditView, ObjectDeleteView,
+)
 
-from django_filters.views import FilterView
-from django_tables2.views import SingleTableView
+from sidekick.forms import (
+    AccountingProfileForm,
+    AccountingSourceForm,
+    BandwidthProfileForm
+)
 
 from sidekick.filters import (
     BandwidthProfileFilterSet,
+    BandwidthProfileFilterSetForm,
     AccountingProfileFilterSet,
+    AccountingProfileFilterSetForm,
     AccountingSourceFilterSet,
+    AccountingSourceFilterSetForm,
 )
 
 from sidekick.tables import (
@@ -24,71 +31,72 @@ from sidekick.models import (
 )
 
 
-class AccountingSourceIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
-    permission_required = 'sidekick.view_accountingsource'
+class AccountingSourceIndexView(ObjectListView):
+    queryset = AccountingSource.objects.all()
     model = AccountingSource
-    table_class = AccountingSourceTable
-    filterset_class = AccountingSourceFilterSet
-    template_name = 'sidekick/accounting/accountingsource_index.html'
+    table = AccountingSourceTable
+    filterset = AccountingSourceFilterSet
+    filterset_form = AccountingSourceFilterSetForm
 
 
-class AccountingSourceDetailView(PermissionRequiredMixin, DetailView):
-    permission_required = 'sidekick.view_accountingsource'
-    model = AccountingSource
-    template_name = 'sidekick/accounting/accountingsource.html'
+class AccountingSourceDetailView(ObjectView):
+    queryset = AccountingSource.objects.all()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        accounting_source = get_object_or_404(AccountingSource, pk=self.kwargs['pk'])
-        context['accounting_source'] = accounting_source
-
+    def get_extra_context(self, request, instance):
         table = AccountingProfileTable(AccountingProfile.objects.filter(
-            accounting_sources__id__in=[accounting_source.id]))
-        context['table'] = table
+            accounting_sources__id__in=[instance.id]))
 
-        return context
+        return {
+            'accountingprofile_table': table,
+        }
 
 
-class AccountingProfileIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
-    permission_required = 'sidekick.view_accountingprofile'
+class AccountingSourceEditView(ObjectEditView):
+    queryset = AccountingSource.objects.all()
+    form = AccountingSourceForm
+
+
+class AccountingSourceDeleteView(ObjectDeleteView):
+    queryset = AccountingSource.objects.all()
+
+
+class AccountingProfileIndexView(ObjectListView):
+    queryset = AccountingProfile.objects.all()
     model = AccountingProfile
-    table_class = AccountingProfileTable
-    filterset_class = AccountingProfileFilterSet
-    template_name = 'sidekick/accounting/accountingprofile_index.html'
+    table = AccountingProfileTable
+    filterset = AccountingProfileFilterSet
+    filterset_form = AccountingProfileFilterSetForm
 
 
-class AccountingProfileDetailView(PermissionRequiredMixin, DetailView):
-    permission_required = 'sidekick.view_accountingprofile'
-    model = AccountingProfile
-    template_name = 'sidekick/accounting/accountingprofile.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        accounting_profile = get_object_or_404(AccountingProfile, pk=self.kwargs['pk'])
-        context['accounting_profile'] = accounting_profile
-
-        return context
+class AccountingProfileDetailView(ObjectView):
+    queryset = AccountingProfile.objects.all()
 
 
-class BandwidthProfileIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
-    permission_required = 'sidekick.view_bandwidthprofile'
+class AccountingProfileEditView(ObjectEditView):
+    queryset = AccountingProfile.objects.all()
+    form = AccountingProfileForm
+
+
+class AccountingProfileDeleteView(ObjectDeleteView):
+    queryset = AccountingProfile.objects.all()
+
+
+class BandwidthProfileIndexView(ObjectListView):
+    queryset = BandwidthProfile.objects.all()
     model = BandwidthProfile
-    table_class = BandwidthProfileTable
-    filterset_class = BandwidthProfileFilterSet
-    template_name = 'sidekick/accounting/bandwidthprofile_index.html'
+    table = BandwidthProfileTable
+    filterset = BandwidthProfileFilterSet
+    filterset_form = BandwidthProfileFilterSetForm
 
 
-class BandwidthProfileDetailView(PermissionRequiredMixin, DetailView):
-    permission_required = 'sidekick.view_bandwidthprofile'
-    model = BandwidthProfile
-    template_name = 'sidekick/accounting/bandwidthprofile.html'
+class BandwidthProfileDetailView(ObjectView):
+    queryset = BandwidthProfile.objects.all()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
 
-        bandwidth_profile = get_object_or_404(BandwidthProfile, pk=self.kwargs['pk'])
-        context['bandwidth_profile'] = bandwidth_profile
+class BandwidthProfileEditView(ObjectEditView):
+    queryset = BandwidthProfile.objects.all()
+    form = BandwidthProfileForm
 
-        return context
+
+class BandwidthProfileDeleteView(ObjectDeleteView):
+    queryset = BandwidthProfile.objects.all()

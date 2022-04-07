@@ -23,13 +23,13 @@ class MemberBandwidthIndexView(PermissionRequiredMixin, SingleTableView):
     table_class = MemberBandwidthTable
     table_pagination = False
     queryset = Tenant.objects.filter(group__name='Members')
-    template_name = 'sidekick/memberbandwidth/memberbandwidth_index.html'
+    template_name = 'sidekick/memberbandwidth_list.html'
 
 
 class MemberBandwidthDetailView(PermissionRequiredMixin, SingleTableView):
     permission_required = 'sidekick.view_memberbandwidth'
     model = NetworkService
-    template_name = 'sidekick/memberbandwidth/memberbandwidth.html'
+    template_name = 'sidekick/memberbandwidth.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

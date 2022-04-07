@@ -2,7 +2,6 @@ from .accounting import AccountingSource                  # noqa: F401
 from .accounting import AccountingSourceCounter           # noqa: F401
 from .accounting import AccountingProfile                 # noqa: F401
 from .accounting import BandwidthProfile                  # noqa: F401
-from .contact import ContactType, Contact, MemberContact  # noqa: F401
 from .networkservice import LogicalSystem, RoutingType    # noqa: F401
 from .networkservice import NetworkServiceType            # noqa: F401
 from .networkservice import NetworkService                # noqa: F401

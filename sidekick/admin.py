@@ -4,15 +4,11 @@ from .models import (
     AccountingProfile, AccountingSource,
     BandwidthProfile,
 
-    ContactType, Contact,
-
     LogicalSystem, RoutingType, NetworkServiceType,
     NetworkService,
     NetworkServiceDevice,
     NetworkServiceL2, NetworkServiceL3,
     NetworkServiceGroup,
-
-    MemberContact,
 
     NIC,
 )
@@ -64,29 +60,9 @@ class BandwidthProfile(admin.ModelAdmin):
     )
 
 
-@admin.register(ContactType)
-class ContactTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'slug')
-
-
-@admin.register(Contact)
-class ContactAdmin(admin.ModelAdmin):
-    list_display = (
-        'first_name', 'last_name', 'title',
-        'email', 'phone', 'comments'
-    )
-
-
 @admin.register(LogicalSystem)
 class LogicalSystemADmin(admin.ModelAdmin):
     list_display = ('name', 'slug')
-
-
-@admin.register(MemberContact)
-class MemberContactAdmin(admin.ModelAdmin):
-    list_display = (
-        'member', 'contact', 'type'
-    )
 
 
 @admin.register(NetworkServiceType)

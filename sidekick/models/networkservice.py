@@ -7,11 +7,11 @@ from django.utils.text import slugify
 
 from dcim.models import Interface
 
-from netbox.models import ChangeLoggedModel
+from netbox.models import NetBoxModel
 
 
 # LogicalSystem represents a logical system in a network device.
-class LogicalSystem(ChangeLoggedModel):
+class LogicalSystem(NetBoxModel):
     name = models.CharField(
         max_length=50,
         unique=True,
@@ -32,11 +32,11 @@ class LogicalSystem(ChangeLoggedModel):
         return self.name
 
     def get_absolute_url(self):
-        return reverse('plugins:sidekick:logicalsystem_detail', args=[self.slug])
+        return reverse('plugins:sidekick:logicalsystem_detail', args=[self.pk])
 
 
 # RoutingType represents the routing type for a network service.
-class RoutingType(ChangeLoggedModel):
+class RoutingType(NetBoxModel):
     name = models.CharField(
         max_length=50,
         unique=True,
@@ -57,13 +57,13 @@ class RoutingType(ChangeLoggedModel):
         return self.name
 
     def get_absolute_url(self):
-        return reverse('plugins:sidekick:routingtype_detail', args=[self.slug])
+        return reverse('plugins:sidekick:routingtype_detail', args=[self.pk])
 
 
 # NetworkServiceType is a Type of Network Service
 # provided to members.
 # For example: Upstream, SuperNet, DWDM.
-class NetworkServiceType(ChangeLoggedModel):
+class NetworkServiceType(NetBoxModel):
     name = models.CharField(
         max_length=50,
         unique=True,
@@ -92,13 +92,13 @@ class NetworkServiceType(ChangeLoggedModel):
         return self.name
 
     def get_absolute_url(self):
-        return reverse('plugins:sidekick:networkservicetype_detail', args=[self.slug])
+        return reverse('plugins:sidekick:networkservicetype_detail', args=[self.pk])
 
 
 # NetworkService represents a network service for of a member.
 # A member can then be subscribed to one or more services that
 # are related to a network service.
-class NetworkService(ChangeLoggedModel):
+class NetworkService(NetBoxModel):
     name = models.CharField(
         max_length=255,
         verbose_name='Name',
@@ -246,7 +246,7 @@ class NetworkService(ChangeLoggedModel):
 # NetworkServiceDevice represents a device that is part
 # of a member's network service.
 # One or more devices may compose a member's service.
-class NetworkServiceDevice(ChangeLoggedModel):
+class NetworkServiceDevice(NetBoxModel):
     network_service = models.ForeignKey(
         to='sidekick.NetworkService',
         on_delete=models.PROTECT,
@@ -312,7 +312,7 @@ class NetworkServiceDevice(ChangeLoggedModel):
 # NetworkServiceL2 represents an L2 component of a member's
 # network service. A network service may have one or more
 # L2 components.
-class NetworkServiceL2(ChangeLoggedModel):
+class NetworkServiceL2(NetBoxModel):
     network_service_device = models.ForeignKey(
         to='sidekick.NetworkServiceDevice',
         on_delete=models.PROTECT,
@@ -356,7 +356,7 @@ class NetworkServiceL2(ChangeLoggedModel):
 # NetworkServiceL3 represents an L3 component of a member's
 # network service. A network service may have one or more
 # L3 components.
-class NetworkServiceL3(ChangeLoggedModel):
+class NetworkServiceL3(NetBoxModel):
     network_service_device = models.ForeignKey(
         to='sidekick.NetworkServiceDevice',
         on_delete=models.PROTECT,
@@ -486,7 +486,7 @@ class NetworkServiceL3(ChangeLoggedModel):
 
 # NetworkServiceGroup represents a grouping of network services
 # that have a common theme. For example: K-12 Members
-class NetworkServiceGroup(ChangeLoggedModel):
+class NetworkServiceGroup(NetBoxModel):
     name = models.CharField(
         max_length=50,
         unique=True,

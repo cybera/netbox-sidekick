@@ -3,11 +3,11 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
-from netbox.models import ChangeLoggedModel
+from netbox.models import NetBoxModel
 
 
 # AccountingSource represents an SCU/DCU source from a device.
-class AccountingSource(ChangeLoggedModel):
+class AccountingSource(NetBoxModel):
     device = models.ForeignKey(
         'dcim.Device',
         verbose_name='Device',
@@ -76,7 +76,7 @@ class AccountingSource(ChangeLoggedModel):
 
 
 # AccountingSourceCounter represents counters for an AccountingSource from a device.
-class AccountingSourceCounter(ChangeLoggedModel):
+class AccountingSourceCounter(NetBoxModel):
     accounting_source = models.ForeignKey(
         'sidekick.AccountingSource',
         on_delete=models.PROTECT,
@@ -116,7 +116,7 @@ class AccountingSourceCounter(ChangeLoggedModel):
 
 
 # AccountingProfile represents a Member with tracked bandwidth
-class AccountingProfile(ChangeLoggedModel):
+class AccountingProfile(NetBoxModel):
     member = models.ForeignKey(
         'tenancy.Tenant',
         on_delete=models.PROTECT,
@@ -169,7 +169,7 @@ class AccountingProfile(ChangeLoggedModel):
 
 
 # BandwidthProfile represents a bandwidth setting for a member.
-class BandwidthProfile(ChangeLoggedModel):
+class BandwidthProfile(NetBoxModel):
     accounting_profile = models.ForeignKey(
         'sidekick.AccountingProfile',
         on_delete=models.PROTECT,

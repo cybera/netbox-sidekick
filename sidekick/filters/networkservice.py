@@ -1,9 +1,12 @@
 import django_filters
+from django import forms
+
+from netbox.filtersets import NetBoxModelFilterSet
+from netbox.forms import NetBoxModelFilterSetForm
+from tenancy.models import Tenant
+from utilities.forms import DynamicModelMultipleChoiceField
 
 import netaddr
-
-from django.core.validators import EMPTY_VALUES
-from django.db.models import Q
 
 from sidekick.models import (
     RoutingType, LogicalSystem,
@@ -13,111 +16,45 @@ from sidekick.models import (
 )
 
 
-class EmptyStringFilter(django_filters.BooleanFilter):
-    def filter(self, qs, value):
-        if value in EMPTY_VALUES:
-            return qs
-
-        exclude = self.exclude ^ (value is False)
-        method = qs.exclude if exclude else qs.filter
-        return method(**{self.field_name: True})
-
-
-class LogicalSystemFilterSet(django_filters.FilterSet):
-    q = django_filters.CharFilter(
-        method='search',
-        label='Search',
-    )
-
+class LogicalSystemFilterSet(NetBoxModelFilterSet):
     class Meta:
         model = LogicalSystem
-        fields = []
-
-    def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(name__icontains=value)
-        ).distinct()
+        fields = ('name',)
 
 
-class RoutingTypeFilterSet(django_filters.FilterSet):
-    q = django_filters.CharFilter(
-        method='search',
-        label='Search',
-    )
+class LogicalSystemFilterSetForm(NetBoxModelFilterSetForm):
+    model = LogicalSystem
 
+
+class RoutingTypeFilterSet(NetBoxModelFilterSet):
     class Meta:
         model = RoutingType
-        fields = []
-
-    def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(name__icontains=value)
-        ).distinct()
+        fields = ('name',)
 
 
-class NetworkServiceTypeFilterSet(django_filters.FilterSet):
-    q = django_filters.CharFilter(
-        method='search',
-        label='Search',
-    )
+class RoutingTypeFilterSetForm(NetBoxModelFilterSetForm):
+    model = RoutingType
 
+
+class NetworkServiceTypeFilterSet(NetBoxModelFilterSet):
     class Meta:
         model = NetworkServiceType
-        fields = []
-
-    def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(name__icontains=value) |
-            Q(description__icontains=value)
-        ).distinct()
+        fields = ('name',)
 
 
-class NetworkServiceFilterSet(django_filters.FilterSet):
-    q = django_filters.CharFilter(
-        method='search',
-        label='Search',
-    )
+class NetworkServiceTypeFilterSetForm(NetBoxModelFilterSetForm):
+    model = NetworkServiceType
 
+
+class NetworkServiceFilterSet(NetBoxModelFilterSet):
     ip_address = django_filters.CharFilter(
         method='prefix_search',
         label='IP Address',
     )
 
-    active = EmptyStringFilter(field_name='active')
-
     class Meta:
         model = NetworkService
-        fields = ['member', 'member_site', 'network_service_type', 'ip_address', 'active']
-
-    def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
-        super().__init__(
-            data=data, queryset=queryset, request=request, prefix=prefix)
-        self.filters['ip_address'].field.widget.attrs.update(
-            {'class': 'form-control'})
-        self.filters['member'].field.widget.attrs.update(
-            {'class': 'netbox-select2-static form-control'})
-        self.filters['member_site'].field.widget.attrs.update(
-            {'class': 'netbox-select2-static form-control'})
-        self.filters['active'].field.widget.attrs.update(
-            {'class': 'netbox-select2-static form-control'})
-        self.filters['network_service_type'].field.widget.attrs.update(
-            {'class': 'netbox-select2-static form-control'})
-        self.form.initial['active'] = True
-
-    def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(name__icontains=value) |
-            Q(comments__icontains=value) |
-            Q(description__icontains=value)
-        ).distinct()
+        fields = ('member', 'member_site', 'network_service_type', 'active')
 
     def prefix_search(self, queryset, name, value):
         services = []
@@ -145,41 +82,32 @@ class NetworkServiceFilterSet(django_filters.FilterSet):
             id__in=services
         )
 
-    @property
-    def qs(self):
-        parent = super().qs
-        active = self.request.GET.get('active', 'true')
-        if active.lower() == 'unknown':
-            return parent.filter()
 
-        if active.lower() == 'false':
-            active = False
-        else:
-            active = True
-        return parent.filter(active=active)
+class NetworkServiceFilterSetForm(NetBoxModelFilterSetForm):
+    model = NetworkService
 
-
-class NetworkServiceGroupFilterSet(django_filters.FilterSet):
-    q = django_filters.CharFilter(
-        method='search',
-        label='Search',
+    member = DynamicModelMultipleChoiceField(
+        queryset=Tenant.objects.filter(group__name='Members'),
+        required=False,
+        label='Member',
     )
 
+    ip_address = forms.CharField(
+        required=False,
+        label='IP Address',
+    )
+
+    activd = forms.NullBooleanField(
+        required=False,
+        label='Active?',
+    )
+
+
+class NetworkServiceGroupFilterSet(NetBoxModelFilterSet):
     class Meta:
         model = NetworkServiceGroup
-        fields = ['network_services']
+        fields = ('network_services',)
 
-    def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
-        super().__init__(
-            data=data, queryset=queryset, request=request, prefix=prefix)
-        self.filters['network_services'].field.widget.attrs.update(
-            {'class': 'netbox-select2-static form-control'})
 
-    def search(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        return queryset.filter(
-            Q(name__icontains=value) |
-            Q(description__icontains=value) |
-            Q(network_services__name__icontains=value)
-        ).distinct()
+class NetworkServiceGroupFilterSetForm(NetBoxModelFilterSetForm):
+    model = NetworkServiceGroup

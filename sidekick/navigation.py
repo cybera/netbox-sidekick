@@ -2,31 +2,19 @@ from extras.plugins import PluginMenuItem
 
 menu_items = (
     PluginMenuItem(
-        link='plugins:sidekick:accountingprofile_index',
+        link='plugins:sidekick:accountingprofile_list',
         link_text='Accounting Profiles',
     ),
     PluginMenuItem(
-        link='plugins:sidekick:accountingsource_index',
+        link='plugins:sidekick:accountingsource_list',
         link_text='Accounting Sources',
-    ),
-    PluginMenuItem(
-        link='plugins:sidekick:bandwidthprofile_index',
-        link_text='Bandwidth Profiles',
-    ),
-    PluginMenuItem(
-        link='plugins:sidekick:contact_index',
-        link_text='Contacts',
-    ),
-    PluginMenuItem(
-        link='plugins:sidekick:contacttype_index',
-        link_text='Contact Types',
     ),
     PluginMenuItem(
         link='plugins:sidekick:ipprefix_index',
         link_text='IP Prefixes',
     ),
     PluginMenuItem(
-        link='plugins:sidekick:logicalsystem_index',
+        link='plugins:sidekick:logicalsystem_list',
         link_text='Logical Systems',
     ),
     PluginMenuItem(
@@ -38,23 +26,23 @@ menu_items = (
         link_text='Member - Bandwidth Usage Report',
     ),
     PluginMenuItem(
-        link='plugins:sidekick:nic_index',
+        link='plugins:sidekick:nic_list',
         link_text='Interfaces',
     ),
     PluginMenuItem(
-        link='plugins:sidekick:networkservice_index',
+        link='plugins:sidekick:networkservice_list',
         link_text='Network Services',
     ),
     PluginMenuItem(
-        link='plugins:sidekick:networkservicegroup_index',
+        link='plugins:sidekick:networkservicegroup_list',
         link_text='Network Service Groups',
     ),
     PluginMenuItem(
-        link='plugins:sidekick:networkservicetype_index',
-        link_text='Service Types',
+        link='plugins:sidekick:routingtype_list',
+        link_text='Routing Types',
     ),
     PluginMenuItem(
-        link='plugins:sidekick:routingtype_index',
-        link_text='Routing Types',
+        link='plugins:sidekick:networkservicetype_list',
+        link_text='Service Types',
     ),
 )

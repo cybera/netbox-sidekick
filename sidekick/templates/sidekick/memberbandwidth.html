@@ -1,38 +1,16 @@
 {% extends 'base/layout.html' %}
 {% load render_table from django_tables2 %}
 
-{% block title %}{{ logical_system }}{% endblock %}
+{% block title %}Member Bandwidth Report for {{ member.name }}{% endblock %}
 
 {% block header %}
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 <script src="https://leeoniya.github.io/uPlot/dist/uPlot.iife.min.js"></script>
 <link rel="stylesheet" href="https://leeoniya.github.io/uPlot/dist/uPlot.min.css" />
-<div class="row noprint">
-  <div class="col-sm-8 col-md-9">
-    <ol class="breadcrumb">
-      <li><a href="{% url 'plugins:sidekick:networkservicegroup_index' %}">Network Service Groups</a></li>
-      <li>{{ object.name }}</li>
-    </ol>
-  </div>
-  <div class="col-sm-4 col-md-3">
-    <form action="{% url 'plugins:sidekick:networkservicegroup_index' %}" method="get">
-      <div class="input-group">
-        <input type="text" name="q" class="form-control" />
-        <span class="input-group-btn">
-          <button type="submit" class="btn btn-primary">
-            <span class="fa fa-search" aria-hidden="true"></span>
-          </button>
-        </span>
-      </div>
-    </form>
-  </div>
-</div>
-<h1>{{ object.name }}</h1>
-<h4>{{ object.description }}</h4>
-<hr>
-{% include 'sidekick/include/created_updated.html' with obj=object %}
 {% endblock %}
 
 {% block content %}
+<h1>Bandwidth Report for {{ member.name }}</h1>
 <div class="row">
   <div class="col-md-12">
     <a href="#" id="last_day">Last Day</a> |
@@ -75,14 +53,6 @@
       </div>
     </div>
   </div>
-
-  <div class="col-md-12">
-    <br><br>
-    <div class="panel panel-default">
-      {% render_table table %}
-    </div>
-  </div>
-</div>
 {% endblock %}
 
 {% block javascript %}
@@ -196,31 +166,31 @@
     });
   }
 
-  $(document).ready(renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}"));
+  $(document).ready(renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}"));
 
   $("#last_day").click(function() {
     clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-1d");
+    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-1d");
   });
 
   $("#last_week").click(function() {
     clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-7d");
+    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-7d");
   });
 
   $("#last_month").click(function() {
     clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-30d");
+    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-30d");
   });
 
   $("#last_year").click(function() {
     clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-1y");
+    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-1y");
   });
 
   $("#last_five").click(function() {
     clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}?period=-5y");
+    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-5y");
   });
 
 </script>

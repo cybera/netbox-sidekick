@@ -2,7 +2,7 @@ import django_tables2 as tables
 
 from django_tables2.utils import Accessor
 
-from utilities.tables import BaseTable, ToggleColumn
+from netbox.tables import BaseTable, ToggleColumn
 
 from sidekick.models import (
     LogicalSystem, RoutingType,
@@ -11,7 +11,7 @@ from sidekick.models import (
 )
 
 MEMBER_NETWORK_SERVICES_LINK = """
-    <a href="{% url 'plugins:sidekick:networkservice_index' %}?member={{ record.member.id }}&ip_address={{ record.prefix }}">{{ record.member.name }}</a>
+    <a href="{% url 'plugins:sidekick:networkservice_list' %}?member={{ record.member.id }}&ip_address={{ record.prefix }}">{{ record.member.name }}</a>
 """
 
 NETWORK_SERVICE_LINK = """
@@ -23,7 +23,7 @@ TENANT_LINK = """
 """
 
 
-class IPPrefixTable(tables.Table):
+class IPPrefixTable(BaseTable):
     prefix = tables.Column()
 
     member = tables.TemplateColumn(
@@ -32,9 +32,8 @@ class IPPrefixTable(tables.Table):
     )
 
     class Meta:
-        attrs = {
-            'class': 'table table-hover table-headings',
-        }
+        model = NetworkService
+        fields = ('prefix', 'member',)
 
 
 class LogicalSystemTable(BaseTable):
@@ -74,7 +73,7 @@ class NetworkServiceTable(BaseTable):
 
     network_service_type = tables.LinkColumn(
         'plugins:sidekick:networkservicetype_detail',
-        args=[Accessor('network_service_type.slug')])
+        args=[Accessor('network_service_type.pk')])
 
     member = tables.TemplateColumn(
         template_code=TENANT_LINK,

@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework import routers
 from .views import (
+    AccountingSourceViewSet,
     CurrentBandwidthView,
     DeviceCheckAccessView,
     FullMapViewSet,
@@ -13,6 +14,7 @@ from .views import (
 
 router = routers.DefaultRouter()
 router.register('map', FullMapViewSet, basename='map')
+router.register('accountingsource', AccountingSourceViewSet)
 urlpatterns = router.urls
 
 urlpatterns += [

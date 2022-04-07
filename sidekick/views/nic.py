@@ -1,16 +1,22 @@
+from netbox.views.generic import (
+    ObjectView, ObjectListView,
+    ObjectEditView, ObjectDeleteView,
+)
+
 from django.conf import settings
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.http import JsonResponse
 from django.views import View
-from django.views.generic import DetailView
-
-from django_filters.views import FilterView
-from django_tables2.views import SingleTableView
 
 from dcim.models import Interface
 
 from sidekick.filters import (
     NICFilterSet,
+    NICFilterSetForm,
+)
+
+from sidekick.forms import (
+    NICForm
 )
 
 from sidekick.tables import (
@@ -28,29 +34,28 @@ from sidekick.utils import (
 
 # NIC Index
 # Displays devices that have NICs being managed by Sidekick
-class NICIndexView(PermissionRequiredMixin, FilterView, SingleTableView):
-    permission_required = 'sidekick.view_nic'
-    model = NIC
+class NICIndexView(ObjectListView):
     queryset = NIC.objects.order_by('interface__id').distinct('interface__id')
-    table_class = NICTable
-    filterset_class = NICFilterSet
-    template_name = 'sidekick/nic/nic_device_index.html'
+    model = NIC
+    table = NICTable
+    filterset = NICFilterSet
+    filterset_form = NICFilterSetForm
 
 
 # NIC Details
-class NICDetailView(PermissionRequiredMixin, DetailView):
-    permission_required = 'sidekick.view_nic'
-    model = Interface
-    template_name = 'sidekick/nic/nic.html'
+class NICDetailView(ObjectView):
+    queryset = NIC.objects.order_by('interface__id').distinct('interface__id')
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
 
-        nics = NIC.objects.filter(interface__id=self.kwargs['pk'])
-        if len(nics) > 0:
-            context['nic'] = nics[0]
+# NIC Edit
+class NICEditView(ObjectEditView):
+    queryset = NIC.objects.order_by('interface__id').distinct('interface__id')
+    form = NICForm
 
-        return context
+
+# NIC Delete
+class NICDeleteView(ObjectDeleteView):
+    queryset = NIC.objects.order_by('interface__id').distinct('interface__id')
 
 
 # NIC graphite data

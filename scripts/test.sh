@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-NETBOX_VERSION="v2.11.12"
+NETBOX_VERSION="v3.2.1"
 
 EXIT=0
 

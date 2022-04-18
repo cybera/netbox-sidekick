@@ -24,7 +24,6 @@ class Command(BaseCommand):
 
         return attrs
 
-
     def handle(self, *args, **options):
         try:
             contact_role = ContactRole.objects.get(name='Network')

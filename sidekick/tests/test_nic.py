@@ -12,9 +12,9 @@ class NICTest(BaseTest):
         v = NIC.objects.get(id=1)
         self.assertEqual(v.admin_status, True)
 
-    def test_view_nic_index(self):
+    def test_view_nic_list(self):
         resp = self.client.get(
-            reverse('plugins:sidekick:nic_index'))
+            reverse('plugins:sidekick:nic_list'))
         self.assertContains(resp, 'xe-3/3/3')
 
     def test_view_nic_detail(self):

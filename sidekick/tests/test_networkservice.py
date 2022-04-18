@@ -17,9 +17,9 @@ class NetworkServiceTest(BaseTest):
         v = LogicalSystem.objects.get(name="Peering")
         self.assertEqual(v.slug, "peering")
 
-    def test_view_logicalsystem_index(self):
+    def test_view_logicalsystem_list(self):
         resp = self.client.get(
-            reverse('plugins:sidekick:logicalsystem_index'))
+            reverse('plugins:sidekick:logicalsystem_list'))
         self.assertContains(resp, 'Peering')
 
     def test_view_logicalsystem_detail(self):
@@ -33,9 +33,9 @@ class NetworkServiceTest(BaseTest):
         v = NetworkServiceType.objects.get(name="Peering")
         self.assertEqual(v.slug, "peering")
 
-    def test_view_networkservicetype_index(self):
+    def test_view_networkservicetype_list(self):
         resp = self.client.get(
-            reverse('plugins:sidekick:networkservicetype_index'))
+            reverse('plugins:sidekick:networkservicetype_list'))
         self.assertContains(resp, 'Peering')
 
     def test_view_networkservicetype_detail(self):
@@ -51,9 +51,9 @@ class NetworkServiceTest(BaseTest):
             description="Peering service for East University")
         self.assertEqual(v.name, "East University's peering service")
 
-    def test_view_networkservice_index(self):
+    def test_view_networkservice_list(self):
         resp = self.client.get(
-            reverse('plugins:sidekick:networkservice_index'))
+            reverse('plugins:sidekick:networkservice_list'))
         self.assertContains(resp, "East University&#x27;s peering service")
 
     # Network Service Group
@@ -65,9 +65,9 @@ class NetworkServiceTest(BaseTest):
         self.assertEqual(v.name, 'A Group')
         self.assertEqual(v.description, 'Just some group')
 
-    def test_view_networkservicegroup_index(self):
+    def test_view_networkservicegroup_list(self):
         resp = self.client.get(
-            reverse('plugins:sidekick:networkservicegroup_index'))
+            reverse('plugins:sidekick:networkservicegroup_list'))
         self.assertContains(resp, 'A Group')
         self.assertContains(resp, 'Just some group')
 
@@ -82,9 +82,9 @@ class NetworkServiceTest(BaseTest):
         v = RoutingType.objects.get(name="BGP")
         self.assertEqual(v.slug, "bgp")
 
-    def test_view_routingtype_index(self):
+    def test_view_routingtype_list(self):
         resp = self.client.get(
-            reverse('plugins:sidekick:routingtype_index'))
+            reverse('plugins:sidekick:routingtype_list'))
         self.assertContains(resp, 'BGP')
 
     def test_view_routingtype_detail(self):

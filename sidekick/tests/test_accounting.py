@@ -15,9 +15,9 @@ class AccountingTest(BaseTest):
         v = AccountingSource.objects.get(device=1, name='Client-EastUniversity')
         self.assertEqual(v.destination, 'Primary ISP')
 
-    def test_view_accountingsource_index(self):
+    def test_view_accountingsource_list(self):
         resp = self.client.get(
-            reverse('plugins:sidekick:accountingsource_index'))
+            reverse('plugins:sidekick:accountingsource_list'))
         self.assertContains(resp, 'Router 1')
         self.assertContains(resp, 'Router 2')
         self.assertContains(resp, 'Client-EastUniversity')
@@ -32,9 +32,9 @@ class AccountingTest(BaseTest):
         v = AccountingProfile.objects.get(id=1)
         self.assertEqual(v.comments, "East University's profile")
 
-    def test_view_accountingprofile_index(self):
+    def test_view_accountingprofile_list(self):
         resp = self.client.get(
-            reverse('plugins:sidekick:accountingprofile_index'))
+            reverse('plugins:sidekick:accountingprofile_list'))
         self.assertContains(resp, 'East University')
 
     def test_view_accountingprofile_detail(self):
@@ -42,15 +42,14 @@ class AccountingTest(BaseTest):
         resp = self.client.get(v.get_absolute_url())
         self.assertContains(resp, 'East University&#x27;s profile')
         self.assertContains(resp, '200000000')
-        self.assertContains(resp, 'Router 1')
 
     # Bandwidth Profile
     def test_bandwidthprofile_basic(self):
         v = BandwidthProfile.objects.get(id=1)
         self.assertEqual(v.traffic_cap, 200000000)
 
-    def test_view_bandwidthprofile_index(self):
+    def test_view_bandwidthprofile_list(self):
         resp = self.client.get(
-            reverse('plugins:sidekick:bandwidthprofile_index'))
+            reverse('plugins:sidekick:bandwidthprofile_list'))
         self.assertContains(resp, 'East University')
         self.assertContains(resp, '200000000')

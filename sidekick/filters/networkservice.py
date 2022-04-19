@@ -1,12 +1,16 @@
 import django_filters
+import netaddr
+
 from django import forms
 
 from netbox.filtersets import NetBoxModelFilterSet
 from netbox.forms import NetBoxModelFilterSetForm
 from tenancy.models import Tenant
-from utilities.forms import DynamicModelMultipleChoiceField
-
-import netaddr
+from utilities.forms import (
+    BOOLEAN_WITH_BLANK_CHOICES,
+    DynamicModelMultipleChoiceField,
+    StaticSelect,
+)
 
 from sidekick.models import (
     RoutingType, LogicalSystem,
@@ -56,6 +60,12 @@ class NetworkServiceFilterSet(NetBoxModelFilterSet):
         model = NetworkService
         fields = ('member', 'member_site', 'network_service_type', 'active')
 
+    def __init__(self, data, *args, **kwargs):
+        if not data.get('active'):
+            data = data.copy()
+            data['active'] = True
+        super().__init__(data, *args, **kwargs)
+
     def prefix_search(self, queryset, name, value):
         services = []
         if not value.strip():
@@ -97,9 +107,12 @@ class NetworkServiceFilterSetForm(NetBoxModelFilterSetForm):
         label='IP Address',
     )
 
-    activd = forms.NullBooleanField(
+    active = forms.NullBooleanField(
         required=False,
         label='Active?',
+        widget=StaticSelect(
+            choices=BOOLEAN_WITH_BLANK_CHOICES,
+        )
     )
 
 

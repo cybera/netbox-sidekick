@@ -36,6 +36,7 @@ class NetworkServiceForm(NetBoxModelForm):
                   'start_date', 'end_date', 'description', 'comments', 'active',
                   'backup_for', 'accounting_profile',)
 
+
 class NetworkServiceDeviceForm(NetBoxModelForm):
     class Meta:
         model = NetworkServiceDevice

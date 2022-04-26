@@ -51,15 +51,6 @@ class AccountingSourceDetailView(ObjectView):
         }
 
 
-class AccountingSourceEditView(ObjectEditView):
-    queryset = AccountingSource.objects.all()
-    form = AccountingSourceForm
-
-
-class AccountingSourceDeleteView(ObjectDeleteView):
-    queryset = AccountingSource.objects.all()
-
-
 class AccountingProfileIndexView(ObjectListView):
     queryset = AccountingProfile.objects.all()
     model = AccountingProfile

@@ -2,7 +2,6 @@ from .accounting import (  # noqa: F401
     AccountingProfileIndexView, AccountingProfileDetailView,
     AccountingProfileEditView, AccountingProfileDeleteView,
     AccountingSourceIndexView, AccountingSourceDetailView,
-    AccountingSourceEditView, AccountingSourceDeleteView,
     BandwidthProfileIndexView, BandwidthProfileDetailView,
     BandwidthProfileEditView, BandwidthProfileDeleteView,
 )

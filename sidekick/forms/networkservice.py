@@ -1,4 +1,12 @@
+from django import forms
+from django.forms.models import inlineformset_factory
+
 from netbox.forms import NetBoxModelForm
+
+from utilities.forms import (
+    DatePicker,
+)
+
 from sidekick.models import (
     LogicalSystem,
     NetworkService,
@@ -30,6 +38,12 @@ class NetworkServiceTypeForm(NetBoxModelForm):
 
 
 class NetworkServiceForm(NetBoxModelForm):
+    start_date = forms.DateTimeField(
+        required=True,
+        label="Start Date",
+        widget=DatePicker,
+    )
+
     class Meta:
         model = NetworkService
         fields = ('name', 'network_service_type', 'member', 'member_site', 'legacy_id',

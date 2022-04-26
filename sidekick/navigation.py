@@ -18,10 +18,6 @@ menu_items = (
         link_text='Logical Systems',
     ),
     PluginMenuItem(
-        link='plugins:sidekick:member_create',
-        link_text='Member - Create New',
-    ),
-    PluginMenuItem(
         link='plugins:sidekick:memberbandwidth_index',
         link_text='Member - Bandwidth Usage Report',
     ),

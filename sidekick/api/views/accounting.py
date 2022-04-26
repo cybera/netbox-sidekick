@@ -9,18 +9,31 @@ from netbox.api.authentication import TokenAuthentication
 from netbox.api.viewsets import NetBoxModelViewSet
 
 from sidekick.api.serializers import (
+    AccountingProfileSerializer,
     AccountingSourceSerializer,
+    BandwidthProfileSerializer,
 )
 
 from sidekick.models import (
     AccountingProfile,
     AccountingSource,
+    BandwidthProfile,
 )
+
+
+class AccountingProfileViewSet(NetBoxModelViewSet):
+    queryset = AccountingProfile.objects.all()
+    serializer_class = AccountingProfileSerializer
 
 
 class AccountingSourceViewSet(NetBoxModelViewSet):
     queryset = AccountingSource.objects.all()
     serializer_class = AccountingSourceSerializer
+
+
+class BandwidthProfileViewSet(NetBoxModelViewSet):
+    queryset = BandwidthProfile.objects.all()
+    serializer_class = BandwidthProfileSerializer
 
 
 class CurrentBandwidthView(APIView):

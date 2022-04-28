@@ -5,7 +5,6 @@ from netbox.views.generic import (
 
 from sidekick.forms import (
     AccountingProfileForm,
-    AccountingSourceForm,
     BandwidthProfileForm
 )
 

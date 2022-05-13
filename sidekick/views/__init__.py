@@ -8,6 +8,7 @@ from .accounting import (  # noqa: F401
 
 from .member import (  # noqa: F401
     MemberCreateView,
+    MemberContactsView,
 )
 
 from .memberbandwidth import (  # noqa: F401

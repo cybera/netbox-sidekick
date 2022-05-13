@@ -20,3 +20,7 @@ class MemberBandwidthTable(BaseTable):
     class Meta(BaseTable.Meta):
         model = LogicalSystem
         fields = ('pk', 'member',)
+
+
+class MemberContactTable(tables.Table):
+    contact = tables.Column()

@@ -22,6 +22,10 @@ menu_items = (
         link_text='Member - Bandwidth Usage Report',
     ),
     PluginMenuItem(
+        link='plugins:sidekick:membercontact_list',
+        link_text='Member - Contacts',
+    ),
+    PluginMenuItem(
         link='plugins:sidekick:nic_list',
         link_text='Interfaces',
     ),

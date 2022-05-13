@@ -1,0 +1,35 @@
+{% extends 'base/layout.html' %}
+{% load render_table from django_tables2 %}
+
+{% block content %}
+<div class="row">
+  <div class="col col-md-7">
+    <div class="card">
+      <h5 class="card-header">Member Contacts</h5>
+      <div class="card-body">
+        {% render_table member_contacts %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col col-md-5">
+    <div class="card">
+      <h5 class="card-header">Search</h5>
+      <div class="card-body">
+        <form action="{{ request.path }}" method="get" id="contact_form">
+          {% csrf_token %}
+          <legend><h6>Members</h6></legend>
+          <select name="member" id="member" class="netbox-static-select">
+            {% for member in members %}
+            <option value="{{ member.id }}" {% if selected_member == member.id %} selected {% endif %}>{{ member.name }}</option>
+            {% endfor %}
+          </select>
+          <br>
+          <br>
+          <button type="submit" name="submit" value="table" class="btn btn-primary">Search</button>
+        </form>
+      </div>
+    </div>
+</div>
+
+{% endblock %}

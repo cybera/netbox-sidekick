@@ -40,6 +40,9 @@ urlpatterns = [
     # Member Bandwidth Data
     path('member_bandwidth/graphite/<int:pk>', views.MemberBandwidthDataView.as_view(), name='memberbandwidth_data'),
 
+    # Member Contacts
+    path('member_contacts/', views.MemberContactsView.as_view(), name='membercontact_list'),
+
     # Network Service Type
     path('network_service_types/', views.NetworkServiceTypeIndexView.as_view(), name='networkservicetype_list'),
     path('network_service_types/add/', views.NetworkServiceTypeEditView.as_view(), name='networkservicetype_add'),

@@ -132,97 +132,98 @@
             {% endfor %}
           {% endif %}
 
-        {% if service_device.network_service_l3.all|length > 0 %}
-          <h6 class="card-header">L3 Information</h6>
-          {% for l3 in service_device.network_service_l3.all %}
-            <div class="card-body">
-              <table class="table table-hover panel-body attr-table">
-                <tr>
-                  <td>Logical System</td>
-                  <td><a href="{{ l3.logical_system.get_absolute_url }}">{{ l3.logical_system }}</a></td>
-                </tr>
-                <tr>
-                  <td>Routing Type</td>
-                  <td>{{ l3.routing_type }}</td>
-                </tr>
-                <tr>
-                  <td>AS Number</td>
-                  <td>{{ l3.asn }}</td>
-                </tr>
-                <tr>
-                  <td>IPv4 Unicast</td>
-                  <td>
-                    {% if l3.ipv4_unicast %}
-                    <i class="mdi mdi-check-bold"></i>
-                    {% else %}
-                    <i class="mdi mdi-close-thick"></i>
-                    {% endif %}
-                  </td>
-                </tr>
-                <tr>
-                  <td>IPv4 Multicast</td>
-                  <td>
-                    {% if l3.ipv4_multicast %}
-                    <i class="mdi mdi-check-bold"></i>
-                    {% else %}
-                    <i class="mdi mdi-close-thick"></i>
-                    {% endif %}
-                  </td>
-                </tr>
-                <tr>
-                  <td>IPv4 Prefixes</td>
-                  <td>{{ l3.ipv4_prefixes }}</td>
-                </tr>
-                <tr>
-                  <td>IPv4 Provider Router Address</td>
-                  <td>{{ l3.provider_router_address_ipv4 }}</td>
-                </tr>
-                <tr>
-                  <td>IPv4 Member Router Address</td>
-                  <td>{{ l3.member_router_address_ipv4 }}</td>
-                </tr>
-                <tr>
-                  <td>IPv6 Unicast</td>
-                  <td>
-                    {% if l3.ipv6_unicast %}
-                    <i class="mdi mdi-check-bold"></i>
-                    {% else %}
-                    <i class="mdi mdi-close-thick"></i>
-                    {% endif %}
-                  </td>
-                </tr>
-                <tr>
-                  <td>IPv6 Multicast</td>
-                  <td>
-                    {% if l3.ipv6_multicast %}
-                    <i class="mdi mdi-check-bold"></i>
-                    {% else %}
-                    <i class="mdi mdi-close-thick"></i>
-                    {% endif %}
-                  </td>
-                </tr>
-                <tr>
-                  <td>IPv6 Prefixes</td>
-                  <td>{{ l3.ipv6_prefixes }}</td>
-                </tr>
-                <tr>
-                  <td>IPv6 Provider Router Address</td>
-                  <td>{{ l3.provider_router_address_ipv6 }}</td>
-                </tr>
-                <tr>
-                  <td>IPv6 Member Router Address</td>
-                  <td>{{ l3.member_router_address_ipv6 }}</td>
-                </tr>
-                <tr>
-                  <td>Comments</td>
-                  <td>{{ l3.comments }}</td>
-                </tr>
-              </table>
-            </div>
-          {% endfor %}
-        {% endif %}
-      </div>
+          {% if service_device.network_service_l3.all|length > 0 %}
+            <h6 class="card-header">L3 Information</h6>
+            {% for l3 in service_device.network_service_l3.all %}
+              <div class="card-body">
+                <table class="table table-hover panel-body attr-table">
+                  <tr>
+                    <td>Logical System</td>
+                    <td><a href="{{ l3.logical_system.get_absolute_url }}">{{ l3.logical_system }}</a></td>
+                  </tr>
+                  <tr>
+                    <td>Routing Type</td>
+                    <td>{{ l3.routing_type }}</td>
+                  </tr>
+                  <tr>
+                    <td>AS Number</td>
+                    <td>{{ l3.asn }}</td>
+                  </tr>
+                  <tr>
+                    <td>IPv4 Unicast</td>
+                    <td>
+                      {% if l3.ipv4_unicast %}
+                      <i class="mdi mdi-check-bold"></i>
+                      {% else %}
+                      <i class="mdi mdi-close-thick"></i>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>IPv4 Multicast</td>
+                    <td>
+                      {% if l3.ipv4_multicast %}
+                      <i class="mdi mdi-check-bold"></i>
+                      {% else %}
+                      <i class="mdi mdi-close-thick"></i>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>IPv4 Prefixes</td>
+                    <td>{{ l3.ipv4_prefixes }}</td>
+                  </tr>
+                  <tr>
+                    <td>IPv4 Provider Router Address</td>
+                    <td>{{ l3.provider_router_address_ipv4 }}</td>
+                  </tr>
+                  <tr>
+                    <td>IPv4 Member Router Address</td>
+                    <td>{{ l3.member_router_address_ipv4 }}</td>
+                  </tr>
+                  <tr>
+                    <td>IPv6 Unicast</td>
+                    <td>
+                      {% if l3.ipv6_unicast %}
+                      <i class="mdi mdi-check-bold"></i>
+                      {% else %}
+                      <i class="mdi mdi-close-thick"></i>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>IPv6 Multicast</td>
+                    <td>
+                      {% if l3.ipv6_multicast %}
+                      <i class="mdi mdi-check-bold"></i>
+                      {% else %}
+                      <i class="mdi mdi-close-thick"></i>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>IPv6 Prefixes</td>
+                    <td>{{ l3.ipv6_prefixes }}</td>
+                  </tr>
+                  <tr>
+                    <td>IPv6 Provider Router Address</td>
+                    <td>{{ l3.provider_router_address_ipv6 }}</td>
+                  </tr>
+                  <tr>
+                    <td>IPv6 Member Router Address</td>
+                    <td>{{ l3.member_router_address_ipv6 }}</td>
+                  </tr>
+                  <tr>
+                    <td>Comments</td>
+                    <td>{{ l3.comments }}</td>
+                  </tr>
+                </table>
+              </div>
+            {% endfor %}
+          {% endif %}
       {% endfor %}
+      </div>
+
       {% plugin_left_page object %}
     </div>
     <div class="col col-md-5">

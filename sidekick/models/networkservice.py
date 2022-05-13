@@ -299,8 +299,8 @@ class NetworkServiceDevice(NetBoxModel):
     def __str__(self):
         return f"{self.network_service} on {self.device.name} {self.interface}"
 
-    def get_absolute_url(self):
-        return reverse('plugins:sidekick:networkservicedevice_detail', args=[self.pk])
+    # def get_absolute_url(self):
+    #     return reverse('plugins:sidekick:networkservicedevice_detail', args=[self.pk])
 
     def get_interface_entry(self):
         try:

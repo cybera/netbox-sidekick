@@ -20,8 +20,18 @@
           {% csrf_token %}
           <legend><h6>Members</h6></legend>
           <select name="member" id="member" class="netbox-static-select">
+            <option value="">---</option>
             {% for member in members %}
             <option value="{{ member.id }}" {% if selected_member == member.id %} selected {% endif %}>{{ member.name }}</option>
+            {% endfor %}
+          </select>
+          <br>
+          <br>
+          <legend><h6>Network Service Groups</h6></legend>
+          <select name="network_service_group" id="network_service_group" class="netbox-static-select">
+            <option value="">---</option>
+            {% for network_service_group in network_service_groups %}
+            <option value="{{ network_service_group.id }}" {% if selected_network_service_group == network_service_group.id %} selected {% endif %}>{{ network_service_group.name }}</option>
             {% endfor %}
           </select>
           <br>

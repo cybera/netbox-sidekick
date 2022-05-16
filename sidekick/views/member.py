@@ -62,8 +62,9 @@ class MemberContactsView(PermissionRequiredMixin, SingleTableView):
             if len(groups) == 1:
                 group = groups[0]
                 for user in group.user_set.all():
-                    if not any(v.get('contact', None) == user.username for v in contacts):
-                        contacts.append({'contact': user.username})
+                    if user.is_active:
+                        if not any(v.get('contact', None) == user.username for v in contacts):
+                            contacts.append({'contact': user.username})
 
         context['member_contacts'] = MemberContactTable(contacts)
         context['members'] = members

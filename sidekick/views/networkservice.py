@@ -46,16 +46,7 @@ from sidekick.models import (
     NetworkServiceGroup,
 )
 
-from sidekick.utils import (
-    get_accounting_sources,
-    get_all_ip_prefixes,
-    get_graphite_accounting_data,
-    get_graphite_remaining_data,
-    get_graphite_service_data,
-    get_graphite_service_graph,
-    get_period,
-    get_services,
-)
+from sidekick import utils
 
 
 # IP Prefix Index
@@ -67,7 +58,7 @@ class IPPrefixIndexView(PermissionRequiredMixin, SingleTableView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         prefixes = []
-        for member_id, data in get_all_ip_prefixes().items():
+        for member_id, data in utils.get_all_ip_prefixes().items():
             for prefix in data['prefixes']:
                 prefixes.append({
                     'prefix': prefix,
@@ -241,8 +232,8 @@ class NetworkServiceGraphiteDataView(PermissionRequiredMixin, View):
         if graphite_render_host is None:
             return JsonResponse({})
 
-        ns = NetworkService.objects.get(pk=self.kwargs['pk'])
-        graph_data = get_graphite_service_graph(ns, graphite_render_host)
+        network_service = NetworkService.objects.get(pk=self.kwargs['pk'])
+        graph_data = utils.get_graphite_service_graph(graphite_render_host, network_service)
         return JsonResponse({
             'graph_data': graph_data,
         })
@@ -258,21 +249,46 @@ class NetworkServiceGroupGraphiteDataView(PermissionRequiredMixin, View):
         if graphite_render_host is None:
             return JsonResponse({})
 
+        period = utils.get_period(request)
+
+        services_by_member = {}
+        accounting_by_member = {}
         service_group = NetworkServiceGroup.objects.get(pk=self.kwargs['pk'])
-        all_members = []
-        all_services = []
-        all_accounting_sources = []
         for network_service in service_group.network_services.all():
             member = network_service.member
-            if member.name not in all_members:
-                all_members.append(member.name)
-                all_services.extend(get_services(member))
-                all_accounting_sources.extend(get_accounting_sources(member))
+            if member.name not in services_by_member.keys():
+                services_by_member[member.name] = []
+            if member.name not in accounting_by_member.keys():
+                accounting_by_member[member.name] = []
 
-        period = get_period(request)
-        service_data = get_graphite_service_data(graphite_render_host, all_services, period)
-        accounting_data = get_graphite_accounting_data(graphite_render_host, all_accounting_sources, period)
-        remaining_data = get_graphite_remaining_data(graphite_render_host, all_services, period)
+            services_by_member[member.name].append(network_service)
+            accounting_by_member[member.name] = utils.get_accounting_sources(member)
+
+        services_in = []
+        services_out = []
+        accounting_in = []
+        accounting_out = []
+        remaining_in = []
+        remaining_out = []
+        for member_name in services_by_member.keys():
+            services = services_by_member[member_name]
+            accounting = accounting_by_member[member_name]
+
+            (_in, _out) = utils.format_graphite_service_query(services)
+            services_in.append(_in)
+            services_out.append(_out)
+
+            (_in, _out) = utils.format_graphite_accounting_query(accounting)
+            accounting_in.append(_in)
+            accounting_out.append(_out)
+
+            (_in, _out) = utils.format_graphite_remaining_query(services, accounting)
+            remaining_in.append(_in)
+            remaining_out.append(_out)
+
+        service_data = utils.get_graphite_data(graphite_render_host, services_in, services_out, period)
+        accounting_data = utils.get_graphite_data(graphite_render_host, accounting_in, accounting_out, period)
+        remaining_data = utils.get_graphite_data(graphite_render_host, remaining_in, remaining_out, period)
 
         graph_data = {
             'service_data': service_data['data'],

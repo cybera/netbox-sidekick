@@ -67,20 +67,45 @@ class NetworkUsageGroupView(APIView):
         except NetworkServiceGroup.DoesNotExist:
             raise Http404
 
-        all_members = []
-        all_services = []
-        all_accounting_sources = []
+        period = utils.get_period(request)
+
+        services_by_member = {}
+        accounting_by_member = {}
         for network_service in service_group.network_services.all():
             member = network_service.member
-            if member.name not in all_members:
-                all_members.append(member.name)
-                all_services.extend(utils.get_services(member))
-                all_accounting_sources.extend(utils.get_accounting_sources(member))
+            if member.name not in services_by_member.keys():
+                services_by_member[member.name] = []
+            if member.name not in accounting_by_member.keys():
+                accounting_by_member[member.name] = []
 
-        period = utils.get_period(request)
-        service_data = utils.get_graphite_service_data(graphite_render_host, all_services, period)
-        accounting_data = utils.get_graphite_accounting_data(graphite_render_host, all_accounting_sources, period)
-        remaining_data = utils.get_graphite_remaining_data(graphite_render_host, all_services, period)
+            services_by_member[member.name].append(network_service)
+            accounting_by_member[member.name] = utils.get_accounting_sources(member)
+
+        services_in = []
+        services_out = []
+        accounting_in = []
+        accounting_out = []
+        remaining_in = []
+        remaining_out = []
+        for member_name in services_by_member.keys():
+            services = services_by_member[member_name]
+            accounting = accounting_by_member[member_name]
+
+            (_in, _out) = utils.format_graphite_service_query(services)
+            services_in.append(_in)
+            services_out.append(_out)
+
+            (_in, _out) = utils.format_graphite_accounting_query(accounting)
+            accounting_in.append(_in)
+            accounting_out.append(_out)
+
+            (_in, _out) = utils.format_graphite_remaining_query(services, accounting)
+            remaining_in.append(_in)
+            remaining_out.append(_out)
+
+        service_data = utils.get_graphite_data(graphite_render_host, services_in, services_out, period)
+        accounting_data = utils.get_graphite_data(graphite_render_host, accounting_in, accounting_out, period)
+        remaining_data = utils.get_graphite_data(graphite_render_host, remaining_in, remaining_out, period)
 
         graph_data = {
             'service_data': service_data['data'],
@@ -126,11 +151,18 @@ class NetworkUsageMemberView(APIView):
             raise Http404
 
         services = utils.get_services(member)
-        accounting_sources = utils.get_accounting_sources(member)
         period = utils.get_period(request)
-        service_data = utils.get_graphite_service_data(graphite_render_host, services, period)
-        accounting_data = utils.get_graphite_accounting_data(graphite_render_host, accounting_sources, period)
-        remaining_data = utils.get_graphite_remaining_data(graphite_render_host, services, period)
+        (services_in, services_out) = utils.format_graphite_service_query(services)
+        service_data = utils.get_graphite_data(graphite_render_host, [services_in], [services_out], period)
+
+        accounting_data = None
+        accounting_sources = utils.get_accounting_sources(member)
+        if len(accounting_sources) > 0:
+            (accounting_in, accounting_out) = utils.format_graphite_accounting_query(accounting_sources)
+            accounting_data = utils.get_graphite_data(graphite_render_host, [accounting_in], [accounting_out], period)
+
+        (remaining_in, remaining_out) = utils.format_graphite_remaining_query(services, accounting_sources)
+        remaining_data = utils.get_graphite_data(graphite_render_host, [remaining_in], [remaining_out], period)
 
         graph_data = {
             'service_data': service_data['data'],
@@ -140,15 +172,15 @@ class NetworkUsageMemberView(APIView):
 
         queries = {
             'service_data': service_data['query'],
-            'remaining_data': remaining_data['query'],
-            'accounting_data': accounting_data['query'],
         }
 
         if accounting_data is not None and 'data' in accounting_data:
             graph_data['accounting_data'] = accounting_data['data']
+            queries['accounting_data'] = accounting_data['query']
 
         if remaining_data is not None and 'data' in remaining_data:
             graph_data['remaining_data'] = remaining_data['data']
+            queries['remaining_data'] = remaining_data['query']
 
         return Response({
             'graph_data': graph_data,

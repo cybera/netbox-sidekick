@@ -562,7 +562,7 @@ def get_graphite_nic_graph(nic, graphite_render_host=None, period="-1Y"):
     return graph_data
 
 
-def get_graphite_service_graph(service, graphite_render_host=None, period="-1Y"):
+def get_graphite_service_graph(graphite_render_host, service, period="-1Y"):
     if graphite_render_host is None:
         return None
 
@@ -601,8 +601,8 @@ def get_graphite_data(graphite_render_host, targets_in, targets_out, period="-1Y
     if graphite_render_host is None:
         return None
 
-    targets_in = ','.join(targets_in)
-    targets_out = ','.join(targets_out)
+    targets_in = ', '.join(targets_in)
+    targets_out = ', '.join(targets_out)
 
     query = f"{graphite_render_host}/render?format=json&from={period}"
     query = f"{query}&target=transformNull(scale(keepLastValue(removeBelowValue(sum({targets_in}), 0)), 8))"
@@ -632,57 +632,57 @@ def get_graphite_data(graphite_render_host, targets_in, targets_out, period="-1Y
     return graph_data
 
 
-def get_graphite_service_data(graphite_render_host, services, period="-1Y"):
-    if graphite_render_host is None:
-        return None
-
-    targets_in = []
-    targets_out = []
-    for s in services:
-        name = s.graphite_service_name()
-        targets_in.append(f"removeAboveValue({name}.*.*.in_octets, 125000000000)")
-        targets_out.append(f"removeAboveValue({name}.*.*.out_octets, 125000000000)")
-
-    return get_graphite_data(graphite_render_host, targets_in, targets_out, period)
-
-
-def get_graphite_accounting_data(graphite_render_host, accounting, period="-1Y"):
-    if graphite_render_host is None:
-        return None
-
-    targets_in = []
-    targets_out = []
-    for acct in accounting:
-        name = acct.graphite_full_path_name()
-        targets_in.append(f"removeAboveValue({name}.in_octets, 125000000000)")
-        targets_out.append(f"removeAboveValue({name}.out_octets, 125000000000)")
-
-    return get_graphite_data(graphite_render_host, targets_in, targets_out, period)
-
-
-def get_graphite_remaining_data(graphite_render_host, services, period="-1Y"):
-    if graphite_render_host is None:
-        return None
-
-    targets_in = []
-    targets_out = []
+def format_graphite_service_query(services):
+    services_in = []
+    services_out = []
     for service in services:
         name = service.graphite_service_name()
-        if service.accounting_profile and len(service.accounting_profile.accounting_sources.all()) > 0:
-            acct_sources_in = []
-            acct_sources_out = []
-            for a in service.accounting_profile.accounting_sources.all():
-                acct_name = a.graphite_full_path_name()
-                acct_sources_in.append(f"{acct_name}.in_octets")
-                acct_sources_out.append(f"{acct_name}.out_octets")
+        services_in.append(f"{name}.*.*.in_octets")
+        services_out.append(f"{name}.*.*.out_octets")
 
-            targets_in.append(f"removeAboveValue(diffSeries({name}.*.*.in_octets, {','.join(acct_sources_in)}), 125000000000)")
-            targets_out.append(f"removeAboveValue(diffSeries({name}.*.*.out_octets, {','.join(acct_sources_out)}), 125000000000)")
-        else:
-            targets_in.append(f"removeAboveValue({name}.*.*.in_octets, 125000000000)")
-            targets_out.append(f"removeAboveValue({name}.*.*.out_octets, 125000000000)")
+    targets_in = f"removeAboveValue(sumSeries({', '.join(services_in)}), 125000000000)"
+    targets_out = f"removeAboveValue(sumSeries({', '.join(services_out)}), 125000000000)"
 
-    return get_graphite_data(graphite_render_host, targets_in, targets_out, period)
+    return (targets_in, targets_out)
+
+
+def format_graphite_accounting_query(accounting):
+    accounting_in = []
+    accounting_out = []
+    for acct in accounting:
+        name = acct.graphite_full_path_name()
+        accounting_in.append(f"{name}.in_octets")
+        accounting_out.append(f"{name}.out_octets")
+
+    targets_in = f"removeAboveValue(sumSeries({', '.join(accounting_in)}), 125000000000)"
+    targets_out = f"removeAboveValue(sumSeries({', '.join(accounting_out)}), 125000000000)"
+
+    return (targets_in, targets_out)
+
+
+def format_graphite_remaining_query(services, accounting):
+    services_in = []
+    services_out = []
+    for service in services:
+        name = service.graphite_service_name()
+        services_in.append(f"{name}.*.*.in_octets")
+        services_out.append(f"{name}.*.*.out_octets")
+
+    targets_in = f"removeAboveValue(sumSeries({', '.join(services_in)}), 125000000000)"
+    targets_out = f"removeAboveValue(sumSeries({', '.join(services_out)}), 125000000000)"
+
+    if len(accounting) > 0:
+        accounting_in = []
+        accounting_out = []
+        for acct in accounting:
+            name = acct.graphite_full_path_name()
+            accounting_in.append(f"{name}.in_octets")
+            accounting_out.append(f"{name}.out_octets")
+
+        targets_in = f"removeAboveValue(diffSeries(sumSeries({', '.join(services_in)}), {', '.join(accounting_in)}), 125000000000)"
+        targets_out = f"removeAboveValue(diffSeries(sumSeries({', '.join(services_out)}), {', '.join(accounting_out)}), 125000000000)"
+
+    return (targets_in, targets_out)
 
 
 def get_all_ip_prefixes():

@@ -41,9 +41,12 @@ class MemberContactsView(PermissionRequiredMixin, SingleTableView):
 
         network_service_groups = NetworkServiceGroup.objects.all()
         network_service_group_id = self.request.GET.get('network_service_group', "")
+        if network_service_group_id != "":
+            network_service_group_id = int(network_service_group_id)
+
         member_names = []
         if network_service_group_id != "":
-            network_service_group = NetworkServiceGroup.objects.get(pk=int(network_service_group_id))
+            network_service_group = NetworkServiceGroup.objects.get(pk=network_service_group_id)
             for network_service in network_service_group.network_services.all():
                 if network_service.member.name not in member_names:
                     member_names.append(network_service.member.name)
@@ -58,6 +61,8 @@ class MemberContactsView(PermissionRequiredMixin, SingleTableView):
                 continue
             if len(member_names) > 0 and member.name not in member_names:
                 continue
+
+            # Get the user accounts from the member's group
             groups = Group.objects.filter(name__iexact=member.name)
             if len(groups) == 1:
                 group = groups[0]
@@ -66,10 +71,16 @@ class MemberContactsView(PermissionRequiredMixin, SingleTableView):
                         if not any(v.get('contact', None) == user.username for v in contacts):
                             contacts.append({'contact': user.username})
 
+            # Get the contact objects from the member's sites
+            for site in member.sites.all():
+                for c in site.contacts.all():
+                    if not any(v.get('contact', None) == c.contact.email for v in contacts):
+                        contacts.append({'contact': c.contact.email})
+
         context['member_contacts'] = MemberContactTable(contacts)
         context['members'] = members
         context['network_service_groups'] = network_service_groups
         context['selected_member'] = member_id
-        context['selected_network_service_group'] = int(network_service_group_id)
+        context['selected_network_service_group'] = network_service_group_id
 
         return context

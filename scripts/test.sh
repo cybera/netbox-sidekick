@@ -17,7 +17,7 @@ fi
 
 
 # Check code conventions
-flake8 --ignore W504,E501 sidekick/
+flake8 --ignore W504,E275,E501 sidekick/
 RC=$?
 if [[ $RC != 0 ]]; then
   echo ""

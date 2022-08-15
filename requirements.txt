@@ -10,4 +10,5 @@ python-dateutil
 rrdtool
 napalm
 whisper
+pytz==2022.1
 git+https://code.canarie.ca/gren_map/grenml.git

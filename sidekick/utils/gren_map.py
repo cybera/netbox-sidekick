@@ -24,7 +24,7 @@ def generate_map():
 
     primary_site_name = settings.PLUGINS_CONFIG['sidekick'].get('mapping_primary_site', None)
     if primary_site_name is None:
-        raise("Mapping_primary_site is not defined in netbox config")
+        raise("mapping_primary_site is not defined in netbox config")
 
     # First build the information for the primary owner.
     primary_site = Site.objects.filter(

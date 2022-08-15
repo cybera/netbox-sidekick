@@ -2,6 +2,7 @@ backports.weakref
 backports-datetime-fromisoformat
 django-extensions
 flake8
+geopy
 graphyte
 git+https://github.com/1Password/connect-sdk-python
 pysnmp

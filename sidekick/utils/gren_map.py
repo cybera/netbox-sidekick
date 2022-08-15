@@ -155,7 +155,7 @@ def generate_map():
                         id=link_id,
                         name=link_name,
                         owners=[owner_id, member_id],
-                        nodes=[member_id, owner_id],
+                        nodes=[member_id, nren_node_id],
                     )
 
     return grenml_manager

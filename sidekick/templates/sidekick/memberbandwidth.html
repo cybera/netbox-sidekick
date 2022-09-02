@@ -82,6 +82,26 @@
     $("#remaining_graph").empty();
   }
 
+  function getMax(arr) {
+      let len = arr.length;
+      let max = -Infinity;
+
+      while (len--) {
+          max = arr[len] > max ? arr[len] : max;
+      }
+      return max;
+  }
+
+  function getMin(arr) {
+      let len = arr.length;
+      let min = Infinity;
+
+      while (len--) {
+          min = arr[len] < min ? arr[len] : min;
+      }
+      return min;
+  }
+
   function renderGraphs(url) {
     return $.ajax({
       url: url,
@@ -95,8 +115,8 @@
         let remaining_data = json['graph_data']['remaining_data'];
         let all_data = [].concat(service_data[1], service_data[2], accounting_data[1], accounting_data[2], remaining_data[1], remaining_data[2]);
 
-        let max = Math.round(Math.max(...all_data));
-        let min = Math.round(Math.min(...all_data));
+        let max = Math.round(getMax(all_data));
+        let min = Math.round(getMin(all_data));
 
         const matchSyncKeys = (own, ext) => own == ext;
         const cursorOpts = {

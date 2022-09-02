@@ -47,6 +47,10 @@ class Command(BaseCommand):
             '--dry-run', required=False, action='store_true',
             help='Perform a dry-run and make no changes')
 
+        parser.add_argument(
+            '--reassign-ip', required=False, action='store_true',
+            help='Reassign an IP even if it is on another device')
+
     def handle(self, *args, **options):
         # First, query for the device by name.
         try:
@@ -107,10 +111,12 @@ class Command(BaseCommand):
                     continue
 
                 iface_type = InterfaceTypeChoices.TYPE_VIRTUAL
-                if iface_details['ifHighSpeed'] == 1000:
+                if iface_details['ifHighSpeed'] == "1000":
                     iface_type = InterfaceTypeChoices.TYPE_1GE_FIXED
-                if iface_details['ifHighSpeed'] == 10000:
+                if iface_details['ifHighSpeed'] == "10000":
                     iface_type = InterfaceTypeChoices.TYPE_10GE_FIXED
+                if iface_details['ifHighSpeed'] == "100000":
+                    iface_type = InterfaceTypeChoices.TYPE_100GE_QSFP28
                 if iface_details['ifHighSpeed'] == 'ieee8023adLag':
                     iface_type = InterfaceTypeChoices.TYPE_LAG
 
@@ -164,6 +170,10 @@ class Command(BaseCommand):
 
                     if existing_interface.untagged_vlan != iface_untagged_vlan:
                         existing_interface.untagged_vlan = iface_untagged_vlan
+                        changed = True
+
+                    if existing_interface.type != iface_type:
+                        existing_interface.type = iface_type
                         changed = True
 
                     if changed is True:
@@ -267,6 +277,12 @@ class Command(BaseCommand):
                                     # a reconfiguration was made. In this case, we reassign the
                                     # IP.
                                     if ip.assigned_object.device.name == existing_interface.device.name:
+                                        ip.assigned_object = existing_interface
+                                        ip.save()
+                                        continue
+
+                                    # Reassign the IP to another device if the option was given
+                                    if options['reassign_ip']:
                                         ip.assigned_object = existing_interface
                                         ip.save()
                                         continue

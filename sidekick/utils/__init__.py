@@ -539,8 +539,8 @@ def get_graphite_nic_graph(nic, graphite_render_host=None, period="-1Y"):
     graph_data['title'] = "Last Year - GB"
     metric_in = f"{carbon_name}.in_octets"
     metric_out = f"{carbon_name}.out_octets"
-    target_in = f"scale(keepLastValue(removeBelowValue(removeAboveValue({metric_in}, 125000000000), 0)), 8)"
-    target_out = f"scale(keepLastValue(removeBelowValue(removeAboveValue({metric_out}, 125000000000), 0)), -8)"
+    target_in = f"scale(keepLastValue({metric_in})), 8)"
+    target_out = f"scale(keepLastValue({metric_out})), -8)"
     query = f"{query_base}&from={period}&target={target_in}&target={target_out}"
 
     r = requests.get(query)
@@ -572,8 +572,8 @@ def get_graphite_service_graph(graphite_render_host, service, period="-1Y"):
 
     graph_data = {}
     graph_data['title'] = "Last Year - GB"
-    target_in = f"scale(keepLastValue(removeBelowValue(removeAboveValue({service_name}.*.*.in_octets, 125000000000), 0)), 8)"
-    target_out = f"scale(keepLastValue(removeBelowValue(removeAboveValue({service_name}.*.*.out_octets, 125000000000), 0)), -8)"
+    target_in = f"scale(keepLastValue({service_name}.*.*.in_octets)), 8)"
+    target_out = f"scale(keepLastValue({service_name}.*.*.out_octets)), -8)"
     # target = f'cactiStyle(alias(scale(keepLastValue({metric}),8),"{inout.title()}"),"si","gb")'
     query = f"{query_base}&from={period}&target={target_in}&target={target_out}"
 
@@ -605,8 +605,8 @@ def get_graphite_data(graphite_render_host, targets_in, targets_out, period="-1Y
     targets_out = ', '.join(targets_out)
 
     query = f"{graphite_render_host}/render?format=json&from={period}"
-    query = f"{query}&target=transformNull(scale(keepLastValue(removeBelowValue(sum({targets_in}), 0)), 8))"
-    query = f"{query}&target=transformNull(scale(keepLastValue(removeBelowValue(sum({targets_out}), 0)), -8))"
+    query = f"{query}&target=transformNull(scale(sum({targets_in}), 8))"
+    query = f"{query}&target=transformNull(scale(sum({targets_out}), -8))"
 
     r = requests.get(query)
     results = json.loads(r.content.decode('utf-8'))
@@ -640,8 +640,8 @@ def format_graphite_service_query(services):
         services_in.append(f"{name}.*.*.in_octets")
         services_out.append(f"{name}.*.*.out_octets")
 
-    targets_in = f"removeAboveValue(sumSeries({', '.join(services_in)}), 125000000000)"
-    targets_out = f"removeAboveValue(sumSeries({', '.join(services_out)}), 125000000000)"
+    targets_in = f"sumSeries({', '.join(services_in)})"
+    targets_out = f"sumSeries({', '.join(services_out)})"
 
     return (targets_in, targets_out)
 
@@ -654,8 +654,8 @@ def format_graphite_accounting_query(accounting):
         accounting_in.append(f"{name}.in_octets")
         accounting_out.append(f"{name}.out_octets")
 
-    targets_in = f"removeAboveValue(sumSeries({', '.join(accounting_in)}), 125000000000)"
-    targets_out = f"removeAboveValue(sumSeries({', '.join(accounting_out)}), 125000000000)"
+    targets_in = f"sumSeries({', '.join(accounting_in)})"
+    targets_out = f"sumSeries({', '.join(accounting_out)})"
 
     return (targets_in, targets_out)
 
@@ -668,8 +668,8 @@ def format_graphite_remaining_query(services, accounting):
         services_in.append(f"{name}.*.*.in_octets")
         services_out.append(f"{name}.*.*.out_octets")
 
-    targets_in = f"removeAboveValue(sumSeries({', '.join(services_in)}), 125000000000)"
-    targets_out = f"removeAboveValue(sumSeries({', '.join(services_out)}), 125000000000)"
+    targets_in = f"sumSeries({', '.join(services_in)})"
+    targets_out = f"sumSeries({', '.join(services_out)})"
 
     if len(accounting) > 0:
         accounting_in = []
@@ -679,8 +679,8 @@ def format_graphite_remaining_query(services, accounting):
             accounting_in.append(f"{name}.in_octets")
             accounting_out.append(f"{name}.out_octets")
 
-        targets_in = f"removeAboveValue(diffSeries(sumSeries({', '.join(services_in)}), {', '.join(accounting_in)}), 125000000000)"
-        targets_out = f"removeAboveValue(diffSeries(sumSeries({', '.join(services_out)}), {', '.join(accounting_out)}), 125000000000)"
+        targets_in = f"removeBelowValue(diffSeries(sumSeries({', '.join(services_in)}), {', '.join(accounting_in)}), 0)"
+        targets_out = f"removeBelowValue(diffSeries(sumSeries({', '.join(services_out)}), {', '.join(accounting_out)}), 0)"
 
     return (targets_in, targets_out)
 

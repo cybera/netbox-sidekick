@@ -572,9 +572,8 @@ def get_graphite_service_graph(graphite_render_host, service, period="-1Y"):
 
     graph_data = {}
     graph_data['title'] = "Last Year - GB"
-    target_in = f"scale(keepLastValue({service_name}.*.*.in_octets)), 8)"
-    target_out = f"scale(keepLastValue({service_name}.*.*.out_octets)), -8)"
-    # target = f'cactiStyle(alias(scale(keepLastValue({metric}),8),"{inout.title()}"),"si","gb")'
+    target_in = f"scale(keepLastValue({service_name}.*.*.in_octets), 8)"
+    target_out = f"scale(keepLastValue({service_name}.*.*.out_octets), -8)"
     query = f"{query_base}&from={period}&target={target_in}&target={target_out}"
 
     r = requests.get(query)

@@ -539,8 +539,8 @@ def get_graphite_nic_graph(nic, graphite_render_host=None, period="-1Y"):
     graph_data['title'] = "Last Year - GB"
     metric_in = f"{carbon_name}.in_octets"
     metric_out = f"{carbon_name}.out_octets"
-    target_in = f"scale(keepLastValue({metric_in})), 8)"
-    target_out = f"scale(keepLastValue({metric_out})), -8)"
+    target_in = f"scale(keepLastValue({metric_in}), 8)"
+    target_out = f"scale(keepLastValue({metric_out}), -8)"
     query = f"{query_base}&from={period}&target={target_in}&target={target_out}"
 
     r = requests.get(query)

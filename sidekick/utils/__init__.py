@@ -572,8 +572,8 @@ def get_graphite_service_graph(graphite_render_host, service, period="-1Y"):
 
     graph_data = {}
     graph_data['title'] = "Last Year - GB"
-    target_in = f"scale(keepLastValue({service_name}.*.*.in_octets), 8)"
-    target_out = f"scale(keepLastValue({service_name}.*.*.out_octets), -8)"
+    target_in = f"sumSeries(scale(keepLastValue({service_name}.*.*.in_octets), 8))"
+    target_out = f"sumSeries(scale(keepLastValue({service_name}.*.*.out_octets), -8))"
     query = f"{query_base}&from={period}&target={target_in}&target={target_out}"
 
     r = requests.get(query)
@@ -607,6 +607,10 @@ def get_graphite_data(graphite_render_host, targets_in, targets_out, period="-1Y
     query = f"{query}&target=transformNull(scale(sum({targets_in}), 8))"
     query = f"{query}&target=transformNull(scale(sum({targets_out}), -8))"
 
+    # 95th Percentile
+    query = f"{query}&target=nPercentile(scale(sum({targets_in}), 8), 95)"
+    query = f"{query}&target=scale(nPercentile(scale(sum({targets_out}), 8), 95), -1)"
+
     r = requests.get(query)
     results = json.loads(r.content.decode('utf-8'))
     if len(results) == 0:
@@ -616,7 +620,7 @@ def get_graphite_data(graphite_render_host, targets_in, targets_out, period="-1Y
         ]
 
     graph_data = {}
-    data = [[], [], []]
+    data = [[], [], [], [], []]
 
     for d in results[0]['datapoints']:
         data[0].append(d[1])
@@ -624,6 +628,12 @@ def get_graphite_data(graphite_render_host, targets_in, targets_out, period="-1Y
 
     for d in results[1]['datapoints']:
         data[2].append(d[0])
+
+    for d in results[2]['datapoints']:
+        data[3].append(d[0])
+
+    for d in results[3]['datapoints']:
+        data[4].append(d[0])
 
     graph_data['data'] = data
     graph_data['query'] = query

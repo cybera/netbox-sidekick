@@ -84,7 +84,7 @@ class MemberBandwidthDataView(PermissionRequiredMixin, View):
 
         if remaining_data is not None and 'data' in remaining_data:
             graph_data['remaining_data'] = remaining_data['data']
-            queries['remaiing_data'] = remaining_data['query']
+            queries['remaining_data'] = remaining_data['query']
 
         return JsonResponse({
             'graph_data': graph_data,

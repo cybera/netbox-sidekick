@@ -608,13 +608,15 @@ def get_graphite_data(graphite_render_host, targets_in, targets_out, period="-1Y
     query = f"{query}&target=transformNull(scale(sum({targets_out}), -8))"
 
     # 95th Percentile
-    query = f"{query}&target=nPercentile(scale(sum({targets_in}), 8), 95)"
-    query = f"{query}&target=scale(nPercentile(scale(sum({targets_out}), 8), 95), -1)"
+    query = f"{query}&target=scale(nPercentile(sum({targets_in}), 95), 8)"
+    query = f"{query}&target=scale(nPercentile(sum({targets_out}), 95), -8)"
 
     r = requests.get(query)
     results = json.loads(r.content.decode('utf-8'))
     if len(results) == 0:
         results = [
+            {'datapoints': [[0, 0]]},
+            {'datapoints': [[0, 0]]},
             {'datapoints': [[0, 0]]},
             {'datapoints': [[0, 0]]},
         ]

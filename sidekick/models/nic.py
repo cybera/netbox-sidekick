@@ -10,7 +10,7 @@ from netbox.models import NetBoxModel
 class NIC(NetBoxModel):
     interface = models.ForeignKey(
         to='dcim.Interface',
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name='NIC',
         related_name='nic',
     )
@@ -99,10 +99,10 @@ class NIC(NetBoxModel):
         return reverse('plugins:sidekick:nic_detail', args=[self.interface.id])
 
     def graphite_device_name(self):
-        return self.interface.device.name.lower().replace(' ', '_')
+        return self.interface.device.name.lower().replace(' ', '_').replace('(', '').replace(')', '')
 
     def graphite_interface_name(self):
-        return self.interface.name.lower().replace('/', '-').replace('.', '_')
+        return self.interface.name.lower().replace('/', '-').replace('.', '_').replace('(', '').replace(')', '')
 
     # If there are more than 5 entries for a NIC,
     # delete older ones.

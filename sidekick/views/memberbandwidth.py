@@ -70,8 +70,8 @@ class MemberBandwidthDataView(PermissionRequiredMixin, View):
 
         graph_data = {
             'service_data': service_data['data'],
-            'remaining_data': [service_data['data'][0], [0], [0]],
-            'accounting_data': [service_data['data'][0], [0], [0]],
+            'remaining_data': [service_data['data'][0], [0], [0], [0], [0]],
+            'accounting_data': [service_data['data'][0], [0], [0], [0], [0]],
         }
 
         queries = {

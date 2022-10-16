@@ -635,6 +635,7 @@ def get_graphite_data(graphite_render_host, targets_in, targets_out, period="-1Y
         for d in results[2]['datapoints']:
             data[3].append(d[0])
 
+    if len(results) > 3:
         for d in results[3]['datapoints']:
             data[4].append(d[0])
 

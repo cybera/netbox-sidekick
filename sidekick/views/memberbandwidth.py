@@ -54,7 +54,7 @@ class MemberBandwidthDataView(PermissionRequiredMixin, View):
             return JsonResponse({})
 
         member = Tenant.objects.get(pk=pk)
-        services = utils.get_services(member)
+        services = utils.get_services_for_graphite(member)
         period = utils.get_period(request)
         (services_in, services_out) = utils.format_graphite_service_query(services)
         service_data = utils.get_graphite_data(graphite_render_host, [services_in], [services_out], period)

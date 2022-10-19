@@ -715,11 +715,11 @@ def get_all_ip_prefixes():
 
 
 def get_services(member):
-    services = []
+    services = {}
     for s in NetworkService.objects.filter(member__id=member.id):
-        services.append(s)
+        services[s.name] = s
 
-    return services
+    return services.values()
 
 
 def get_accounting_sources(member):

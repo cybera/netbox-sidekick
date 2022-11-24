@@ -5,6 +5,7 @@ from django.views.generic.edit import FormView
 from django_tables2.views import SingleTableView
 
 from tenancy.models import Tenant
+from tenancy.models import ContactRole
 
 from sidekick.tables import (
     MemberContactTable,
@@ -44,6 +45,13 @@ class MemberContactsView(PermissionRequiredMixin, SingleTableView):
         if network_service_group_id != "":
             network_service_group_id = int(network_service_group_id)
 
+        contact_role = None
+        contact_roles = ContactRole.objects.all()
+        contact_role_id = self.request.GET.get('contact_role', "")
+        if contact_role_id != "":
+            contact_role_id = int(contact_role_id)
+            contact_role = ContactRole.objects.get(pk=contact_role_id)
+
         member_names = []
         if network_service_group_id != "":
             network_service_group = NetworkServiceGroup.objects.get(pk=network_service_group_id)
@@ -63,24 +71,30 @@ class MemberContactsView(PermissionRequiredMixin, SingleTableView):
                 continue
 
             # Get the user accounts from the member's group
-            groups = Group.objects.filter(name__iexact=member.name)
-            if len(groups) == 1:
-                group = groups[0]
-                for user in group.user_set.all():
-                    if user.is_active:
-                        if not any(v.get('contact', None) == user.username for v in contacts):
-                            contacts.append({'contact': user.username})
+            # But only if no contact role was specified
+            if contact_role is None:
+                groups = Group.objects.filter(name__iexact=member.name)
+                if len(groups) == 1:
+                    group = groups[0]
+                    for user in group.user_set.all():
+                        if user.is_active:
+                            if not any(v.get('contact', None) == user.username for v in contacts):
+                                contacts.append({'contact': user.username})
 
             # Get the contact objects from the member's sites
+            # And only of the "role" specified.
             for site in member.sites.all():
                 for c in site.contacts.all():
                     if not any(v.get('contact', None) == c.contact.email for v in contacts):
-                        contacts.append({'contact': c.contact.email})
+                        if contact_role is not None and c.role == contact_role:
+                            contacts.append({'contact': c.contact.email})
 
         context['member_contacts'] = MemberContactTable(contacts)
         context['members'] = members
         context['network_service_groups'] = network_service_groups
+        context['contact_roles'] = contact_roles
         context['selected_member'] = member_id
         context['selected_network_service_group'] = network_service_group_id
+        context['selected_contact_role_id'] = contact_role_id
 
         return context

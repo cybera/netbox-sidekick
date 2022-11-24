@@ -36,6 +36,15 @@
           </select>
           <br>
           <br>
+          <legend><h6>Role</h6></legend>
+          <select name="contact_role" id="contact_role" class="netbox-static-select">
+            <option value="">---</option>
+            {% for contact_role in contact_roles %}
+            <option value="{{ contact_role.id }}" {% if selected_contact_role_id == contact_role.id %} selected {% endif %}>{{ contact_role.name }}</option>
+            {% endfor %}
+          </select>
+          <br>
+          <br>
           <button type="submit" name="submit" value="table" class="btn btn-primary">Search</button>
         </form>
       </div>

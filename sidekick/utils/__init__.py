@@ -135,7 +135,7 @@ VALID_INTERFACE_NAMES = [
     'Fa', 'Gi', 'Nu', 'Po', 'StackPort', 'Te', 'Vl',
 
     # Juniper
-    'ae', 'et', 'ge', 'lt', 'xe',
+    'ae', 'et', 'ge', 'irb', 'lt', 'xe',
 ]
 
 

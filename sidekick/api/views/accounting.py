@@ -52,10 +52,9 @@ class CurrentBandwidthView(APIView):
         except AccountingProfile.DoesNotExist:
             raise Http404
 
+        result = {}
         bp = ap.get_current_bandwidth_profile()
         if bp is not None:
-            result = {}
-
             traffic_cap = bp.traffic_cap
             result["member_name"] = ap.member.name
             result['traffic_cap'] = traffic_cap

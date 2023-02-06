@@ -51,6 +51,13 @@ class MemberContactsView(PermissionRequiredMixin, SingleTableView):
         if contact_role_id != "":
             contact_role_id = int(contact_role_id)
             contact_role = ContactRole.objects.get(pk=contact_role_id)
+        else:
+            try:
+                v = ContactRole.objects.filter(name="Network")
+                contact_role = v.first()
+                contact_role_id = contact_role.id
+            except ContactRole.DoesNotExist:
+                pass
 
         member_names = []
         if network_service_group_id != "":

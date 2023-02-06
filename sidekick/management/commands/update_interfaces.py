@@ -100,6 +100,7 @@ class Command(BaseCommand):
             # Obtain the list of interfaces.
             # For each device that is not supposed to be ignored,
             # add that interface to the device if it doesn't already exist.
+            device_interface_names = []
             for iface_index, iface_details in device_info.items():
                 iface_name = iface_details.get('ifName', None)
                 if iface_name is None:
@@ -109,6 +110,9 @@ class Command(BaseCommand):
 
                 if not any(i in iface_details['ifName'] for i in VALID_INTERFACE_NAMES):
                     continue
+
+                # Collect the devices interface names for another loop below.
+                device_interface_names.append(iface_name)
 
                 iface_type = InterfaceTypeChoices.TYPE_VIRTUAL
                 if iface_details['ifHighSpeed'] == "1000":
@@ -176,6 +180,10 @@ class Command(BaseCommand):
                         existing_interface.type = iface_type
                         changed = True
 
+                    if existing_interface.label == "MISSING":
+                        existing_interface.label = ""
+                        changed = True
+
                     if changed is True:
                         if options['dry_run']:
                             self.stdout.write(f"Would have updated {iface_name}")
@@ -209,11 +217,29 @@ class Command(BaseCommand):
                         )
                         iface.save()
 
-            # To account for one or more new interfaces being added,
-            # build a list of interface names already on the device.
+            # To account for one or more new interfaces being added above,
+            # rebuild the list of interface names already on the device.
             existing_interfaces = {}
             for i in device.vc_interfaces():
                 existing_interfaces[i.name] = i
+
+            # Now check if there are interfaces in NetBox that no longer
+            # exist on the device itself. This can happen if a card was
+            # removed from the device or if a device was renamed.
+            for i in device.vc_interfaces():
+                if i.name not in device_interface_names:
+                    if i.name == "mgmt":
+                        continue
+                    if i.label == "MISSING":
+                        continue
+
+                    # Update the NetBox entry to reflect that this interface
+                    # no longer exists on the device itself.
+                    # Note that we do not want to delete the interface because we
+                    # can't be sure if the interface was truly removed.
+                    i.label = "MISSING"
+                    i.enabled = False
+                    i.save()
 
             # Obtain the list of IP addresses on each interface.
             # For each interface that is not supposed to be ignored,

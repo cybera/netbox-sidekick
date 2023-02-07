@@ -8,6 +8,16 @@
     rght: 2
     tree_id: 2
 
+- model: tenancy.TenantGroup
+  pk: 2
+  fields:
+    name: "Peering Connections"
+    slug: "peering_connections"
+    level: 0
+    lft: 1
+    rght: 2
+    tree_id: 2
+
 - model: tenancy.Tenant
   pk: 1
   fields:
@@ -62,3 +72,31 @@
     name: "Cybera"
     slug: "cybera"
     tenant_id: 4
+
+- model: tenancy.Tenant
+  pk: 5
+  fields:
+    name: "Internet Exchange"
+    slug: "internet-exchange"
+    group: 1
+
+- model: dcim.Site
+  pk: 5
+  fields:
+    name: "Internet Exchange"
+    slug: "internet-exchange"
+    tenant_id: 5
+
+- model: tenancy.Tenant
+  pk: 6
+  fields:
+    name: "Peering Partner"
+    slug: "peering-partner"
+    group: 2
+
+- model: dcim.Site
+  pk: 6
+  fields:
+    name: "Peering Partner"
+    slug: "peering-partner"
+    tenant_id: 6

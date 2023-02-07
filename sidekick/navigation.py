@@ -14,6 +14,10 @@ menu_items = (
         link_text='IP Prefixes',
     ),
     PluginMenuItem(
+        link='plugins:sidekick:nic_list',
+        link_text='Interfaces',
+    ),
+    PluginMenuItem(
         link='plugins:sidekick:logicalsystem_list',
         link_text='Logical Systems',
     ),
@@ -26,16 +30,16 @@ menu_items = (
         link_text='Member - Contacts',
     ),
     PluginMenuItem(
-        link='plugins:sidekick:nic_list',
-        link_text='Interfaces',
-    ),
-    PluginMenuItem(
         link='plugins:sidekick:networkservice_list',
         link_text='Network Services',
     ),
     PluginMenuItem(
         link='plugins:sidekick:networkservicegroup_list',
         link_text='Network Service Groups',
+    ),
+    PluginMenuItem(
+        link='plugins:sidekick:peeringconnection_list',
+        link_text='Peering Connections',
     ),
     PluginMenuItem(
         link='plugins:sidekick:routingtype_list',

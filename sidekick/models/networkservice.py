@@ -365,6 +365,26 @@ class NetworkServiceL3(NetBoxModel):
         blank=True,
     )
 
+    member = models.ForeignKey(
+        'tenancy.Tenant',
+        on_delete=models.PROTECT,
+        verbose_name="Member/Service Provider",
+        help_text="Set this only if the member is different from the owner of the " +
+        "parent Network Service (e.g. if this L3 connection is a peering connection).",
+        null=True,
+        blank=True,
+    )
+
+    member_site = models.ForeignKey(
+        'dcim.Site',
+        verbose_name='Member/Service Provider Site',
+        on_delete=models.PROTECT,
+        help_text="Set this only if the member is different from the owner of the " +
+        "parent Network Service (e.g. if this L3 connection is a peering connection).",
+        null=True,
+        blank=True,
+    )
+
     logical_system = models.ForeignKey(
         to='sidekick.LogicalSystem',
         on_delete=models.PROTECT,
@@ -473,15 +493,26 @@ class NetworkServiceL3(NetBoxModel):
         default='',
     )
 
+    active = models.BooleanField(
+        verbose_name='Active',
+        help_text='The active/inactive status of the L3 service',
+        default=True,
+    )
+
     class Meta:
         verbose_name = "Network Service L3"
         verbose_name_plural = "Network Services L3"
 
     def __str__(self):
+        if self.member is not None:
+            return f"{self.member} via {self.network_service_device.network_service.name}"
         return f"{self.network_service_device} L3 Service"
 
-    # def get_absolute_url(self):
-    #     return reverse('plugins:sidekick:networkservicel3_detail', args=[self.pk])
+    def get_peeringconnection_url(self):
+        return reverse('plugins:sidekick:peeringconnection_detail', args=[self.pk])
+
+    def get_absolute_url(self):
+        return reverse('plugins:sidekick:networkservicel3_detail', args=[self.pk])
 
 
 # NetworkServiceGroup represents a grouping of network services

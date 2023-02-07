@@ -168,6 +168,11 @@ class NetworkServiceL3Admin(admin.ModelAdmin):
                 'network_service_device',),
         }),
 
+        ('Member / Service Provider', {
+            'fields': (
+                'member', 'member_site'),
+        }),
+
         ('Configuration', {
             'fields': (
                 'logical_system', 'routing_type', 'asn'),

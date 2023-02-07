@@ -16,6 +16,7 @@ from sidekick.models import (
     RoutingType, LogicalSystem,
     NetworkServiceType,
     NetworkService,
+    NetworkServiceL3,
     NetworkServiceGroup,
 )
 
@@ -124,3 +125,23 @@ class NetworkServiceGroupFilterSet(NetBoxModelFilterSet):
 
 class NetworkServiceGroupFilterSetForm(NetBoxModelFilterSetForm):
     model = NetworkServiceGroup
+
+
+class NetworkServiceL3FilterSet(NetBoxModelFilterSet):
+    class Meta:
+        model = NetworkServiceL3
+        fields = ('member', 'active')
+
+
+class NetworkServiceL3FilterSetForm(NetBoxModelFilterSetForm):
+    model = NetworkServiceL3
+
+
+class PeeringConnectionFilterSet(NetBoxModelFilterSet):
+    class Meta:
+        model = NetworkServiceL3
+        fields = ('member', 'active')
+
+
+class PeeringConnectionFilterSetForm(NetBoxModelFilterSetForm):
+    model = NetworkServiceL3

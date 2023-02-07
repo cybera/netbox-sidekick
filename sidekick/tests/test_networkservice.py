@@ -4,7 +4,7 @@ from django.urls import reverse
 
 from sidekick.models import (
     LogicalSystem, RoutingType,
-    NetworkServiceType, NetworkService,
+    NetworkServiceType, NetworkService, NetworkServiceL3,
     NetworkServiceGroup,
 )
 
@@ -113,3 +113,10 @@ class NetworkServiceTest(BaseTest):
             description="Peering service for East University")
         backup = v.get_backup_service()[0]
         self.assertEqual(backup.name, expected_service_name)
+
+    # Peering connection
+    def test_peeringconnection_get(self):
+        v = NetworkServiceL3.objects.get(id=4)
+        resp = self.client.get(v.get_peeringconnection_url())
+        self.assertContains(resp, 'Peering Partner')
+        self.assertContains(resp, 'Internet Exchange')

@@ -19,23 +19,32 @@ from sidekick.filters import (
     NetworkServiceTypeFilterSetForm,
     NetworkServiceFilterSet,
     NetworkServiceFilterSetForm,
+    NetworkServiceL3FilterSet,
+    NetworkServiceL3FilterSetForm,
     NetworkServiceGroupFilterSet,
     NetworkServiceGroupFilterSetForm,
+    PeeringConnectionFilterSet,
+    PeeringConnectionFilterSetForm,
 )
 
 from sidekick.forms import (
     RoutingTypeForm,
     LogicalSystemForm,
     NetworkServiceForm,
+    NetworkServiceL3Form,
     NetworkServiceTypeForm,
     NetworkServiceGroupForm,
 )
 
 from sidekick.tables import (
     IPPrefixTable,
-    LogicalSystemTable, RoutingTypeTable,
-    NetworkServiceTypeTable, NetworkServiceTable,
+    LogicalSystemTable,
+    NetworkServiceTypeTable,
+    NetworkServiceTable,
+    NetworkServiceL3Table,
     NetworkServiceGroupTable,
+    PeeringConnectionTable,
+    RoutingTypeTable,
 )
 
 from sidekick.models import (
@@ -43,6 +52,7 @@ from sidekick.models import (
     RoutingType,
     NetworkServiceType,
     NetworkService,
+    NetworkServiceL3,
     NetworkServiceGroup,
 )
 
@@ -190,6 +200,31 @@ class NetworkServiceDeleteView(ObjectDeleteView):
     queryset = NetworkService.objects.all()
 
 
+# Network Service L3 Index
+class NetworkServiceL3IndexView(ObjectListView):
+    queryset = NetworkServiceL3.objects.all()
+    model = NetworkServiceL3
+    table = NetworkServiceL3Table
+    filterset = NetworkServiceL3FilterSet
+    filterset_form = NetworkServiceL3FilterSetForm
+
+
+# Network Service L3 Details
+class NetworkServiceL3DetailView(ObjectView):
+    queryset = NetworkServiceL3.objects.all()
+
+
+# Network Service L3 Edit
+class NetworkServiceL3EditView(ObjectEditView):
+    queryset = NetworkServiceL3.objects.all()
+    form = NetworkServiceL3Form
+
+
+# Network Service L3 Delete
+class NetworkServiceL3DeleteView(ObjectDeleteView):
+    queryset = NetworkServiceL3.objects.all()
+
+
 # Network Service Group Index
 class NetworkServiceGroupIndexView(ObjectListView):
     queryset = NetworkServiceGroup.objects.all()
@@ -312,3 +347,33 @@ class NetworkServiceGroupGraphiteDataView(PermissionRequiredMixin, View):
             'graph_data': graph_data,
             'queries': queries,
         })
+
+
+# Peering Service Index
+class PeeringConnectionIndexView(ObjectListView):
+    queryset = NetworkServiceL3.objects.filter(
+        member__isnull=False)
+    model = NetworkServiceL3
+    table = PeeringConnectionTable
+    filterset = PeeringConnectionFilterSet
+    filterset_form = PeeringConnectionFilterSetForm
+
+
+# Peering Service Details
+class PeeringConnectionDetailView(ObjectView):
+    template_name = 'sidekick/peeringconnection.html'
+    queryset = NetworkServiceL3.objects.filter(
+        member__isnull=False)
+
+
+# Peering Service Edit
+class PeeringConnectionEditView(ObjectEditView):
+    queryset = NetworkServiceL3.objects.filter(
+        member__isnull=False)
+    form = NetworkServiceL3Form
+
+
+# Peering Delete Edit
+class PeeringConnectionDeleteView(ObjectDeleteView):
+    queryset = NetworkServiceL3.objects.filter(
+        member__isnull=False)

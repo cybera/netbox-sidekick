@@ -29,6 +29,10 @@ from .networkservice import (  # noqa: F401
     NetworkServiceGroupIndexView, NetworkServiceGroupDetailView,
     NetworkServiceGroupEditView, NetworkServiceGroupDeleteView,
     NetworkServiceGroupGraphiteDataView,
+    NetworkServiceL3IndexView, NetworkServiceL3DetailView,
+    NetworkServiceL3EditView, NetworkServiceL3DeleteView,
+    PeeringConnectionIndexView, PeeringConnectionDetailView,
+    PeeringConnectionEditView, PeeringConnectionDeleteView,
     RoutingTypeIndexView, RoutingTypeDetailView,
     RoutingTypeEditView, RoutingTypeDeleteView,
 )

@@ -113,3 +113,63 @@
     ipv6_prefixes: |
       dead::beef::0/64
       dead::beee::0/64
+
+- model: sidekick.NetworkService
+  pk: 3
+  fields:
+    name: "Connection to Internet Exchange"
+    active: True
+    network_service_type: 1
+    member: 5
+    member_site: 5
+
+- model: sidekick.NetworkServiceDevice
+  pk: 3
+  fields:
+    network_service: 3
+    device: 1
+    interface: 'xe-3/3/6.300'
+    vlan: 600
+
+- model: sidekick.NetworkServiceL3
+  pk: 3
+  fields:
+    network_service_device: 3
+    logical_system: 1
+    routing_type: 1
+    ipv4_unicast: 1
+    ipv4_multicast: 0
+    ipv6_unicast: 1
+    ipv6_multicast: 0
+    provider_router_address_ipv4: '192.168.3.1/31'
+    member_router_address_ipv4: '192.168.3.2/31'
+    asn: 12346
+    ipv4_prefixes: |
+      192.168.3.0/24
+      192.168.3.0/24
+    ipv6_prefixes: |
+      dead::aaaa::0/64
+      dead::bbbb::0/64
+
+
+- model: sidekick.NetworkServiceL3
+  pk: 4
+  fields:
+    network_service_device: 3
+    member_id: 6
+    member_site_id: 6
+    logical_system: 1
+    routing_type: 1
+    ipv4_unicast: 1
+    ipv4_multicast: 0
+    ipv6_unicast: 1
+    ipv6_multicast: 0
+    provider_router_address_ipv4: '192.168.4.3/31'
+    provider_router_address_ipv4: '192.168.4.4/31'
+    asn: 12347
+    ipv4_prefixes: |
+      192.168.4.0/24
+      192.168.4.0/24
+    ipv6_prefixes: |
+      dead::cccc::0/64
+      dead::dddd::0/64

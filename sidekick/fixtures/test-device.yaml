@@ -52,6 +52,13 @@
     name: "xe-3/3/5.301"
     type: "1000base-t"
 
+- model: dcim.Interface
+  pk: 4
+  fields:
+    device: 1
+    name: "xe-3/3/6.600"
+    type: "1000base-t"
+
 - model: dcim.Device
   pk: 2
   fields:

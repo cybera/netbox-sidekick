@@ -12,7 +12,11 @@ from .networkservice import NetworkServiceTypeFilterSet       # noqa: F401
 from .networkservice import NetworkServiceTypeFilterSetForm   # noqa: F401
 from .networkservice import NetworkServiceFilterSet           # noqa: F401
 from .networkservice import NetworkServiceFilterSetForm       # noqa: F401
+from .networkservice import NetworkServiceL3FilterSet         # noqa: F401
+from .networkservice import NetworkServiceL3FilterSetForm     # noqa: F401
 from .networkservice import NetworkServiceGroupFilterSet      # noqa: F401
 from .networkservice import NetworkServiceGroupFilterSetForm  # noqa: F401
+from .networkservice import PeeringConnectionFilterSet        # noqa: F401
+from .networkservice import PeeringConnectionFilterSetForm    # noqa: F401
 from .nic import NICFilterSet                                 # noqa: F401
 from .nic import NICFilterSetForm                             # noqa: F401

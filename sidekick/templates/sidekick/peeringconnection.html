@@ -1,0 +1,129 @@
+{% extends 'generic/object.html' %}
+{% load helpers %}
+{% load plugins %}
+{% load render_table from django_tables2 %}
+
+{% block head %}
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="https://leeoniya.github.io/uPlot/dist/uPlot.iife.min.js"></script>
+<link rel="stylesheet" href="https://leeoniya.github.io/uPlot/dist/uPlot.min.css" />
+{% endblock %}
+
+{% block breadcrumbs %}
+  {{ block.super }}
+  {% if object.group %}
+    <li class="breadcrumb-item"><a href="{% url 'tenancy:contact_list' %}?group_id={{ object.group.pk }}">{{ object.group }}</a></li>
+  {% endif %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+  <div class="row">
+    <div class="col col-md-7">
+      <div class="card">
+        <h5 class="card-header">Peering Connection</h5>
+        <div class="card-body">
+          <table class="table table-hover panel-body attr-table">
+            <tr>
+              <td>Parent Network Service</td>
+              <td><a href="{{ object.network_service_device.network_service.get_absolute_url }}">{{ object.network_service_device.network_service.name }}</a>
+            </tr>
+
+            <tr>
+              <td>Parent Network Service Device</td>
+              <td><a href="{{ object.network_service_device.network_service.get_absolute_url }}">{{ object.network_service_device }}</a>
+            </tr>
+
+            <tr>
+              <td>Logical System</td>
+              <td><a href="{{ object.logical_system.get_absolute_url }}">{{ object.logical_system }}</a></td>
+            </tr>
+            <tr>
+              <td>Routing Type</td>
+              <td>{{ object.routing_type }}</td>
+            </tr>
+            <tr>
+              <td>AS Number</td>
+              <td>{{ object.asn }}</td>
+            </tr>
+            <tr>
+              <td>IPv4 Unicast</td>
+              <td>
+                {% if object.ipv4_unicast %}
+                <i class="mdi mdi-check-bold"></i>
+                {% else %}
+                <i class="mdi mdi-close-thick"></i>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>IPv4 Multicast</td>
+              <td>
+                {% if object.ipv4_multicast %}
+                <i class="mdi mdi-check-bold"></i>
+                {% else %}
+                <i class="mdi mdi-close-thick"></i>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>IPv4 Prefixes</td>
+              <td>{{ object.ipv4_prefixes }}</td>
+            </tr>
+            <tr>
+              <td>IPv4 Provider Router Address</td>
+              <td>{{ object.provider_router_address_ipv4 }}</td>
+            </tr>
+            <tr>
+              <td>IPv4 Member Router Address</td>
+              <td>{{ object.member_router_address_ipv4 }}</td>
+            </tr>
+            <tr>
+              <td>IPv6 Unicast</td>
+              <td>
+                {% if object.ipv6_unicast %}
+                <i class="mdi mdi-check-bold"></i>
+                {% else %}
+                <i class="mdi mdi-close-thick"></i>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>IPv6 Multicast</td>
+              <td>
+                {% if object.ipv6_multicast %}
+                <i class="mdi mdi-check-bold"></i>
+                {% else %}
+                <i class="mdi mdi-close-thick"></i>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>IPv6 Prefixes</td>
+              <td>{{ object.ipv6_prefixes }}</td>
+            </tr>
+            <tr>
+              <td>IPv6 Provider Router Address</td>
+              <td>{{ object.provider_router_address_ipv6 }}</td>
+            </tr>
+            <tr>
+              <td>IPv6 Member Router Address</td>
+              <td>{{ object.member_router_address_ipv6 }}</td>
+            </tr>
+            <tr>
+              <td>Comments</td>
+              <td>{{ object.comments }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      {% plugin_left_page object %}
+    </div>
+    <div class="col col-md-5">
+      {% include 'inc/panels/custom_fields.html' %}
+      {% include 'inc/panels/tags.html' %}
+
+      {% plugin_right_page object %}
+    </div>
+  </div>
+{% endblock %}

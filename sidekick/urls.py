@@ -57,6 +57,13 @@ urlpatterns = [
     path('network_services/<int:pk>/edit', views.NetworkServiceEditView.as_view(), name='networkservice_edit'),
     path('network_services/<int:pk>/delete', views.NetworkServiceDeleteView.as_view(), name='networkservice_delete'),
 
+    # Network Service L3
+    path('network_services_l3/', views.NetworkServiceL3IndexView.as_view(), name='networkservicel3_list'),
+    path('network_services_l3/add/', views.NetworkServiceL3EditView.as_view(), name='networkservicel3_add'),
+    path('network_services_l3/<int:pk>/', views.NetworkServiceL3DetailView.as_view(), name='networkservicel3_detail'),
+    path('network_services_l3/<int:pk>/edit', views.NetworkServiceL3EditView.as_view(), name='networkservicel3_edit'),
+    path('network_services_l3/<int:pk>/delete', views.NetworkServiceL3DeleteView.as_view(), name='networkservicel3_delete'),
+
     # Network Service Graphite data
     path('network_service/graphite/<int:pk>', views.NetworkServiceGraphiteDataView.as_view(), name='network_service_graphite_data'),
 
@@ -85,6 +92,14 @@ urlpatterns = [
 
     # NIC Graphite data
     path('nics/graphite/<int:pk>', views.NICGraphiteDataView.as_view(), name='nic_graphite_data'),
+
+    # Peering Services
+    path('peering_connections/', views.PeeringConnectionIndexView.as_view(), name='peeringconnection_list'),
+    path('peering_connections/add/', views.PeeringConnectionEditView.as_view(), name='peeringconnection_add'),
+    path('peering_connections/<int:pk>/', views.PeeringConnectionDetailView.as_view(), name='peeringconnection_detail'),
+    path('peering_connections/<int:pk>/edit', views.PeeringConnectionEditView.as_view(), name='peeringconnection_edit'),
+    path('peering_connections/<int:pk>/delete', views.PeeringConnectionEditView.as_view(), name='peeringconnection_delete'),
+
 
     # Routing Type
     path('routing_types/', views.RoutingTypeIndexView.as_view(), name='routingtype_list'),

@@ -11,6 +11,7 @@ from .views import (
     NetworkServiceTypeViewSet,
     NetworkServiceViewSet,
     NetworkServiceDeviceViewSet,
+    NetworkServiceDuplicateInterfaces,
     NetworkServiceL2ViewSet,
     NetworkServiceL3ViewSet,
     NetworkServiceGroupViewSet,
@@ -41,6 +42,9 @@ urlpatterns += [
     path('accounting_profiles/<int:profile>/current_bandwidth',
          CurrentBandwidthView.as_view(), name='accounting_profile_current_bandwidth'),
     path('device/access/<int:device>/', DeviceCheckAccessView.as_view(), name='nic_check_access'),
+    # This should have a better name, but the "networkservice" namespace
+    # is already used above.
+    path('duplicate_interfaces/', NetworkServiceDuplicateInterfaces.as_view(), name='networkservice_duplicate_interfaces'),
     path('networkusage/groups/', NetworkUsageListGroupsView.as_view(), name='networkusage_groups'),
     path('networkusage/members/', NetworkUsageListMembersView.as_view(), name='networkusage_members'),
     path('networkusage/member/<int:member_id>/', NetworkUsageMemberView.as_view(), name='networkusage_member'),

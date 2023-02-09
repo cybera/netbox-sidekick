@@ -29,9 +29,12 @@ class NICFilterSet(NetBoxModelFilterSet):
         model = NIC
         fields = ('device',)
 
-    def filter_device(self, queryset, name, value):
+    def search(self, queryset, name, value):
+        if not value.strip():
+            return queryset
         return queryset.filter(
-            Q(interface__device__name__icontains=value)
+            Q(interface__device__name__icontains=value) |
+            Q(interface__name__icontains=value)
         ).order_by('interface__id').distinct('interface__id')
 
 

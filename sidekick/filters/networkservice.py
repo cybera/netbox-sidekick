@@ -2,6 +2,7 @@ import django_filters
 import netaddr
 
 from django import forms
+from django.db.models import Q
 
 from netbox.filtersets import NetBoxModelFilterSet
 from netbox.forms import NetBoxModelFilterSetForm
@@ -59,7 +60,7 @@ class NetworkServiceFilterSet(NetBoxModelFilterSet):
 
     class Meta:
         model = NetworkService
-        fields = ('member', 'member_site', 'network_service_type', 'active')
+        fields = ('member', 'active')
 
     def __init__(self, data, *args, **kwargs):
         if not data.get('active'):
@@ -92,6 +93,16 @@ class NetworkServiceFilterSet(NetBoxModelFilterSet):
         return queryset.filter(
             id__in=services
         )
+
+    def search(self, queryset, name, value):
+        if not value.strip():
+            return queryset
+        qs_filter = (
+            Q(name__icontains=value) |
+            Q(member__name__icontains=value)
+        )
+
+        return queryset.filter(qs_filter)
 
 
 class NetworkServiceFilterSetForm(NetBoxModelFilterSetForm):

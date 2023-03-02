@@ -2,6 +2,7 @@ from .accounting import AccountingProfileViewSet               # noqa: F401
 from .accounting import AccountingSourceViewSet                # noqa: F401
 from .accounting import BandwidthProfileViewSet                # noqa: F401
 from .accounting import CurrentBandwidthView                   # noqa: F401
+from .accounting import AllCurrentBandwidthView                # noqa: F401
 from .device import DeviceCheckAccessView                      # noqa: F401
 from .map import FullMapViewSet                                # noqa: F401
 from .networkservice import LogicalSystemViewSet               # noqa: F401

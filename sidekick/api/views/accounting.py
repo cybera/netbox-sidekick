@@ -1,3 +1,5 @@
+import re
+
 from django.http import Http404
 
 from rest_framework.permissions import IsAuthenticated
@@ -14,6 +16,10 @@ from sidekick.api.serializers import (
     BandwidthProfileSerializer,
 )
 
+from sidekick.filters import (
+    AccountingProfileFilterSet
+)
+
 from sidekick.models import (
     AccountingProfile,
     AccountingSource,
@@ -24,6 +30,7 @@ from sidekick.models import (
 class AccountingProfileViewSet(NetBoxModelViewSet):
     queryset = AccountingProfile.objects.all()
     serializer_class = AccountingProfileSerializer
+    filterset_class = AccountingProfileFilterSet
 
 
 class AccountingSourceViewSet(NetBoxModelViewSet):
@@ -69,3 +76,31 @@ class CurrentBandwidthView(APIView):
                 result['accounting_sources'][f"{accounting_source}"]["current_rate"] = current_rate
 
         return Response(result)
+
+
+class AllCurrentBandwidthView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    renderer_class = JSONRenderer
+
+    def get(self, request):
+        results = []
+        for accounting_profile in AccountingProfile.objects.filter(enabled=True):
+            bandwidth_profile = accounting_profile.get_current_bandwidth_profile()
+            if bandwidth_profile is not None:
+                v = {}
+                v['member_name'] = accounting_profile.member.name
+                v['member_name_slug'] = re.sub(r'[ -./\'\(\)]+', '', accounting_profile.member.name)
+                v['traffic_cap'] = bandwidth_profile.traffic_cap
+                v['burst_limit'] = bandwidth_profile.burst_limit
+                v['accounting_sources'] = []
+                for accounting_source in accounting_profile.accounting_sources.all():
+                    t = {}
+                    t['device'] = accounting_source.device.name
+                    t['name'] = accounting_source.name
+                    t['destination'] = accounting_source.destination
+                    v['accounting_sources'].append(t)
+
+                results.append(v)
+
+        return Response(results)

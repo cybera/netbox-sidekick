@@ -7,9 +7,12 @@ from sidekick.models import (
     BandwidthProfile,
 )
 
+from tenancy.api.nested_serializers import NestedTenantSerializer
+
 
 class AccountingProfileSerializer(NetBoxModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='plugins-api:sidekick-api:accountingprofile-detail')
+    member = NestedTenantSerializer(required=False, allow_null=True)
 
     class Meta:
         model = AccountingProfile

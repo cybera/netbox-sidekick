@@ -3,6 +3,7 @@ from rest_framework import routers
 from .views import (
     AccountingProfileViewSet,
     AccountingSourceViewSet,
+    AllCurrentBandwidthView,
     BandwidthProfileViewSet,
     CurrentBandwidthView,
     DeviceCheckAccessView,
@@ -39,6 +40,8 @@ router.register('networkservicegroup', NetworkServiceGroupViewSet)
 urlpatterns = router.urls
 
 urlpatterns += [
+    path('accounting_profiles/all_current_bandwidth',
+         AllCurrentBandwidthView.as_view(), name='accounting_profile_all_current_bandwidth'),
     path('accounting_profiles/<int:profile>/current_bandwidth',
          CurrentBandwidthView.as_view(), name='accounting_profile_current_bandwidth'),
     path('device/access/<int:device>/', DeviceCheckAccessView.as_view(), name='nic_check_access'),

@@ -94,6 +94,13 @@ class AllCurrentBandwidthView(APIView):
                 v['traffic_cap'] = bandwidth_profile.traffic_cap
                 v['burst_limit'] = bandwidth_profile.burst_limit
                 v['accounting_sources'] = []
+
+                contacts = []
+                for site in accounting_profile.member.sites.all():
+                    for c in site.contacts.all():
+                        if c.role.name == "Network":
+                            contacts.append(c.contact.email)
+                v['contacts'] = contacts
                 for accounting_source in accounting_profile.accounting_sources.all():
                     t = {}
                     t['device'] = accounting_source.device.name

@@ -204,6 +204,12 @@ class BandwidthProfile(NetBoxModel):
         null=True,
     )
 
+    billable = models.BooleanField(
+        verbose_name='Billable',
+        help_text='If this profile should be billed',
+        default=True,
+    )
+
     class Meta:
         ordering = ['accounting_profile']
         verbose_name = 'Bandwidth Profile'

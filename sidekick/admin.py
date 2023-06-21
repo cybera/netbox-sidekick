@@ -20,7 +20,7 @@ class BandwidthProfileInline(admin.StackedInline):
 
     fieldsets = (
         (None, {
-            'fields': ('traffic_cap', 'burst_limit', 'effective_date'),
+            'fields': ('traffic_cap', 'burst_limit', 'effective_date', 'billable'),
         }),
         (None, {
             'fields': ('comments',),
@@ -52,7 +52,7 @@ class AccountingSourceAdmin(admin.ModelAdmin):
 class BandwidthProfile(admin.ModelAdmin):
     fieldsets = (
         (None, {
-            'fields': ('traffic_cap', 'burst_limit', 'effective_date'),
+            'fields': ('traffic_cap', 'burst_limit', 'effective_date', 'billable'),
         }),
         (None, {
             'fields': ('comments',),

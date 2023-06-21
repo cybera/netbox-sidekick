@@ -93,6 +93,7 @@ class AllCurrentBandwidthView(APIView):
                 v['member_name_slug'] = re.sub(r'[ -./\'\(\)]+', '', accounting_profile.member.name)
                 v['traffic_cap'] = bandwidth_profile.traffic_cap
                 v['burst_limit'] = bandwidth_profile.burst_limit
+                v['billable'] = bandwidth_profile.billable
                 v['accounting_sources'] = []
 
                 contacts = []

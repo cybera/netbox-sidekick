@@ -256,12 +256,14 @@
               <td>Date</td>
               <td>Traffic Cap</td>
               <td>Burst Limit</td>
+              <td>Billable</td>
             </tr>
             {% for v in object.accounting_profile.bandwidthprofile_set.all|dictsort:"effective_date" %}
             <tr>
               <td><a href="{{ v.get_absolute_url }}">{{ v.effective_date }}</a></td>
               <td>{{ v.traffic_cap }}</td>
               <td>{{ v.burst_limit }}</td>
+              <td>{{ v.billable }}</td>
             </tr>
             {% endfor %}
           </table>

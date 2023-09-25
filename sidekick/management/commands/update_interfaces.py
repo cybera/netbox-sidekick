@@ -1,3 +1,4 @@
+import django
 import graphyte
 import re
 
@@ -424,7 +425,10 @@ class Command(BaseCommand):
                     if 'out_rate' in iface_details:
                         nic.out_rate = iface_details['out_rate']
 
-                    nic.save()
+                    try:
+                        nic.save()
+                    except django.db.utils.DataError:
+                        continue
 
                 # Send the metrics to Graphite if graphite_host has been set.
                 graphite_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_host', None)

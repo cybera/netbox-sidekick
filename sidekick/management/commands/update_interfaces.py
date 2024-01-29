@@ -461,7 +461,7 @@ class Command(BaseCommand):
                                 diff = diff / total_seconds
                             graphite_name = f"{graphite_prefix}.{cat}"
                             if options['dry_run']:
-                                self.stdout.write(f"{graphite_name} {diff} {total_seconds}")
+                                self.stdout.write(f"Would have updated graphite: {graphite_name} {diff} {total_seconds}")
                             else:
                                 graphyte.send(graphite_name, diff)
 
@@ -489,6 +489,9 @@ class Command(BaseCommand):
                         if m1 is not None and m2 is not None:
                             diff = (m1 - m2)
 
-                            if diff != 0:
-                                diff = diff / total_seconds
-                            graphyte.send(graphite_name, diff)
+                            if options['dry_run']:
+                                self.stdout.write(f"Would have updated graphite: {graphite_name} {diff} {total_seconds}")
+                            else:
+                                if diff != 0:
+                                    diff = diff / total_seconds
+                                graphyte.send(graphite_name, diff)

@@ -375,19 +375,19 @@ class Command(BaseCommand):
 
                     out_octets = iface_details.get('ifHCOutOctets', 0)
                     if 'No more variables' in f"{out_octets}":
-                        out_octets = iface_details.get('ifOutOctets', 0)
+                        out_octets = 0
 
                     in_octets = iface_details.get('ifHCInOctets', 0)
                     if 'No more variables' in f"{in_octets}":
-                        in_octets = iface_details.get('ifInOctets', 0)
+                        in_octets = 0
 
                     out_unicast_packets = iface_details.get('ifHCOutUcastPkts', 0)
                     if 'No more variables' in f"{out_unicast_packets}":
-                        out_unicast_packets = iface_details.get('ifOutUcastPkts', 0)
+                        out_unicast_packets = 0
 
                     in_unicast_packets = iface_details.get('ifHCInUcastPkts', 0)
                     if 'No more variables' in f"{in_unicast_packets}":
-                        in_unicast_packets = iface_details.get('ifInUcastPkts', 0)
+                        in_unicast_packets = 0
 
                     out_nunicast_packets = iface_details.get('ifOutNUcastPkts', 0)
                     if 'No more variables' in f"{out_nunicast_packets}":

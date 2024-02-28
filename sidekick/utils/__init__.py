@@ -96,8 +96,8 @@ OIDs = [
     ObjectType(ObjectIdentity('IF-MIB', 'ifHCInOctets')),
     ObjectType(ObjectIdentity('IF-MIB', 'ifOutOctets')),
     ObjectType(ObjectIdentity('IF-MIB', 'ifInOctets')),
-    ObjectType(ObjectIdentity('IF-MIB', 'ifInNUcastPkts')),
-    ObjectType(ObjectIdentity('IF-MIB', 'ifOutNUcastPkts')),
+    #ObjectType(ObjectIdentity('IF-MIB', 'ifInNUcastPkts')),
+    #ObjectType(ObjectIdentity('IF-MIB', 'ifOutNUcastPkts')),
     ObjectType(ObjectIdentity('IF-MIB', 'ifHCInUcastPkts')),
     ObjectType(ObjectIdentity('IF-MIB', 'ifHCOutUcastPkts')),
     ObjectType(ObjectIdentity('IF-MIB', 'ifInUcastPkts')),
@@ -353,6 +353,7 @@ def snmpwalk_bulk(ipaddress, community):
                 in_rate = r[1].prettyPrint()
                 if in_rate != "No more variables left in this MIB View":
                     results[index]['in_rate'] = in_rate
+                continue
 
             # Match the jnx-specific entries
             match = re.match(jnxifHCOut1SecRate_re, f"{r[0]}")
@@ -363,6 +364,7 @@ def snmpwalk_bulk(ipaddress, community):
                 out_rate = r[1].prettyPrint()
                 if out_rate != "No more variables left in this MIB View":
                     results[index]['out_rate'] = r[1].prettyPrint()
+                continue
 
             # Match the format IF-MIB::FOO
             match = re.match(oid_re, str(r[0].prettyPrint()))
@@ -373,7 +375,14 @@ def snmpwalk_bulk(ipaddress, community):
                     index = f"{r[0]}".split('.')[-1]
                     if index not in results:
                         results[index] = {}
-                    results[index][match[2]] = r[1].prettyPrint()
+                    # sometimes one OID ends before the other
+                    # during the SNMP walk and it would then return
+                    # "No more variables left in this MIB View"
+                    # on subsequent queries.
+                    # Let us check if we already have a result
+                    # so we do not overwrite the initial correct one
+                    if match[2] not in results[index]:
+                        results[index][match[2]] = r[1].prettyPrint()
 
                 # Parse admin status
                 if match[2] == 'ifAdminStatus' or match[2] == 'ifOperStatus':

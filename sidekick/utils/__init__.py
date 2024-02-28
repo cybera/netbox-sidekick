@@ -96,8 +96,6 @@ OIDs = [
     ObjectType(ObjectIdentity('IF-MIB', 'ifHCInOctets')),
     ObjectType(ObjectIdentity('IF-MIB', 'ifOutOctets')),
     ObjectType(ObjectIdentity('IF-MIB', 'ifInOctets')),
-    #ObjectType(ObjectIdentity('IF-MIB', 'ifInNUcastPkts')),
-    #ObjectType(ObjectIdentity('IF-MIB', 'ifOutNUcastPkts')),
     ObjectType(ObjectIdentity('IF-MIB', 'ifHCInUcastPkts')),
     ObjectType(ObjectIdentity('IF-MIB', 'ifHCOutUcastPkts')),
     ObjectType(ObjectIdentity('IF-MIB', 'ifInUcastPkts')),

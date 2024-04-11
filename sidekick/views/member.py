@@ -79,7 +79,8 @@ class MemberContactsView(PermissionRequiredMixin, SingleTableView):
 
             # Get the user accounts from the member's group
             # But only if no contact role was specified
-            if contact_role is None:
+            # or if the Network role is specified (which it is by default)
+            if contact_role is None or contact_role.name == "Network":
                 groups = Group.objects.filter(name__iexact=member.name)
                 if len(groups) == 1:
                     group = groups[0]

@@ -5,7 +5,7 @@ flake8
 geopy
 graphyte
 git+https://github.com/1Password/connect-sdk-python
-pysnmp
+pysnmp==4.4.12
 python-dateutil
 rrdtool
 napalm

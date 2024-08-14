@@ -14,6 +14,7 @@ from .networkservice import NetworkServiceL2ViewSet            # noqa: F401
 from .networkservice import NetworkServiceL3ViewSet            # noqa: F401
 from .networkservice import NetworkServiceGroupViewSet         # noqa: F401
 from .networkservice import NetworkServiceDuplicateInterfaces  # noqa: F401
+from .networkservice import NetworkServiceAdvertisedPrefixes   # noqa: F401
 from .networkusage import NetworkUsageListGroupsView           # noqa: F401
 from .networkusage import NetworkUsageListMembersView          # noqa: F401
 from .networkusage import NetworkUsageGroupView                # noqa: F401

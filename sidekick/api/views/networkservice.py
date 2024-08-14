@@ -6,6 +6,8 @@ from rest_framework.views import APIView
 from netbox.api.authentication import TokenAuthentication
 from netbox.api.viewsets import NetBoxModelViewSet
 
+from sidekick.api.renderers.plaintext import PlainTextRenderer
+
 from sidekick.api.serializers import (
     LogicalSystemSerializer,
     RoutingTypeSerializer,
@@ -93,3 +95,19 @@ class NetworkServiceDuplicateInterfaces(APIView):
                 result.append(f"Multiple services using {duplicates} on {dev}")
 
         return Response(result)
+
+
+class NetworkServiceAdvertisedPrefixes(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    renderer_classes = (PlainTextRenderer,)
+
+    def get(self, request):
+        prefixes = []
+        for network_service in NetworkService.objects.filter(active=True).filter(network_service_type__name__in=['c-all', 'transit']):
+            for prefix in network_service.get_ip_prefixes():
+                p = "%s" % (prefix)
+                if p not in prefixes:
+                    prefixes.append(p)
+
+        return Response("\n".join(prefixes))

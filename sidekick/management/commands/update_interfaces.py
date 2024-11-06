@@ -61,7 +61,17 @@ class Command(BaseCommand):
             return
 
         # Determine the information needed to connect to the device.
-        mgmt_ip = device.primary_ip4
+        try:
+            if device.primary_ip4:
+                mgmt_ip = device.primary_ip4
+            elif device.primary_ip6:
+                mgmt_ip = device.primary_ip6
+            else:
+                raise Exception(f"No valid IPv4/IPv6 primary address found for { options['device_name'] }")
+        except Exception as e:
+            self.stdout.write(f"{ e }")
+            return
+
         onepw_host = settings.PLUGINS_CONFIG['sidekick'].get('1pw_connect_host', None)
         onepw_token_path = settings.PLUGINS_CONFIG['sidekick'].get('1pw_connect_token_path', None)
         onepw_vault = settings.PLUGINS_CONFIG['sidekick'].get('1pw_connect_readonly_vault', None)

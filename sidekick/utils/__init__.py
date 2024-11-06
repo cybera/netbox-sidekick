@@ -13,12 +13,15 @@ from pysnmp.hlapi import (
     ObjectIdentity, ObjectType,
     SnmpEngine,
     UdpTransportTarget,
+    Udp6TransportTarget,
 )
 
 from sidekick.models import (
     AccountingProfile,
     NetworkService,
 )
+
+from ipaddress import ip_address
 
 GRAPHS = {
     # 'last_day': {
@@ -157,12 +160,19 @@ def decrypt_1pw_secret(token_path, host, vault, device, field):
 
     return secret
 
+def get_pysnmp_udp_transport_target(ipaddress):
+    ip = ip_address(ipaddress)
 
-def snmpget(ipaddress, community, oid):
+    if ip.version == 4:
+        return UdpTransportTarget((ipaddress, 161))
+    else:
+        return Udp6TransportTarget((ipaddress, 161))
+
+def snmpget(remote_ip, community, oid):
     iterator = getCmd(
         SnmpEngine(),
         CommunityData(community),
-        UdpTransportTarget((ipaddress, 161)),
+        UdpTransportTarget((remote_ip, 161)),
         ContextData(),
         ObjectType(ObjectIdentity(oid)))
     errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
@@ -179,12 +189,12 @@ def snmpget(ipaddress, community, oid):
         return None
 
 
-def snmpwalk(ipaddress, community, oid):
+def snmpwalk(remote_ip, community, oid):
     _results = []
     for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
             SnmpEngine(),
             CommunityData(community),
-            UdpTransportTarget((ipaddress, 161)),
+            UdpTransportTarget((remote_ip, 161)),
             ContextData(),
             ObjectType(oid),
             lexicographicMode=False,
@@ -204,7 +214,7 @@ def snmpwalk(ipaddress, community, oid):
     return None
 
 
-def snmpwalk_bulk_accounting(ipaddress, community):
+def snmpwalk_bulk_accounting(remote_ip, community):
     data = []
     isps = {}
     class_names = {}
@@ -219,7 +229,7 @@ def snmpwalk_bulk_accounting(ipaddress, community):
     for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
             SnmpEngine(),
             CommunityData(community),
-            UdpTransportTarget((ipaddress, 161)),
+            UdpTransportTarget((remote_ip, 161)),
             ContextData(),
             lexicographicMode=False,
             lookupMib=True,
@@ -273,7 +283,7 @@ def snmpwalk_bulk_accounting(ipaddress, community):
     # Obtain the name for each ISP
     for isp in isps.keys():
         _oid = f".1.3.6.1.2.1.31.1.1.1.18.{isp}"
-        isp_name = snmpget(ipaddress, community, _oid)
+        isp_name = snmpget(remote_ip, community, _oid)
         if isp_name is not None:
             isps[isp] = f"{isp_name[0][1]}"
 
@@ -301,10 +311,10 @@ def snmpwalk_bulk_accounting(ipaddress, community):
     return classes
 
 
-def snmpwalk_bulk(ipaddress, community):
+def snmpwalk_bulk(remote_ip, community):
     data = []
     results = {}
-    ip_addresses = {}
+    ipv4_addresses = {}
 
     special = [
         'ifAdminStatus',
@@ -322,10 +332,12 @@ def snmpwalk_bulk(ipaddress, community):
     jnxifHCIn1SecRate_re = r'.*2636\.3\.3\.1\.1\.7'
     jnxifHCOut1SecRate_re = r'.*2636\.3\.3\.1\.1\.8'
 
+    pysnmp_udp_transport_target = get_pysnmp_udp_transport_target(remote_ip)
+
     for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
             SnmpEngine(),
             CommunityData(community),
-            UdpTransportTarget((ipaddress, 161)),
+            pysnmp_udp_transport_target,
             ContextData(),
             lexicographicMode=False,
             lookupMib=True,
@@ -434,7 +446,7 @@ def snmpwalk_bulk(ipaddress, community):
                         v4_mask = r[1].prettyPrint()
                         v4_address = match2[1]
                         cidr = NETMASKS[v4_mask]
-                        ip_addresses[v4_address] = cidr
+                        ipv4_addresses[v4_address] = cidr
 
     # Loop through the results
     # and match the IP address with the netmask
@@ -444,8 +456,8 @@ def snmpwalk_bulk(ipaddress, community):
 
         if 'ipAdEntIfIndex' in v:
             for ipv4 in v['ipAdEntIfIndex']:
-                if ipv4 in ip_addresses.keys():
-                    results[k]['ipv4'].append(f"{ipv4}/{ip_addresses[ipv4]}")
+                if ipv4 in ipv4_addresses.keys():
+                    results[k]['ipv4'].append(f"{ipv4}/{ipv4_addresses[ipv4]}")
 
     return results
 

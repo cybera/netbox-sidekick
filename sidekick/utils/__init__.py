@@ -169,10 +169,12 @@ def get_pysnmp_udp_transport_target(ipaddress):
         return Udp6TransportTarget((ipaddress, 161))
 
 def snmpget(remote_ip, community, oid):
+    pysnmp_udp_transport_target = get_pysnmp_udp_transport_target(remote_ip)
+
     iterator = getCmd(
         SnmpEngine(),
         CommunityData(community),
-        UdpTransportTarget((remote_ip, 161)),
+        pysnmp_udp_transport_target,
         ContextData(),
         ObjectType(ObjectIdentity(oid)))
     errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
@@ -191,10 +193,12 @@ def snmpget(remote_ip, community, oid):
 
 def snmpwalk(remote_ip, community, oid):
     _results = []
+    pysnmp_udp_transport_target = get_pysnmp_udp_transport_target(remote_ip)
+
     for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
             SnmpEngine(),
             CommunityData(community),
-            UdpTransportTarget((remote_ip, 161)),
+            pysnmp_udp_transport_target,
             ContextData(),
             ObjectType(oid),
             lexicographicMode=False,
@@ -226,10 +230,12 @@ def snmpwalk_bulk_accounting(remote_ip, community):
     jnxScuStatsBytes_re = r'.*2636\.3\.16\.1\.1\.1\.5\.(\d+)\.1\.(\d+)\.(.+)'
     jnxDcuStatsBytes_re = r'.*2636\.3\.6\.2\.1\.5\.(\d+)\.1\.(\d+)\.(.+)'
 
+    pysnmp_udp_transport_target = get_pysnmp_udp_transport_target(remote_ip)
+
     for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
             SnmpEngine(),
             CommunityData(community),
-            UdpTransportTarget((remote_ip, 161)),
+            pysnmp_udp_transport_target,
             ContextData(),
             lexicographicMode=False,
             lookupMib=True,

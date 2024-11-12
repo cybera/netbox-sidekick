@@ -99,7 +99,7 @@ class NIC(NetBoxModel):
         return reverse('plugins:sidekick:nic_detail', args=[self.interface.id])
 
     def graphite_device_name(self):
-        return self.interface.device.name.lower().replace(' ', '_').replace('(', '').replace(')', '')
+        return self.interface.device.name.lower().replace(' ', '_').replace('.', '_').replace('(', '').replace(')', '')
 
     def graphite_interface_name(self):
         return self.interface.name.lower().replace('/', '-').replace('.', '_').replace('(', '').replace(')', '')

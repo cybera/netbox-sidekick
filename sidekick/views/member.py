@@ -93,6 +93,8 @@ class MemberContactsView(PermissionRequiredMixin, SingleTableView):
             # And only of the "role" specified.
             for site in member.sites.all():
                 for c in site.contacts.all():
+                    if site.status != "active":
+                        continue
                     if not any(v.get('contact', None) == c.contact.email for v in contacts):
                         if contact_role is not None and c.role == contact_role:
                             contacts.append({'contact': c.contact.email})

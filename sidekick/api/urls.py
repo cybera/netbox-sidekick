@@ -7,7 +7,6 @@ from .views import (
     BandwidthProfileViewSet,
     CurrentBandwidthView,
     DeviceCheckAccessView,
-    FullMapViewSet,
     LogicalSystemViewSet,
     NetworkServiceTypeViewSet,
     NetworkServiceViewSet,
@@ -26,7 +25,6 @@ from .views import (
 )
 
 router = routers.DefaultRouter()
-router.register('map', FullMapViewSet, basename='map')
 router.register('accountingprofile', AccountingProfileViewSet)
 router.register('accountingsource', AccountingSourceViewSet)
 router.register('bandwidthprofile', BandwidthProfileViewSet)

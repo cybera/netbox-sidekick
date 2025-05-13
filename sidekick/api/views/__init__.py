@@ -4,7 +4,6 @@ from .accounting import BandwidthProfileViewSet                # noqa: F401
 from .accounting import CurrentBandwidthView                   # noqa: F401
 from .accounting import AllCurrentBandwidthView                # noqa: F401
 from .device import DeviceCheckAccessView                      # noqa: F401
-from .map import FullMapViewSet                                # noqa: F401
 from .networkservice import LogicalSystemViewSet               # noqa: F401
 from .networkservice import RoutingTypeViewSet                 # noqa: F401
 from .networkservice import NetworkServiceTypeViewSet          # noqa: F401

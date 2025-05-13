@@ -4,7 +4,7 @@ django-extensions
 flake8
 geopy
 graphyte
-git+https://github.com/1Password/connect-sdk-python
+git+https://github.com/1Password/connect-sdk-python@5198bd3cac80b960341caf5678e027ca5b7e4155
 pysnmp==4.4.12
 python-dateutil
 rrdtool

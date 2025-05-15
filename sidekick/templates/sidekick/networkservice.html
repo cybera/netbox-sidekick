@@ -152,7 +152,7 @@
                   <tr>
                     <td>Prefixes</td>
                     <td>
-                      {% for prefix in l3.ip_prefixes %}
+                      {% for prefix in l3.ip_prefixes.all %}
                       <li>{{ prefix }}</li>
                       {% endfor %}
                     </td>

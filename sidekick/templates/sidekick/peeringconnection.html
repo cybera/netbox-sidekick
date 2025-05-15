@@ -48,7 +48,7 @@
             <tr>
               <td>Prefixes</td>
               <td>
-                {% for prefix in object.ip_prefixes %}
+                {% for prefix in object.ip_prefixes.all %}
                 <li>{{ prefix }}</li>
                 {% endfor %}
               </td>

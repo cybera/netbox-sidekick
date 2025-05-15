@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from dcim.models import Interface
+from ipam.models import Prefix
 
 from netbox.models import NetBoxModel
 
@@ -201,6 +202,16 @@ class NetworkService(NetBoxModel):
         member_name = slugify(self.member.name)
         service_name = slugify(self.name)
         return f"services.{member_name}.{service_name}"
+
+    def get_prefixes(self, version=4):
+        prefixes = []
+        for network_device in self.network_service_devices.all():
+            for l3 in network_device.network_service_l3.all():
+                for prefix in l3.ip_prefixes.all():
+                    if prefix.prefix.version == version:
+                        prefixes.append(prefix.prefix)
+        prefixes.sort()
+        return prefixes
 
     def get_ipv4_prefixes(self):
         prefixes = []
@@ -497,6 +508,12 @@ class NetworkServiceL3(NetBoxModel):
         verbose_name='Active',
         help_text='The active/inactive status of the L3 service',
         default=True,
+    )
+
+    ip_prefixes = models.ManyToManyField(
+        Prefix,
+        verbose_name='IP Prefixes',
+        blank=True,
     )
 
     class Meta:

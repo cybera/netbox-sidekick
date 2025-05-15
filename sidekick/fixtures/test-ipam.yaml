@@ -1,3 +1,115 @@
+- model: ipam.Prefix
+  pk: 1
+  fields:
+    tenant_id: 1
+    prefix: 192.168.1.0/24
+    status: active
+
+- model: ipam.Prefix
+  pk: 2
+  fields:
+    tenant_id: 1
+    prefix: 192.168.2.0/24
+    status: active
+
+- model: ipam.Prefix
+  pk: 3
+  fields:
+    tenant_id: 1
+    prefix: dead:beef::0/64
+    status: active
+
+- model: ipam.Prefix
+  pk: 4
+  fields:
+    tenant_id: 1
+    prefix: dead:beee::0/64
+    status: active
+
+- model: ipam.Prefix
+  pk: 5
+  fields:
+    tenant_id: 1
+    prefix: 192.168.3.0/24
+    status: active
+
+- model: ipam.Prefix
+  pk: 6
+  fields:
+    tenant_id: 1
+    prefix: 192.168.4.0/24
+    status: active
+
+- model: ipam.Prefix
+  pk: 7
+  fields:
+    tenant_id: 1
+    prefix: dead:beea::0/64
+    status: active
+
+- model: ipam.Prefix
+  pk: 8
+  fields:
+    tenant_id: 1
+    prefix: dead:beeb::0/64
+    status: active
+
+- model: ipam.Prefix
+  pk: 9
+  fields:
+    tenant_id: 5
+    prefix: 192.168.5.0/24
+    status: active
+
+- model: ipam.Prefix
+  pk: 10
+  fields:
+    tenant_id: 5
+    prefix: 192.168.6.0/24
+    status: active
+
+- model: ipam.Prefix
+  pk: 11
+  fields:
+    tenant_id: 5
+    prefix: dead:aaaa::0/64
+    status: active
+
+- model: ipam.Prefix
+  pk: 12
+  fields:
+    tenant_id: 5
+    prefix: dead:bbbb::0/64
+    status: active
+
+- model: ipam.Prefix
+  pk: 13
+  fields:
+    tenant_id: 6
+    prefix: 192.168.7.0/24
+    status: active
+
+- model: ipam.Prefix
+  pk: 14
+  fields:
+    tenant_id: 6
+    prefix: 192.168.8.0/24
+    status: active
+
+- model: ipam.Prefix
+  pk: 15
+  fields:
+    tenant_id: 6
+    prefix: dead:cccc::0/64
+    status: active
+
+- model: ipam.Prefix
+  pk: 16
+  fields:
+    tenant_id: 6
+    prefix: dead:dddd::0/64
+    status: active
+
 - model: ipam.IPAddress
   pk: 1
   fields:

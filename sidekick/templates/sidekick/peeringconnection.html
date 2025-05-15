@@ -46,6 +46,14 @@
               <td>{{ object.asn }}</td>
             </tr>
             <tr>
+              <td>Prefixes</td>
+              <td>
+                {% for prefix in object.ip_prefixes %}
+                <li>{{ prefix }}</li>
+                {% endfor %}
+              </td>
+            </tr>
+            <tr>
               <td>IPv4 Unicast</td>
               <td>
                 {% if object.ipv4_unicast %}

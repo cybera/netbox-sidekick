@@ -67,6 +67,7 @@ class NetworkServiceL3Form(NetBoxModelForm):
         model = NetworkServiceL3
         fields = ('member', 'member_site',
                   'network_service_device', 'logical_system', 'routing_type', 'asn',
+                  'ip_prefixes',
                   'ipv4_unicast', 'ipv4_multicast', 'ipv4_prefixes',
                   'provider_router_address_ipv4', 'member_router_address_ipv4',
                   'ipv6_unicast', 'ipv6_multicast', 'ipv6_prefixes',

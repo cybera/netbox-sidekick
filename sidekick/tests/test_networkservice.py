@@ -105,6 +105,9 @@ class NetworkServiceTest(BaseTest):
         prefixes = v.get_ipv4_prefixes()
         self.assertEqual(prefixes, expected_prefixes)
 
+        prefixes = v.get_prefixes(version=4)
+        self.assertEqual(prefixes, expected_prefixes)
+
     # Backup service
     def test_backup_service(self):
         expected_service_name = "East University's backup peering service"

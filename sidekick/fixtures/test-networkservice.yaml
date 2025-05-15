@@ -63,6 +63,11 @@
     ipv6_prefixes: |
       dead::beef::0/64
       dead::beee::0/64
+    ip_prefixes:
+      - 1
+      - 2
+      - 3
+      - 4
 
 - model: sidekick.NetworkServiceGroup
   pk: 1
@@ -113,6 +118,11 @@
     ipv6_prefixes: |
       dead::beef::0/64
       dead::beee::0/64
+    ip_prefixes:
+      - 5
+      - 6
+      - 7
+      - 8
 
 - model: sidekick.NetworkService
   pk: 3
@@ -150,7 +160,11 @@
     ipv6_prefixes: |
       dead::aaaa::0/64
       dead::bbbb::0/64
-
+    ip_prefixes:
+      - 9
+      - 10
+      - 11
+      - 12
 
 - model: sidekick.NetworkServiceL3
   pk: 4
@@ -173,3 +187,8 @@
     ipv6_prefixes: |
       dead::cccc::0/64
       dead::dddd::0/64
+    ip_prefixes:
+      - 13
+      - 14
+      - 15
+      - 16

@@ -150,6 +150,14 @@
                     <td>{{ l3.asn }}</td>
                   </tr>
                   <tr>
+                    <td>Prefixes</td>
+                    <td>
+                      {% for prefix in l3.ip_prefixes %}
+                      <li>{{ prefix }}</li>
+                      {% endfor %}
+                    </td>
+                  </tr>
+                  <tr>
                     <td>IPv4 Unicast</td>
                     <td>
                       {% if l3.ipv4_unicast %}

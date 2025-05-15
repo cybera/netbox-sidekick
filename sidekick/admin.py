@@ -157,6 +157,8 @@ class NetworkServiceL2AdminInline(admin.StackedInline):
 
 @admin.register(NetworkServiceL3)
 class NetworkServiceL3Admin(admin.ModelAdmin):
+    filter_horizontal = ('ip_prefixes',)
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'network_service_device':
             kwargs['queryset'] = NetworkServiceDevice.objects.order_by('network_service__member__name')
@@ -176,6 +178,11 @@ class NetworkServiceL3Admin(admin.ModelAdmin):
         ('Configuration', {
             'fields': (
                 'logical_system', 'routing_type', 'asn'),
+        }),
+
+        ('IP Prefixes', {
+            'fields': (
+                'ip_prefixes',),
         }),
 
         ('IPv4 Information', {

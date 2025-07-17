@@ -19,8 +19,8 @@ class Command(BaseCommand):
             if member_name not in v6_prefixes:
                 v6_prefixes[member_name] = []
 
-            v4_prefixes[member_name].extend(ns.get_ipv4_prefixes())
-            v6_prefixes[member_name].extend(ns.get_ipv6_prefixes())
+            v4_prefixes[member_name].extend(ns.get_prefixes(version=4))
+            v6_prefixes[member_name].extend(ns.get_prefixes(version=6))
 
         for i_member, i_prefixes in v4_prefixes.items():
             for j_member, j_prefixes in v4_prefixes.items():

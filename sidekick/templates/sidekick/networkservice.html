@@ -150,14 +150,6 @@
                     <td>{{ l3.asn }}</td>
                   </tr>
                   <tr>
-                    <td>Prefixes</td>
-                    <td>
-                      {% for prefix in l3.ip_prefixes.all %}
-                      <li>{{ prefix }}</li>
-                      {% endfor %}
-                    </td>
-                  </tr>
-                  <tr>
                     <td>IPv4 Unicast</td>
                     <td>
                       {% if l3.ipv4_unicast %}
@@ -179,7 +171,13 @@
                   </tr>
                   <tr>
                     <td>IPv4 Prefixes</td>
-                    <td>{{ l3.ipv4_prefixes }}</td>
+                    <td>
+                      {% for prefix in l3.ip_prefixes.all %}
+                      {% if prefix.prefix.version == 4 %}
+                      <li>{{ prefix }}</li>
+                      {% endif %}
+                      {% endfor %}
+                    </td>
                   </tr>
                   <tr>
                     <td>IPv4 Provider Router Address</td>
@@ -211,7 +209,13 @@
                   </tr>
                   <tr>
                     <td>IPv6 Prefixes</td>
-                    <td>{{ l3.ipv6_prefixes }}</td>
+                    <td>
+                      {% for prefix in l3.ip_prefixes.all %}
+                      {% if prefix.prefix.version == 6 %}
+                      <li>{{ prefix }}</li>
+                      {% endif %}
+                      {% endfor %}
+                    </td>
                   </tr>
                   <tr>
                     <td>IPv6 Provider Router Address</td>

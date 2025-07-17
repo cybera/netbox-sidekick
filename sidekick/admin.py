@@ -188,15 +188,13 @@ class NetworkServiceL3Admin(admin.ModelAdmin):
         ('IPv4 Information', {
             'fields': (
                 'ipv4_unicast', 'ipv4_multicast',
-                'provider_router_address_ipv4', 'member_router_address_ipv4',
-                'ipv4_prefixes',),
+                'provider_router_address_ipv4', 'member_router_address_ipv4',),
         }),
 
         ('IPv6 Information', {
             'fields': (
                 'ipv6_unicast', 'ipv6_multicast',
-                'provider_router_address_ipv6', 'member_router_address_ipv6',
-                'ipv6_prefixes',),
+                'provider_router_address_ipv6', 'member_router_address_ipv6',),
         }),
 
         (None, {

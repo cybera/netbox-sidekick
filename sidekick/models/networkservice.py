@@ -213,6 +213,7 @@ class NetworkService(NetBoxModel):
         prefixes.sort()
         return prefixes
 
+    # old - remove soon
     def get_ipv4_prefixes(self):
         prefixes = []
         for network_device in self.network_service_devices.all():
@@ -229,6 +230,7 @@ class NetworkService(NetBoxModel):
         prefixes.sort()
         return prefixes
 
+    # old - remove soon
     def get_ipv6_prefixes(self):
         prefixes = []
         for network_device in self.network_service_devices.all():
@@ -244,6 +246,7 @@ class NetworkService(NetBoxModel):
         prefixes.sort()
         return prefixes
 
+    # old - remove soon
     def get_ip_prefixes(self):
         prefixes = self.get_ipv4_prefixes()
         prefixes.extend(self.get_ipv6_prefixes())

@@ -158,18 +158,6 @@ class MemberCreateForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control'}))
 
-    ipv4_prefixes = forms.CharField(
-        label='IPv4 Prefixes',
-        help_text="Enter one per line",
-        required=False,
-        widget=forms.Textarea(attrs={'class': 'form-control'}))
-
-    ipv6_prefixes = forms.CharField(
-        label='IPv6 Prefixes',
-        help_text="Enter one per line",
-        required=False,
-        widget=forms.Textarea(attrs={'class': 'form-control'}))
-
     def clean_member_name(self):
         member_name = self.cleaned_data["member_name"]
         existing_member = Tenant.objects.filter(name__iexact=member_name)
@@ -257,10 +245,8 @@ class MemberCreateForm(forms.Form):
         asn = self.cleaned_data["asn"]
         ipv4_unicast = self.cleaned_data["ipv4_unicast"]
         ipv4_multicast = self.cleaned_data["ipv4_multicast"]
-        ipv4_prefixes = self.cleaned_data["ipv4_prefixes"]
         ipv6_unicast = self.cleaned_data["ipv6_unicast"]
         ipv6_multicast = self.cleaned_data["ipv6_multicast"]
-        ipv6_prefixes = self.cleaned_data["ipv6_prefixes"]
         provider_router_address_ipv4 = self.cleaned_data["provider_router_address_ipv4"]
         member_router_address_ipv4 = self.cleaned_data["member_router_address_ipv4"]
         provider_router_address_ipv6 = self.cleaned_data["provider_router_address_ipv6"]
@@ -273,10 +259,8 @@ class MemberCreateForm(forms.Form):
             asn=asn,
             ipv4_unicast=ipv4_unicast,
             ipv4_multicast=ipv4_multicast,
-            ipv4_prefixes=ipv4_prefixes,
             ipv6_unicast=ipv6_unicast,
             ipv6_multicast=ipv6_multicast,
-            ipv6_prefixes=ipv6_prefixes,
             provider_router_address_ipv4=provider_router_address_ipv4,
             member_router_address_ipv4=member_router_address_ipv4,
             provider_router_address_ipv6=provider_router_address_ipv6,

@@ -103,9 +103,19 @@ class NetworkServiceAdvertisedPrefixes(APIView):
     renderer_classes = (PlainTextRenderer,)
 
     def get(self, request):
+        service_type = request.query_params.getlist('service_type', ['transit', 'c-all'])
+        if not isinstance(service_type, list):
+            service_type = [service_type]
+
+        version = request.query_params.get('version', 4)
+        try:
+            version = int(version)
+        except ValueError:
+            version = 4
+
         prefixes = []
-        for network_service in NetworkService.objects.filter(active=True).filter(network_service_type__name__in=['c-all', 'transit']):
-            for prefix in network_service.get_ip_prefixes():
+        for network_service in NetworkService.objects.filter(active=True).filter(network_service_type__name__in=service_type):
+            for prefix in network_service.get_prefixes(version=version):
                 p = "%s" % (prefix)
                 if p not in prefixes:
                     prefixes.append(p)

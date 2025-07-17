@@ -732,7 +732,7 @@ def get_all_ip_prefixes():
                 'prefixes': [],
                 'member': network_service.member,
             }
-        for prefix in network_service.get_ip_prefixes():
+        for prefix in network_service.get_prefixes():
             if prefix not in prefixes[member_id]['prefixes']:
                 prefixes[member_id]['prefixes'].append(prefix)
         prefixes[member_id]['prefixes'].sort()

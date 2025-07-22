@@ -10,10 +10,6 @@ menu_items = (
         link_text='Accounting Sources',
     ),
     PluginMenuItem(
-        link='plugins:sidekick:ipprefix_index',
-        link_text='IP Prefixes',
-    ),
-    PluginMenuItem(
         link='plugins:sidekick:nic_list',
         link_text='Interfaces',
     ),

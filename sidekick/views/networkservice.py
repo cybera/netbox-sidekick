@@ -8,8 +8,6 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.http import JsonResponse
 from django.views import View
 
-from django_tables2.views import SingleTableView
-
 from sidekick.filters import (
     LogicalSystemFilterSet,
     LogicalSystemFilterSetForm,
@@ -37,7 +35,6 @@ from sidekick.forms import (
 )
 
 from sidekick.tables import (
-    IPPrefixTable,
     LogicalSystemTable,
     NetworkServiceTypeTable,
     NetworkServiceTable,
@@ -57,26 +54,6 @@ from sidekick.models import (
 )
 
 from sidekick import utils
-
-
-# IP Prefix Index
-class IPPrefixIndexView(PermissionRequiredMixin, SingleTableView):
-    permission_required = 'sidekick.view_ipprefix'
-    model = NetworkService
-    template_name = 'sidekick/ipprefix_list.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        prefixes = []
-        for member_id, data in utils.get_all_ip_prefixes().items():
-            for prefix in data['prefixes']:
-                prefixes.append({
-                    'prefix': prefix,
-                    'member': data['member'],
-                })
-        context['ipprefix_table'] = IPPrefixTable(prefixes)
-
-        return context
 
 
 # Logical System Index

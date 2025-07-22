@@ -18,7 +18,6 @@ from .memberbandwidth import (  # noqa: F401
 )
 
 from .networkservice import (  # noqa: F401
-    IPPrefixIndexView,
     LogicalSystemIndexView, LogicalSystemDetailView,
     LogicalSystemEditView, LogicalSystemDeleteView,
     NetworkServiceTypeIndexView, NetworkServiceTypeDetailView,

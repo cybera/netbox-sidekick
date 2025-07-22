@@ -21,9 +21,6 @@ urlpatterns = [
     path('bandwidth_profiles/<int:pk>/edit/', views.BandwidthProfileEditView.as_view(), name='bandwidthprofile_edit'),
     path('bandwidth_profiles/<int:pk>/delete/', views.BandwidthProfileDeleteView.as_view(), name='bandwidthprofile_delete'),
 
-    # IP Prefix
-    path('ip_prefixes/', views.IPPrefixIndexView.as_view(), name='ipprefix_index'),
-
     # Logical System
     path('logical_systems/', views.LogicalSystemIndexView.as_view(), name='logicalsystem_list'),
     path('logical_systems/add/', views.LogicalSystemEditView.as_view(), name='logicalsystem_add'),

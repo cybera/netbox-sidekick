@@ -2,6 +2,7 @@ backports.weakref
 backports-datetime-fromisoformat
 django-extensions==3.1.5
 flake8
+pysmi==0.3.4
 geopy==2.2.0
 graphyte==1.7.1
 git+https://github.com/1Password/connect-sdk-python@5198bd3cac80b960341caf5678e027ca5b7e4155

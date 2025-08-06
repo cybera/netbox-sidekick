@@ -160,6 +160,7 @@ def decrypt_1pw_secret(token_path, host, vault, device, field):
 
     return secret
 
+
 def get_pysnmp_udp_transport_target(ipaddress):
     ip = ip_address(ipaddress)
 
@@ -167,6 +168,7 @@ def get_pysnmp_udp_transport_target(ipaddress):
         return UdpTransportTarget((ipaddress, 161))
     else:
         return Udp6TransportTarget((ipaddress, 161))
+
 
 def snmpget(remote_ip, community, oid):
     pysnmp_udp_transport_target = get_pysnmp_udp_transport_target(remote_ip)

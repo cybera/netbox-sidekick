@@ -102,8 +102,6 @@ class NetworkServiceTest(BaseTest):
         v = NetworkService.objects.get(
             member__name='East University',
             description="Peering service for East University")
-        prefixes = v.get_ipv4_prefixes()
-        self.assertEqual(prefixes, expected_prefixes)
 
         prefixes = v.get_prefixes(version=4)
         self.assertEqual(prefixes, expected_prefixes)

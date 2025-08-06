@@ -57,12 +57,6 @@
     member_router_address_ipv4: '192.168.1.2/31'
     asn: 12345
     legacy_id: 1
-    ipv4_prefixes: |
-      192.168.1.0/24
-      192.168.2.0/24
-    ipv6_prefixes: |
-      dead::beef::0/64
-      dead::beee::0/64
     ip_prefixes:
       - 1
       - 2
@@ -112,12 +106,6 @@
     member_router_address_ipv4: '192.168.2.2/31'
     asn: 12345
     legacy_id: 3
-    ipv4_prefixes: |
-      192.168.1.0/24
-      192.168.2.0/24
-    ipv6_prefixes: |
-      dead::beef::0/64
-      dead::beee::0/64
     ip_prefixes:
       - 5
       - 6
@@ -154,12 +142,6 @@
     provider_router_address_ipv4: '192.168.3.1/31'
     member_router_address_ipv4: '192.168.3.2/31'
     asn: 12346
-    ipv4_prefixes: |
-      192.168.3.0/24
-      192.168.3.0/24
-    ipv6_prefixes: |
-      dead::aaaa::0/64
-      dead::bbbb::0/64
     ip_prefixes:
       - 9
       - 10
@@ -181,12 +163,6 @@
     provider_router_address_ipv4: '192.168.4.3/31'
     provider_router_address_ipv4: '192.168.4.4/31'
     asn: 12347
-    ipv4_prefixes: |
-      192.168.4.0/24
-      192.168.4.0/24
-    ipv6_prefixes: |
-      dead::cccc::0/64
-      dead::dddd::0/64
     ip_prefixes:
       - 13
       - 14

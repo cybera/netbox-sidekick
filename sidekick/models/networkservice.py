@@ -1,5 +1,3 @@
-import netaddr
-
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
@@ -213,46 +211,6 @@ class NetworkService(NetBoxModel):
         prefixes.sort()
         return prefixes
 
-    # old - remove soon
-    def get_ipv4_prefixes(self):
-        prefixes = []
-        for network_device in self.network_service_devices.all():
-            for l3 in network_device.network_service_l3.all():
-                for prefix in l3.ipv4_prefixes.split("\n"):
-                    prefix = prefix.strip()
-                    if prefix:
-                        try:
-                            prefix = netaddr.IPNetwork(prefix)
-                        except netaddr.core.AddrFormatError:
-                            continue
-                        if prefix not in prefixes:
-                            prefixes.append(prefix)
-        prefixes.sort()
-        return prefixes
-
-    # old - remove soon
-    def get_ipv6_prefixes(self):
-        prefixes = []
-        for network_device in self.network_service_devices.all():
-            for l3 in network_device.network_service_l3.all():
-                for prefix in l3.ipv6_prefixes.split("\n"):
-                    prefix = prefix.strip()
-                    if prefix:
-                        try:
-                            prefix = netaddr.IPNetwork(prefix)
-                        except netaddr.core.AddrFormatError:
-                            continue
-                        prefixes.append(prefix)
-        prefixes.sort()
-        return prefixes
-
-    # old - remove soon
-    def get_ip_prefixes(self):
-        prefixes = self.get_ipv4_prefixes()
-        prefixes.extend(self.get_ipv6_prefixes())
-        prefixes.sort()
-        return prefixes
-
     def get_backup_service(self):
         return NetworkService.objects.filter(backup_for=self.id)
 
@@ -435,13 +393,6 @@ class NetworkServiceL3(NetBoxModel):
         default=True,
     )
 
-    ipv4_prefixes = models.TextField(
-        verbose_name='IPv4 Prefixes',
-        help_text='IPv4 Prefixes of the member',
-        null=True,
-        blank=True,
-    )
-
     provider_router_address_ipv4 = models.CharField(
         max_length=255,
         verbose_name='Provider Router Address IPv4',
@@ -468,13 +419,6 @@ class NetworkServiceL3(NetBoxModel):
         verbose_name='IPv6 Multicast',
         help_text='Does the service support IPv6 Multicast?',
         default=False,
-    )
-
-    ipv6_prefixes = models.TextField(
-        verbose_name='IPv6 Prefixes',
-        help_text='IPv6 Prefixes of the member',
-        null=True,
-        blank=True,
     )
 
     provider_router_address_ipv6 = models.CharField(

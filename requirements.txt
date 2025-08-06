@@ -12,3 +12,5 @@ napalm
 whisper
 pytz==2022.1
 meraki==1.40.1
+pyasn1==0.4.8
+pyasn1-modules==0.2.8

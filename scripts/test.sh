@@ -41,7 +41,6 @@ cp scripts/configuration.testing.py build/netbox/netbox/netbox/configuration.py
 
 # Run sidekick unit tests
 cd build/netbox
-python netbox/manage.py migrate
 coverage run --source="netbox/" netbox/manage.py test sidekick
 RC=$?
 if [[ $RC != 0 ]]; then

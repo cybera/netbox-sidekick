@@ -744,7 +744,7 @@ def get_all_ip_prefixes():
 def get_services_for_graphite(member):
     services = {}
     for s in NetworkService.objects.filter(member__id=member.id):
-        services[s.name] = s
+        services[s.id] = s
 
     return services.values()
 

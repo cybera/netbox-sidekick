@@ -88,7 +88,7 @@ class Command(BaseCommand):
             snmp = None
 
             try:
-                snmp = decrypt_1pw_secret(onepw_token_path, onepw_host, onepw_vault, f"{device}", 'snmp')
+                snmp = decrypt_1pw_secret(onepw_token_path, onepw_host, onepw_vault, f"{device.name}", 'snmp')
             except Exception as e:
                 self.stdout.write(f"Unable to decrypt snmp secret: {e}")
 

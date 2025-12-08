@@ -85,6 +85,7 @@ class Command(BaseCommand):
            onepw_vault is not None:
 
             _mgmt_ip = "%s" % (mgmt_ip.address.ip)
+            snmp = None
 
             try:
                 snmp = decrypt_1pw_secret(onepw_token_path, onepw_host, onepw_vault, f"{device}", 'snmp')

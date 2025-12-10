@@ -53,8 +53,8 @@ class DeviceCheckAccessView(APIView):
 
         # Attempt to decrypt the device's credentials.
         try:
-            username = decrypt_1pw_secret(onepw_token_path, onepw_host, onepw_vault, f"{device}", 'username')
-            password = decrypt_1pw_secret(onepw_token_path, onepw_host, onepw_vault, f"{device}", 'password')
+            username = decrypt_1pw_secret(onepw_token_path, onepw_host, onepw_vault, f"{device.name}", 'username')
+            password = decrypt_1pw_secret(onepw_token_path, onepw_host, onepw_vault, f"{device.name}", 'password')
         except Exception:
             raise Http404
 

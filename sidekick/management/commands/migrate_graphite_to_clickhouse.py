@@ -5,6 +5,7 @@ import multiprocessing
 import json
 from datetime import datetime, timezone
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from sidekick.utils.clickhouse import ClickHouseHTTP
 from dcim.models import Interface
@@ -53,18 +54,30 @@ class Command(BaseCommand):
     help = "Migrate historical data from Graphite/Whisper files to ClickHouse with idempotency"
 
     def add_arguments(self, parser):
+        sidekick_config = settings.PLUGINS_CONFIG.get('sidekick', {})
+
         parser.add_argument("--whisper-dir", required=True, help="Base directory of Whisper files")
-        parser.add_argument("--clickhouse-url", default=os.getenv("CLICKHOUSE_URL", "http://127.0.0.1:8123"))
-        parser.add_argument("--database", default="pmacct")
+        parser.add_argument(
+            "--clickhouse-url",
+            default=sidekick_config.get('clickhouse_url') or os.getenv("CLICKHOUSE_URL", "http://127.0.0.1:8123"),
+        )
+        parser.add_argument(
+            "--database",
+            default=sidekick_config.get('clickhouse_database')
+            or os.getenv("CLICKHOUSE_DATABASE")
+            or os.getenv("CLICKHOUSE_NETFLOW_DATABASE")
+            or "pmacct",
+        )
         parser.add_argument("--workers", type=int, default=multiprocessing.cpu_count())
         parser.add_argument("--limit", type=int, default=0)
         parser.add_argument("--no-state-check", action="store_true", help="Skip checking ClickHouse for existing data")
 
     def handle(self, *args, **options):
+        sidekick_config = settings.PLUGINS_CONFIG.get('sidekick', {})
         ch_params = {
             "base_url": options["clickhouse_url"],
-            "user": os.getenv("CLICKHOUSE_USER", ""),
-            "password": os.getenv("CLICKHOUSE_PASSWORD", ""),
+            "user": sidekick_config.get('clickhouse_user') or os.getenv("CLICKHOUSE_USER", ""),
+            "password": sidekick_config.get('clickhouse_password') or os.getenv("CLICKHOUSE_PASSWORD", ""),
             "database": options["database"],
         }
         ch = ClickHouseHTTP(**ch_params)

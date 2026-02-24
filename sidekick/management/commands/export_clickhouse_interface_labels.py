@@ -4,6 +4,7 @@ import json
 import os
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 
@@ -117,31 +118,35 @@ class Command(BaseCommand):
     help = "Export NetBox interface labels to ClickHouse for ad-hoc querying"
 
     def add_arguments(self, parser):
+        sidekick_config = settings.PLUGINS_CONFIG.get('sidekick', {})
+
         parser.add_argument(
             "--clickhouse-url",
-            default=os.getenv("CLICKHOUSE_URL", "http://127.0.0.1:8123"),
+            default=sidekick_config.get('clickhouse_url') or os.getenv("CLICKHOUSE_URL", "http://127.0.0.1:8123"),
             help="ClickHouse HTTP URL (default: http://127.0.0.1:8123)",
         )
         parser.add_argument(
             "--clickhouse-user",
-            default=os.getenv("CLICKHOUSE_USER", ""),
+            default=sidekick_config.get('clickhouse_user') or os.getenv("CLICKHOUSE_USER", ""),
             help="ClickHouse user (default: env CLICKHOUSE_USER)",
         )
         parser.add_argument(
             "--clickhouse-password",
-            default=os.getenv("CLICKHOUSE_PASSWORD", ""),
+            default=sidekick_config.get('clickhouse_password') or os.getenv("CLICKHOUSE_PASSWORD", ""),
             help="ClickHouse password (default: env CLICKHOUSE_PASSWORD)",
         )
         parser.add_argument(
             "--database",
-            default=os.getenv("CLICKHOUSE_DATABASE")
+            default=sidekick_config.get('clickhouse_database')
+            or os.getenv("CLICKHOUSE_DATABASE")
             or os.getenv("CLICKHOUSE_NETFLOW_DATABASE")
             or "pmacct",
             help="ClickHouse database (default: env CLICKHOUSE_DATABASE or CLICKHOUSE_NETFLOW_DATABASE or pmacct)",
         )
         parser.add_argument(
             "--table",
-            default=os.getenv("CLICKHOUSE_LABELS_TABLE", "dim_interface_labels"),
+            default=sidekick_config.get('clickhouse_labels_table')
+            or os.getenv("CLICKHOUSE_LABELS_TABLE", "dim_interface_labels"),
             help="Target table name (default: dim_interface_labels)",
         )
         parser.add_argument(
@@ -162,10 +167,12 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        sidekick_config = settings.PLUGINS_CONFIG.get('sidekick', {})
+
         ch = ClickHouseHTTP(
             base_url=options["clickhouse_url"],
-            user=options["clickhouse_user"],
-            password=options["clickhouse_password"],
+            user=sidekick_config.get('clickhouse_user') or os.getenv("CLICKHOUSE_USER", ""),
+            password=sidekick_config.get('clickhouse_password') or os.getenv("CLICKHOUSE_PASSWORD", ""),
             database=options["database"],
         )
 

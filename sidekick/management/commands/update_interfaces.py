@@ -1,5 +1,6 @@
 import django
 import graphyte
+import os
 import re
 
 from django.conf import settings
@@ -20,6 +21,7 @@ from sidekick.utils import (
     decrypt_1pw_secret,
     snmpwalk_bulk,
 )
+from sidekick.utils.clickhouse import ClickHouseHTTP, now_utc_str
 
 
 RE_ARISTA_VLAN = re.compile(r'^Vlan(\d+)$')
@@ -35,6 +37,18 @@ METRIC_CATEGORIES = [
     'in_nunicast_packets', 'out_nunicast_packets',
     'in_errors', 'out_errors',
 ]
+
+
+def to_int(v, default=0):
+    if isinstance(v, tuple):
+        if v:
+            v = v[0]
+        else:
+            return default
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return default
 
 
 class Command(BaseCommand):
@@ -86,6 +100,30 @@ class Command(BaseCommand):
 
             _mgmt_ip = "%s" % (mgmt_ip.address.ip)
             snmp = None
+            ch = None
+            ch_table = None
+
+            ch_url = settings.PLUGINS_CONFIG['sidekick'].get('clickhouse_url', None)
+            if ch_url is None:
+                ch_url = os.getenv("CLICKHOUSE_URL")
+            ch_user = settings.PLUGINS_CONFIG['sidekick'].get('clickhouse_user', None)
+            if ch_user is None:
+                ch_user = os.getenv("CLICKHOUSE_USER", "")
+            ch_password = settings.PLUGINS_CONFIG['sidekick'].get('clickhouse_password', None)
+            if ch_password is None:
+                ch_password = os.getenv("CLICKHOUSE_PASSWORD", "")
+            ch_db = settings.PLUGINS_CONFIG['sidekick'].get('clickhouse_database', None)
+            if ch_db is None:
+                ch_db = os.getenv("CLICKHOUSE_DATABASE") or os.getenv("CLICKHOUSE_NETFLOW_DATABASE") or "pmacct"
+            ch_table = settings.PLUGINS_CONFIG['sidekick'].get('clickhouse_table', None)
+            if ch_table is None:
+                ch_table = os.getenv("CLICKHOUSE_TABLE", "nic_counters_raw")
+
+            if ch_url:
+                try:
+                    ch = ClickHouseHTTP(base_url=ch_url, user=ch_user, password=ch_password, database=ch_db)
+                except Exception as e:
+                    self.stdout.write(f"WARNING: ClickHouse init failed: {e}")
 
             try:
                 snmp = decrypt_1pw_secret(onepw_token_path, onepw_host, onepw_vault, f"{device.name}", 'snmp')
@@ -358,6 +396,8 @@ class Command(BaseCommand):
                                     existing_interface.ip_address = ip
                                     existing_interface.save()
 
+            ch_rows = []
+
             # Obtain the counters on each interface.
             # For each interface that is not supposed to be ignored,
             # store the counters as a NIC object.
@@ -441,6 +481,26 @@ class Command(BaseCommand):
                     except django.db.utils.DataError:
                         continue
 
+                    if ch is not None:
+                        ch_rows.append(
+                            {
+                                "ts": now_utc_str(),
+                                "interface_id": existing_interface.id,
+                                "admin_status": to_int(admin_status),
+                                "oper_status": to_int(oper_status),
+                                "out_octets": to_int(out_octets),
+                                "in_octets": to_int(in_octets),
+                                "out_unicast_packets": to_int(out_unicast_packets),
+                                "in_unicast_packets": to_int(in_unicast_packets),
+                                "out_nunicast_packets": to_int(out_nunicast_packets),
+                                "in_nunicast_packets": to_int(in_nunicast_packets),
+                                "out_errors": to_int(out_errors),
+                                "in_errors": to_int(in_errors),
+                                "in_rate": to_int(getattr(nic, "in_rate", 0)),
+                                "out_rate": to_int(getattr(nic, "out_rate", 0)),
+                            }
+                        )
+
                 # Send the metrics to Graphite if graphite_host has been set.
                 graphite_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_host', None)
                 if graphite_host is not None:
@@ -506,3 +566,9 @@ class Command(BaseCommand):
                                 if diff != 0:
                                     diff = diff / total_seconds
                                 graphyte.send(graphite_name, diff)
+
+            if ch is not None and ch_rows:
+                try:
+                    ch.insert_json_each_row(f"{ch_db}.{ch_table}", ch_rows)
+                except Exception as e:
+                    self.stdout.write(f"WARNING: ClickHouse insert failed: {e}")

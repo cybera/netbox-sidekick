@@ -165,6 +165,11 @@ class Command(BaseCommand):
             action="store_true",
             help="Build rows but do not write to ClickHouse",
         )
+        parser.add_argument(
+            "--verbose",
+            action="store_true",
+            help="Print progress and success messages",
+        )
 
     def handle(self, *args, **options):
         sidekick_config = settings.PLUGINS_CONFIG.get('sidekick', {})
@@ -190,7 +195,7 @@ class Command(BaseCommand):
                 ensure_table(ch, target_table)
 
         service_map, duplicates = build_service_map()
-        if duplicates:
+        if duplicates and options['verbose']:
             self.stdout.write(
                 f"WARNING: {len(duplicates)} duplicate NetworkServiceDevice mappings found; using first instance."
             )
@@ -262,7 +267,7 @@ class Command(BaseCommand):
 
         if options["dry_run"]:
             self.stdout.write(f"Dry run complete. Would export {count:,} interfaces.")
-        else:
+        elif options["verbose"]:
             self.stdout.write(f"Exported {count:,} interfaces to {target_table}.")
 
     def _flush_rows(self, ch: ClickHouseHTTP, target_table: str, rows: List[Dict[str, Any]]) -> None:

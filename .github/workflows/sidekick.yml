@@ -1,4 +1,4 @@
-name: Sideick Tests
+name: Sidekick Tests
 
 on:
   push:
@@ -24,6 +24,7 @@ jobs:
         image: postgres
         env:
           POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: netbox
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -38,9 +39,9 @@ jobs:
         python-version: [3.9]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install Dependencies

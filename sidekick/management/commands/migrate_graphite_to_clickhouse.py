@@ -110,6 +110,9 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Scanning {options['whisper_dir']}...")
         tasks = []
+        # Get the device segment from the directory name as a fallback
+        dir_dev_segment = os.path.basename(options["whisper_dir"].rstrip(os.sep))
+
         for root, dirs, files in os.walk(options["whisper_dir"]):
             for filename in files:
                 if not filename.endswith(".wsp"):
@@ -118,17 +121,26 @@ class Command(BaseCommand):
                 full_path = os.path.join(root, filename)
                 rel_path = os.path.relpath(full_path, options["whisper_dir"])
                 parts = rel_path.split(os.sep)
-                if len(parts) < 3: continue
-
-                metric = parts[-1].replace(".wsp", "")
-                if_segment = parts[-2]
-                dev_segment = parts[-3]
-
-                iface_id = iface_map.get((dev_segment, if_segment))
-                if not iface_id and len(parts) >= 4:
+                
+                # Check for standard Graphite structure: device/interface/metric.wsp
+                # or pointed-at structure: interface/metric.wsp
+                if len(parts) == 2:
+                    dev_segment = dir_dev_segment
+                    if_segment = parts[0]
+                    metric = parts[1].replace(".wsp", "")
+                elif len(parts) >= 3:
                     dev_segment = parts[-3]
                     if_segment = parts[-2]
-                    iface_id = iface_map.get((dev_segment, if_segment))
+                    metric = parts[-1].replace(".wsp", "")
+                else:
+                    continue
+
+                iface_id = iface_map.get((dev_segment, if_segment))
+                
+                # Fallback: Try matching shorthand interface names (e.g. gi0-1 -> gigabitethernet0-1)
+                if not iface_id:
+                    short_if = if_segment.lower().replace("gi", "gigabitethernet").replace("te", "ten-gigabitethernet").replace("xe", "ten-gigabitethernet").replace("et", "ethernet")
+                    iface_id = iface_map.get((dev_segment, short_if))
 
                 if iface_id:
                     # Get last timestamp for this specific metric

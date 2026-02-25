@@ -122,3 +122,28 @@ To test the files, run:
 $ cd /opt/netbox/netbox
 $ python manage.py test sidekick
 ```
+
+## Reproducing CI Environment Locally
+
+To ensure your changes will pass on GitHub Actions, you can run the tests in a dedicated, isolated environment that mirrors the CI runners.
+
+### CI-Mimic Test Run
+Use the specialized Docker Compose file located in `scripts/`:
+
+```bash
+# Clean up any previous runs and volumes
+docker compose -f scripts/docker-compose.ci.yml down -v
+
+# Run the full suite (installs dependencies, clones NetBox, runs linting + tests)
+docker compose -f scripts/docker-compose.ci.yml run --rm ci-runner
+```
+
+This environment uses:
+- **Python:** 3.9 (Bullseye)
+- **PostgreSQL:** 13 (Alpine)
+- **Redis:** Alpine
+
+### Key Files
+- `scripts/test.sh`: The main entry point for CI testing.
+- `scripts/configuration.testing.py`: Base NetBox configuration for tests.
+- `scripts/docker-compose.ci.yml`: Docker definition for the CI-mimic environment.

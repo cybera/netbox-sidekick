@@ -14,16 +14,17 @@ from dcim.models import Interface
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def migrate_file(file_info):
     """
     Worker function to process a single Whisper file.
     """
     full_path, iface_id, metric, ch_params, last_ts = file_info
-    
+
     try:
         ch = ClickHouseHTTP(**ch_params)
         (start, end, step), values = whisper.fetch(full_path, 0)
-        
+
         rows = []
         points = 0
         current_ts = start
@@ -38,17 +39,18 @@ def migrate_file(file_info):
                 })
                 points += 1
             current_ts += step
-            
+
             if len(rows) >= 10000:
                 ch.insert_json_each_row(f"{ch.database}.nic_deltas_5m", rows)
                 rows = []
-        
+
         if rows:
             ch.insert_json_each_row(f"{ch.database}.nic_deltas_5m", rows)
-            
+
         return points, None
     except Exception as e:
         return 0, str(e)
+
 
 class Command(BaseCommand):
     help = "Migrate historical data from Graphite/Whisper files to ClickHouse with idempotency"
@@ -63,10 +65,10 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--database",
-            default=sidekick_config.get('clickhouse_database')
-            or os.getenv("CLICKHOUSE_DATABASE")
-            or os.getenv("CLICKHOUSE_NETFLOW_DATABASE")
-            or "pmacct",
+            default=sidekick_config.get('clickhouse_database') or
+            os.getenv("CLICKHOUSE_DATABASE") or
+            os.getenv("CLICKHOUSE_NETFLOW_DATABASE") or
+            "pmacct",
         )
         parser.add_argument("--workers", type=int, default=multiprocessing.cpu_count())
         parser.add_argument("--limit", type=int, default=0)
@@ -121,7 +123,7 @@ class Command(BaseCommand):
                 full_path = os.path.join(root, filename)
                 rel_path = os.path.relpath(full_path, options["whisper_dir"])
                 parts = rel_path.split(os.sep)
-                
+
                 # Check for standard Graphite structure: device/interface/metric.wsp
                 # or pointed-at structure: interface/metric.wsp
                 if len(parts) == 2:
@@ -136,7 +138,7 @@ class Command(BaseCommand):
                     continue
 
                 iface_id = iface_map.get((dev_segment, if_segment))
-                
+
                 # Fallback: Try matching shorthand interface names (e.g. gi0-1 -> gigabitethernet0-1)
                 if not iface_id:
                     short_if = if_segment.lower().replace("gi", "gigabitethernet").replace("te", "ten-gigabitethernet").replace("xe", "ten-gigabitethernet").replace("et", "ethernet")
@@ -175,7 +177,7 @@ class Command(BaseCommand):
                     else:
                         total_points += points
                         processed_files += 1
-                        
+
                     if processed_files % 100 == 0 or processed_files == total_files:
                         elapsed = (datetime.now() - start_time).total_seconds()
                         fps = processed_files / elapsed if elapsed > 0 else 0

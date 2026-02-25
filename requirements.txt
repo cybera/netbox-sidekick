@@ -10,6 +10,7 @@ pysnmp==4.4.12
 python-dateutil
 rrdtool==0.1.15
 napalm==3.4.0
+textfsm==1.1.2
 whisper==1.1.8
 pytz==2022.1
 meraki==1.40.1

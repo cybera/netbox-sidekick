@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: netbox
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d netbox"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ci-runner:
+    image: python:3.9-bullseye
+    volumes:
+      # Adjusted to point to the project root relative to this file's location in ./scripts
+      - ../:/workspace
+    working_dir: /workspace
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      - PYTHONUNBUFFERED=1
+    command:
+      - "bash"
+      - "-c"
+      - |
+        set -ex
+        apt-get update -qq && apt-get install -y -qq librrd-dev git libpq-dev
+        python -m pip install --upgrade pip
+        pip install python-dateutil backports.weakref backports-datetime-fromisoformat pycodestyle coverage
+        pip install -r requirements.txt
+        
+        # Modify the script to use a shallow clone to save time
+        sed -i 's/git clone https:\/\/github.com\/netbox-community\/netbox/git clone --depth 1 --branch v3.2.1 https:\/\/github.com\/netbox-community\/netbox/g' scripts/test.sh
+        
+        # Prepare a temporary config file that points to docker services
+        cp scripts/configuration.testing.py scripts/configuration.docker.py
+        
+        # Replace DB host
+        sed -i "/DATABASE = {/,/}/ s/'HOST': 'localhost'/'HOST': 'postgres'/" scripts/configuration.docker.py
+        # Replace Redis hosts
+        sed -i "/REDIS = {/,/}/ s/'HOST': 'localhost'/'HOST': 'redis'/g" scripts/configuration.docker.py
+        
+        # Tell the test script to use our docker config
+        sed -i 's/cp scripts\/configuration.testing.py/cp scripts\/configuration.docker.py/g' scripts/test.sh
+        
+        ./scripts/test.sh
+        
+        # Cleanup changes to test.sh
+        git checkout scripts/test.sh

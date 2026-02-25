@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-import json
 import os
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -137,16 +136,16 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--database",
-            default=sidekick_config.get('clickhouse_database')
-            or os.getenv("CLICKHOUSE_DATABASE")
-            or os.getenv("CLICKHOUSE_NETFLOW_DATABASE")
-            or "pmacct",
+            default=sidekick_config.get('clickhouse_database') or
+            os.getenv("CLICKHOUSE_DATABASE") or
+            os.getenv("CLICKHOUSE_NETFLOW_DATABASE") or
+            "pmacct",
             help="ClickHouse database (default: env CLICKHOUSE_DATABASE or CLICKHOUSE_NETFLOW_DATABASE or pmacct)",
         )
         parser.add_argument(
             "--table",
-            default=sidekick_config.get('clickhouse_labels_table')
-            or os.getenv("CLICKHOUSE_LABELS_TABLE", "dim_interface_labels"),
+            default=sidekick_config.get('clickhouse_labels_table') or
+            os.getenv("CLICKHOUSE_LABELS_TABLE", "dim_interface_labels"),
             help="Target table name (default: dim_interface_labels)",
         )
         parser.add_argument(

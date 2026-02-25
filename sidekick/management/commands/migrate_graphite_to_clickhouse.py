@@ -19,7 +19,7 @@ def migrate_file(file_info):
     """
     Worker function to process a single Whisper file.
     """
-    full_path, iface_id, metric, ch_params, last_ts = file_info
+    full_path, iface_id, metric, ch_params, last_ts, skip_zeros, trim_zeros = file_info
 
     try:
         ch = ClickHouseHTTP(**ch_params)
@@ -28,16 +28,40 @@ def migrate_file(file_info):
         rows = []
         points = 0
         current_ts = start
+        has_seen_non_zero = False
+
         for val in values:
-            # Skip if we already have this data or it's empty
-            if val is not None and current_ts > last_ts:
-                rows.append({
-                    "ts": datetime.fromtimestamp(current_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
-                    "interface_id": iface_id,
-                    "metric": metric,
-                    "delta": float(val)
-                })
-                points += 1
+            if val is None:
+                current_ts += step
+                continue
+
+            val_float = float(val)
+
+            # Idempotency check: Skip if we already have this data
+            if current_ts <= last_ts:
+                if val_float != 0:
+                    has_seen_non_zero = True
+                current_ts += step
+                continue
+
+            # Filtering logic
+            if val_float == 0:
+                if skip_zeros:
+                    current_ts += step
+                    continue
+                if trim_zeros and not has_seen_non_zero:
+                    current_ts += step
+                    continue
+            else:
+                has_seen_non_zero = True
+
+            rows.append({
+                "ts": datetime.fromtimestamp(current_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+                "interface_id": iface_id,
+                "metric": metric,
+                "delta": val_float
+            })
+            points += 1
             current_ts += step
 
             if len(rows) >= 10000:
@@ -73,6 +97,8 @@ class Command(BaseCommand):
         parser.add_argument("--workers", type=int, default=multiprocessing.cpu_count())
         parser.add_argument("--limit", type=int, default=0)
         parser.add_argument("--no-state-check", action="store_true", help="Skip checking ClickHouse for existing data")
+        parser.add_argument("--skip-zeros", action="store_true", help="Do not import any data points where the value is 0")
+        parser.add_argument("--trim-zeros", action="store_true", help="Skip leading zeros for each file (only start importing after first non-zero value)")
 
     def handle(self, *args, **options):
         sidekick_config = settings.PLUGINS_CONFIG.get('sidekick', {})
@@ -147,7 +173,10 @@ class Command(BaseCommand):
                 if iface_id:
                     # Get last timestamp for this specific metric
                     last_ts = checkpoints.get((iface_id, metric), 0)
-                    tasks.append((full_path, iface_id, metric, ch_params, last_ts))
+                    tasks.append((
+                        full_path, iface_id, metric, ch_params, last_ts,
+                        options['skip_zeros'], options['trim_zeros']
+                    ))
 
                 if options['limit'] > 0 and len(tasks) >= options['limit']:
                     break

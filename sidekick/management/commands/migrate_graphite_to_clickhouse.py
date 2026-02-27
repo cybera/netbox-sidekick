@@ -169,9 +169,9 @@ class Command(BaseCommand):
                     # assuming structure: .../accounting/member_profile/destination/metric.wsp
                     idx = parts.index("accounting")
                     if len(parts) >= idx + 4:
-                        acc_name = parts[idx+1]
-                        dest_name = parts[idx+2]
-                        metric = parts[idx+3].replace(".wsp", "")
+                        acc_name = parts[idx + 1]
+                        dest_name = parts[idx + 2]
+                        metric = parts[idx + 3].replace(".wsp", "")
                         acc_id = acc_map.get((f"accounting.{acc_name}", dest_name))
 
                 # If not accounting, try interface structure

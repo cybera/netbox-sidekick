@@ -113,13 +113,13 @@ class Command(BaseCommand):
             if ch_password is None:
                 ch_password = os.getenv("CLICKHOUSE_PASSWORD", "")
             ch_db = settings.PLUGINS_CONFIG['sidekick'].get('clickhouse_database', None)
-            if ch_db is None:
+            if not ch_db:
                 ch_db = os.getenv("CLICKHOUSE_DATABASE") or os.getenv("CLICKHOUSE_NETFLOW_DATABASE") or "pmacct"
             ch_table = settings.PLUGINS_CONFIG['sidekick'].get('clickhouse_table', None)
-            if ch_table is None:
+            if not ch_table:
                 ch_table = os.getenv("CLICKHOUSE_TABLE", "nic_counters_raw")
 
-            if ch_url:
+            if ch_url and ch_db:
                 try:
                     ch = ClickHouseHTTP(base_url=ch_url, user=ch_user, password=ch_password, database=ch_db)
                 except Exception as e:

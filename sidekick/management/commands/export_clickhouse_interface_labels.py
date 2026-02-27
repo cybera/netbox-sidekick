@@ -9,7 +9,7 @@ from django.utils.text import slugify
 
 from dcim.models import Interface
 
-from sidekick.models import NetworkServiceDevice
+from sidekick.models import NetworkServiceDevice, AccountingSource
 from sidekick.utils.clickhouse import ClickHouseHTTP, now_utc_str
 
 
@@ -72,6 +72,25 @@ def ensure_table(ch: ClickHouseHTTP, full_name: str) -> None:
         )
         ENGINE = ReplacingMergeTree(updated_at)
         ORDER BY (interface_id)
+        """
+    )
+
+
+def ensure_accounting_table(ch: ClickHouseHTTP, full_name: str) -> None:
+    ch.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS {full_name}
+        (
+          accounting_source_id UInt32,
+          device_id UInt32,
+          device_name String,
+          source_name String,
+          destination_name String,
+          graphite_prefix String,
+          updated_at DateTime
+        )
+        ENGINE = ReplacingMergeTree(updated_at)
+        ORDER BY (accounting_source_id)
         """
     )
 
@@ -264,10 +283,51 @@ class Command(BaseCommand):
         if not options["dry_run"] and use_swap:
             swap_in(ch, insert_table, target_table)
 
+        # Export Accounting Sources
+        target_acc_table = f"{db}.dim_accounting_sources"
+        insert_acc_table = target_acc_table
+        if not options["dry_run"]:
+            if use_swap:
+                insert_acc_table = target_acc_table + "__new"
+                ensure_accounting_table(ch, insert_acc_table)
+                truncate_table(ch, insert_acc_table)
+            else:
+                ensure_accounting_table(ch, target_acc_table)
+
+        acc_rows = []
+        acc_count = 0
+        for acc in AccountingSource.objects.select_related("device"):
+            graphite_prefix = "accounting.{}.{}".format(
+                acc.graphite_name(),
+                acc.graphite_destination_name())
+
+            acc_rows.append({
+                "accounting_source_id": acc.id,
+                "device_id": acc.device.id,
+                "device_name": acc.device.name,
+                "source_name": acc.name,
+                "destination_name": acc.destination,
+                "graphite_prefix": graphite_prefix,
+                "updated_at": now_utc_str(),
+            })
+            acc_count += 1
+            if not options["dry_run"] and len(acc_rows) >= options["batch_size"]:
+                self._flush_rows(ch, insert_acc_table, acc_rows)
+                acc_rows = []
+
+        if acc_rows and not options["dry_run"]:
+            self._flush_rows(ch, insert_acc_table, acc_rows)
+
+        if not options["dry_run"] and use_swap:
+            swap_in(ch, insert_acc_table, target_acc_table)
+
         if options["dry_run"]:
-            self.stdout.write(f"Dry run complete. Would export {count:,} interfaces.")
+            self.stdout.write(
+                f"Dry run complete. Would export {count:,} interfaces and {acc_count:,} accounting sources."
+            )
         elif options["verbose"]:
             self.stdout.write(f"Exported {count:,} interfaces to {target_table}.")
+            self.stdout.write(f"Exported {acc_count:,} accounting sources to {target_acc_table}.")
 
     def _flush_rows(self, ch: ClickHouseHTTP, target_table: str, rows: List[Dict[str, Any]]) -> None:
         ch.insert_json_each_row(target_table, rows)

@@ -1,4 +1,5 @@
 import graphyte
+import os
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -16,6 +17,7 @@ from sidekick.utils import (
     decrypt_1pw_secret,
     snmpwalk_bulk_accounting,
 )
+from sidekick.utils.clickhouse import ClickHouseHTTP, now_utc_str
 
 
 scudcu_map = {
@@ -69,6 +71,29 @@ class Command(BaseCommand):
                 self.stdout.write(f"Unable to find snmp secret for {device}")
                 return
 
+            ch = None
+            ch_url = settings.PLUGINS_CONFIG['sidekick'].get('clickhouse_url', None)
+            if not ch_url:
+                ch_url = os.getenv("CLICKHOUSE_URL")
+            ch_user = settings.PLUGINS_CONFIG['sidekick'].get('clickhouse_user', None)
+            if not ch_user:
+                ch_user = os.getenv("CLICKHOUSE_USER", "")
+            ch_password = settings.PLUGINS_CONFIG['sidekick'].get('clickhouse_password', None)
+            if not ch_password:
+                ch_password = os.getenv("CLICKHOUSE_PASSWORD", "")
+            ch_db = settings.PLUGINS_CONFIG['sidekick'].get('clickhouse_database', None)
+            if not ch_db:
+                ch_db = os.getenv("CLICKHOUSE_DATABASE") or os.getenv("CLICKHOUSE_NETFLOW_DATABASE") or "pmacct"
+            ch_table = settings.PLUGINS_CONFIG['sidekick'].get('clickhouse_legacy_table', None)
+            if not ch_table:
+                ch_table = os.getenv("CLICKHOUSE_LEGACY_TABLE", "nic_deltas_5m")
+
+            if ch_url and ch_db:
+                try:
+                    ch = ClickHouseHTTP(base_url=ch_url, user=ch_user, password=ch_password, database=ch_db)
+                except Exception as e:
+                    self.stdout.write(f"WARNING: ClickHouse init failed: {e}")
+
             try:
                 classes = snmpwalk_bulk_accounting(_mgmt_ip, snmp)
             except Exception as e:
@@ -76,6 +101,7 @@ class Command(BaseCommand):
                 return
 
             # Add any new classes to the database.
+            ch_rows = []
             for name, data in classes.items():
                 try:
                     accounting_source = AccountingSource.objects.get(
@@ -96,6 +122,7 @@ class Command(BaseCommand):
                     self.stdout.write(f"Multiple SCU/DCU classes found for {name} on {device}")
 
                 # Add new counters to the databse.
+                results = None
                 if options['dry_run']:
                     self.stdout.write(f"Would have updated counters for {accounting_source}")
                 else:
@@ -105,6 +132,18 @@ class Command(BaseCommand):
                         dcu=data['dcu'],
                     )
                     counter.save()
+                    results = accounting_source.get_current_rate()
+
+                # Collect ClickHouse rows
+                if ch is not None and results:
+                    for cat in ['scu', 'dcu']:
+                        ch_rows.append({
+                            "ts": now_utc_str(),
+                            "interface_id": None,
+                            "accounting_source_id": accounting_source.id,
+                            "metric": cat,
+                            "delta": float(results[cat]),
+                        })
 
                 # Send the metrics to Graphite if graphite_host has been set.
                 graphite_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_host', None)
@@ -115,7 +154,8 @@ class Command(BaseCommand):
                     # This is because Cybera's metrics were previously stored in RRD
                     # files which only retains the derivative and not what the actual
                     # counters were.
-                    results = accounting_source.get_current_rate()
+                    if results is None:
+                        results = accounting_source.get_current_rate()
 
                     graphite_prefix = "accounting.{}.{}".format(
                         accounting_source.graphite_name(),
@@ -127,3 +167,9 @@ class Command(BaseCommand):
                             self.stdout.write(f"{graphite_name} {results[cat]}")
                         else:
                             graphyte.send(graphite_name, results[cat])
+
+            if ch is not None and ch_rows:
+                try:
+                    ch.insert_json_each_row(f"{ch_db}.{ch_table}", ch_rows)
+                except Exception as e:
+                    self.stdout.write(f"WARNING: ClickHouse insert failed: {e}")

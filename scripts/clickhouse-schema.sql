@@ -27,25 +27,27 @@ TTL ts + INTERVAL 5 YEAR;
 CREATE TABLE IF NOT EXISTS pmacct.nic_deltas_5m
 (
   ts DateTime,
-  interface_id UInt32,
+  interface_id Nullable(UInt32),
+  accounting_source_id Nullable(UInt32),
   metric LowCardinality(String),
   delta Float64
 )
 ENGINE = ReplacingMergeTree
 PARTITION BY toYYYYMM(ts)
-ORDER BY (interface_id, metric, ts)
+ORDER BY (interface_id, accounting_source_id, metric, ts)
 TTL ts + INTERVAL 5 YEAR;
 
 CREATE TABLE IF NOT EXISTS pmacct.nic_deltas_1h
 (
   ts DateTime,
-  interface_id UInt32,
+  interface_id Nullable(UInt32),
+  accounting_source_id Nullable(UInt32),
   metric LowCardinality(String),
   delta Float64
 )
 ENGINE = ReplacingMergeTree
 PARTITION BY toYYYYMM(ts)
-ORDER BY (interface_id, metric, ts)
+ORDER BY (interface_id, accounting_source_id, metric, ts)
 TTL ts + INTERVAL 10 YEAR;
 
 CREATE TABLE IF NOT EXISTS pmacct.dim_interface_labels
@@ -69,6 +71,19 @@ CREATE TABLE IF NOT EXISTS pmacct.dim_interface_labels
 ENGINE = ReplacingMergeTree(updated_at)
 ORDER BY (interface_id);
 
+CREATE TABLE IF NOT EXISTS pmacct.dim_accounting_sources
+(
+  accounting_source_id UInt32,
+  device_id UInt32,
+  device_name String,
+  source_name String,
+  destination_name String,
+  graphite_prefix String,
+  updated_at DateTime
+)
+ENGINE = ReplacingMergeTree(updated_at)
+ORDER BY (accounting_source_id);
+
 -- Unified View for seamless querying of legacy and new data.
 -- Calculates rates dynamically from raw counters using Window Functions.
 CREATE OR REPLACE VIEW pmacct.nic_metrics_unified AS
@@ -77,6 +92,7 @@ WITH
         SELECT
             ts,
             interface_id,
+            CAST(NULL, 'Nullable(UInt32)') as accounting_source_id,
             in_octets,
             out_octets,
             in_rate,
@@ -89,6 +105,7 @@ WITH
 SELECT
     ts,
     interface_id,
+    accounting_source_id,
     'in_octets' as metric,
     if(in_rate > 0, CAST(in_rate, 'Float64'),
        if(prev_ts != toDateTime(0) AND ts > prev_ts AND in_octets >= prev_in,
@@ -100,6 +117,7 @@ UNION ALL
 SELECT
     ts,
     interface_id,
+    accounting_source_id,
     'out_octets' as metric,
     if(out_rate > 0, CAST(out_rate, 'Float64'),
        if(prev_ts != toDateTime(0) AND ts > prev_ts AND out_octets >= prev_out,
@@ -111,6 +129,7 @@ UNION ALL
 SELECT
     ts,
     interface_id,
+    accounting_source_id,
     metric,
     delta,
     'legacy_delta' as source

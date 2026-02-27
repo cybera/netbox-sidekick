@@ -9,6 +9,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from sidekick.utils.clickhouse import ClickHouseHTTP
 from dcim.models import Interface
+from sidekick.models import AccountingSource
 
 # Configure logging for workers
 logging.basicConfig(level=logging.INFO)
@@ -19,7 +20,7 @@ def migrate_file(file_info):
     """
     Worker function to process a single Whisper file.
     """
-    full_path, iface_id, metric, ch_params, last_ts, skip_zeros, trim_zeros = file_info
+    full_path, iface_id, acc_id, metric, ch_params, last_ts, skip_zeros, trim_zeros = file_info
 
     try:
         ch = ClickHouseHTTP(**ch_params)
@@ -58,6 +59,7 @@ def migrate_file(file_info):
             rows.append({
                 "ts": datetime.fromtimestamp(current_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
                 "interface_id": iface_id,
+                "accounting_source_id": acc_id,
                 "metric": metric,
                 "delta": val_float
             })
@@ -117,22 +119,30 @@ class Command(BaseCommand):
             if_segment = iface.name.lower().replace("/", "-").replace(".", "_").replace("(", "").replace(")", "")
             iface_map[(dev_segment, if_segment)] = iface.id
 
+        self.stdout.write("Building accounting source mapping...")
+        acc_map = {}
+        for acc in AccountingSource.objects.all():
+            key = (acc.graphite_name(), acc.graphite_destination_name())
+            acc_map[key] = acc.id
+
         # High-water mark state checking
         checkpoints = {}
         if not options['no_state_check']:
             self.stdout.write("Checking ClickHouse for existing data state...")
             try:
-                # Query max(ts) for each interface/metric to skip already migrated data
+                # Query max(ts) for each interface/metric or accounting source/metric
                 query = (
-                    f"SELECT interface_id, metric, toUnixTimestamp(max(ts)) "
-                    f"FROM {options['database']}.nic_deltas_5m GROUP BY interface_id, metric"
+                    f"SELECT interface_id, accounting_source_id, metric, toUnixTimestamp(max(ts)) "
+                    f"FROM {options['database']}.nic_deltas_5m GROUP BY interface_id, accounting_source_id, metric"
                 )
-                # execute returns the raw response body
                 raw_data = ch.execute(query + " FORMAT JSON")
                 data = json.loads(raw_data)
                 for row in data['data']:
-                    checkpoints[(int(row[0]), row[1])] = int(row[2])
-                self.stdout.write(f"Found {len(checkpoints)} existing interface/metric checkpoints.")
+                    # Key is (iface_id, acc_id, metric)
+                    iface_id = int(row[0]) if row[0] is not None else None
+                    acc_id = int(row[1]) if row[1] is not None else None
+                    checkpoints[(iface_id, acc_id, row[2])] = int(row[3])
+                self.stdout.write(f"Found {len(checkpoints)} existing metric checkpoints.")
             except Exception as e:
                 self.stdout.write(self.style.WARNING(f"Could not fetch state (normal on first run): {e}"))
 
@@ -150,31 +160,47 @@ class Command(BaseCommand):
                 rel_path = os.path.relpath(full_path, options["whisper_dir"])
                 parts = rel_path.split(os.sep)
 
-                # Check for standard Graphite structure: device/interface/metric.wsp
-                # or pointed-at structure: interface/metric.wsp
-                if len(parts) == 2:
-                    dev_segment = dir_dev_segment
-                    if_segment = parts[0]
-                    metric = parts[1].replace(".wsp", "")
-                elif len(parts) >= 3:
-                    dev_segment = parts[-3]
-                    if_segment = parts[-2]
-                    metric = parts[-1].replace(".wsp", "")
-                else:
-                    continue
+                iface_id = None
+                acc_id = None
+                metric = None
 
-                iface_id = iface_map.get((dev_segment, if_segment))
+                # Check for Accounting path: accounting/member_profile/destination/metric.wsp
+                if "accounting" in parts:
+                    # assuming structure: .../accounting/member_profile/destination/metric.wsp
+                    idx = parts.index("accounting")
+                    if len(parts) >= idx + 4:
+                        acc_name = parts[idx+1]
+                        dest_name = parts[idx+2]
+                        metric = parts[idx+3].replace(".wsp", "")
+                        acc_id = acc_map.get((f"accounting.{acc_name}", dest_name))
 
-                # Fallback: Try matching shorthand interface names (e.g. gi0-1 -> gigabitethernet0-1)
-                if not iface_id:
-                    short_if = if_segment.lower().replace("gi", "gigabitethernet").replace("te", "ten-gigabitethernet").replace("xe", "ten-gigabitethernet").replace("et", "ethernet")
-                    iface_id = iface_map.get((dev_segment, short_if))
+                # If not accounting, try interface structure
+                if not acc_id:
+                    # Check for standard Graphite structure: device/interface/metric.wsp
+                    # or pointed-at structure: interface/metric.wsp
+                    if len(parts) == 2:
+                        dev_segment = dir_dev_segment
+                        if_segment = parts[0]
+                        metric = parts[1].replace(".wsp", "")
+                    elif len(parts) >= 3:
+                        dev_segment = parts[-3]
+                        if_segment = parts[-2]
+                        metric = parts[-1].replace(".wsp", "")
+                    else:
+                        continue
 
-                if iface_id:
+                    iface_id = iface_map.get((dev_segment, if_segment))
+
+                    # Fallback: Try matching shorthand interface names (e.g. gi0-1 -> gigabitethernet0-1)
+                    if not iface_id:
+                        short_if = if_segment.lower().replace("gi", "gigabitethernet").replace("te", "ten-gigabitethernet").replace("xe", "ten-gigabitethernet").replace("et", "ethernet")
+                        iface_id = iface_map.get((dev_segment, short_if))
+
+                if iface_id or acc_id:
                     # Get last timestamp for this specific metric
-                    last_ts = checkpoints.get((iface_id, metric), 0)
+                    last_ts = checkpoints.get((iface_id, acc_id, metric), 0)
                     tasks.append((
-                        full_path, iface_id, metric, ch_params, last_ts,
+                        full_path, iface_id, acc_id, metric, ch_params, last_ts,
                         options['skip_zeros'], options['trim_zeros']
                     ))
 

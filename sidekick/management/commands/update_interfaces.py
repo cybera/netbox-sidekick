@@ -444,7 +444,7 @@ class Command(BaseCommand):
                     if 'No more variables' in f"{out_nunicast_packets}":
                         out_nunicast_packets = 0
 
-                    in_nunicast_packets = iface_details.get('ifInNUcastPkts', 0),
+                    in_nunicast_packets = iface_details.get('ifInNUcastPkts', 0)
                     if 'No more variables' in f"{in_nunicast_packets}":
                         in_nunicast_packets = 0
 
@@ -466,7 +466,7 @@ class Command(BaseCommand):
                         out_unicast_packets=out_unicast_packets,
                         in_unicast_packets=in_unicast_packets,
                         out_nunicast_packets=out_nunicast_packets,
-                        in_nunicast_packets=in_unicast_packets,
+                        in_nunicast_packets=in_nunicast_packets,
                         out_errors=out_errors,
                         in_errors=in_errors,
                     )

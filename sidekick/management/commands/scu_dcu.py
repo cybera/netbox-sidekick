@@ -139,7 +139,7 @@ class Command(BaseCommand):
                     for cat in ['scu', 'dcu']:
                         ch_rows.append({
                             "ts": now_utc_str(),
-                            "interface_id": None,
+                            "interface_id": 0,
                             "accounting_source_id": accounting_source.id,
                             "metric": cat,
                             "delta": float(results[cat]),

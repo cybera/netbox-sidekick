@@ -139,8 +139,8 @@ class Command(BaseCommand):
                 data = json.loads(raw_data)
                 for row in data['data']:
                     # Key is (iface_id, acc_id, metric)
-                    iface_id = int(row[0]) if row[0] is not None else None
-                    acc_id = int(row[1]) if row[1] is not None else None
+                    iface_id = int(row[0]) if row[0] is not None else 0
+                    acc_id = int(row[1]) if row[1] is not None else 0
                     checkpoints[(iface_id, acc_id, row[2])] = int(row[3])
                 self.stdout.write(f"Found {len(checkpoints)} existing metric checkpoints.")
             except Exception as e:
@@ -160,8 +160,8 @@ class Command(BaseCommand):
                 rel_path = os.path.relpath(full_path, options["whisper_dir"])
                 parts = rel_path.split(os.sep)
 
-                iface_id = None
-                acc_id = None
+                iface_id = 0
+                acc_id = 0
                 metric = None
 
                 # Check for Accounting path: accounting/member_profile/destination/metric.wsp

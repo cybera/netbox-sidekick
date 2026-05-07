@@ -486,6 +486,8 @@ class Command(BaseCommand):
                             {
                                 "ts": now_utc_str(),
                                 "interface_id": existing_interface.id,
+                                "device_id": device.id,
+                                "snmp_index": to_int(iface_index),
                                 "admin_status": to_int(admin_status),
                                 "oper_status": to_int(oper_status),
                                 "out_octets": to_int(out_octets),

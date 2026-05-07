@@ -57,6 +57,7 @@ def ensure_table(ch: ClickHouseHTTP, full_name: str) -> None:
           interface_id UInt32,
           device_id UInt32,
           device_name String,
+          device_ip String,
           interface_name String,
           device_segment String,
           interface_segment String,

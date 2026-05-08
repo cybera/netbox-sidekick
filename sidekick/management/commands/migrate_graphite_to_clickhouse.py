@@ -2,6 +2,7 @@ import os
 import whisper
 import logging
 import multiprocessing
+import time
 import json
 from datetime import datetime, timezone
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -16,6 +17,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+
+def clean_seg(s):
+    return s.lower().replace(" ", "_").replace(".", "_").replace("(", "").replace(")", "").replace("/", "-")
+
 def migrate_file(file_info):
     """
     Worker function to process a single Whisper file.
@@ -24,7 +29,7 @@ def migrate_file(file_info):
 
     try:
         ch = ClickHouseHTTP(**ch_params)
-        (start, end, step), values = whisper.fetch(full_path, 0)
+        (start, end, step), values = whisper.fetch(full_path, int(time.time() - 157680000))
 
         rows = []
         points = 0
@@ -124,7 +129,6 @@ class Command(BaseCommand):
         for acc in AccountingSource.objects.all():
             key = (acc.graphite_name(), acc.graphite_destination_name())
             acc_map[key] = acc.id
-            self.stdout.write(f"DEBUG: acc_map entry: {key} -> {acc.id}")
 
         # High-water mark state checking
         checkpoints = {}
@@ -173,20 +177,19 @@ class Command(BaseCommand):
                         acc_name = parts[idx + 1]
                         dest_name = parts[idx + 2]
                         metric = parts[idx + 3].replace(".wsp", "")
-                        acc_id = acc_map.get((f"accounting.{acc_name}", dest_name))
-                        self.stdout.write(f"DEBUG: Found acc path: {acc_name}/{dest_name} -> ID: {acc_id}")
+                        acc_id = acc_map.get((acc_name, dest_name))
 
                 # If not accounting, try interface structure
                 if not acc_id:
                     # Check for standard Graphite structure: device/interface/metric.wsp
                     # or pointed-at structure: interface/metric.wsp
                     if len(parts) == 2:
-                        dev_segment = dir_dev_segment
-                        if_segment = parts[0]
+                        dev_segment = clean_seg(dir_dev_segment)
+                        if_segment = clean_seg(parts[0])
                         metric = parts[1].replace(".wsp", "")
                     elif len(parts) >= 3:
-                        dev_segment = parts[-3]
-                        if_segment = parts[-2]
+                        dev_segment = clean_seg(parts[-3])
+                        if_segment = clean_seg(parts[-2])
                         metric = parts[-1].replace(".wsp", "")
                     else:
                         continue

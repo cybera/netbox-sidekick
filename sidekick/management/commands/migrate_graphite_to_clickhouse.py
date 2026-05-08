@@ -124,6 +124,7 @@ class Command(BaseCommand):
         for acc in AccountingSource.objects.all():
             key = (acc.graphite_name(), acc.graphite_destination_name())
             acc_map[key] = acc.id
+            self.stdout.write(f"DEBUG: acc_map entry: {key} -> {acc.id}")
 
         # High-water mark state checking
         checkpoints = {}
@@ -173,6 +174,7 @@ class Command(BaseCommand):
                         dest_name = parts[idx + 2]
                         metric = parts[idx + 3].replace(".wsp", "")
                         acc_id = acc_map.get((f"accounting.{acc_name}", dest_name))
+                        self.stdout.write(f"DEBUG: Found acc path: {acc_name}/{dest_name} -> ID: {acc_id}")
 
                 # If not accounting, try interface structure
                 if not acc_id:

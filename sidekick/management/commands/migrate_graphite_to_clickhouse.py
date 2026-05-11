@@ -161,12 +161,6 @@ class Command(BaseCommand):
         dir_dev_segment = os.path.basename(options["whisper_dir"].rstrip(os.sep))
 
         for root, dirs, files in os.walk(options["whisper_dir"]):
-            # Skip the 'members' branch as it contains redundant data (we get the associations from 'services')
-            rel_root = os.path.relpath(root, options["whisper_dir"])
-            top_level = rel_root.split(os.sep)[0]
-            if top_level == 'members':
-                continue
-
             for filename in files:
                 if not filename.endswith(".wsp"):
                     continue

@@ -71,7 +71,7 @@ def migrate_file(file_info):
             points += 1
             current_ts += step
 
-            if len(rows) >= 10000:
+            if len(rows) >= 200000:
                 ch.insert_json_each_row(f"{ch.database}.nic_deltas_5m", rows)
                 rows = []
 

@@ -370,7 +370,7 @@ def snmpwalk_bulk(remote_ip, community):
                     results[index] = {}
                 in_rate = r[1].prettyPrint()
                 if in_rate != "No more variables left in this MIB View":
-                    results[index]['in_rate'] = in_rate
+                    results[index]['in_rate'] = int(in_rate) // 8
                 continue
 
             # Match the jnx-specific entries
@@ -381,7 +381,7 @@ def snmpwalk_bulk(remote_ip, community):
                     results[index] = {}
                 out_rate = r[1].prettyPrint()
                 if out_rate != "No more variables left in this MIB View":
-                    results[index]['out_rate'] = r[1].prettyPrint()
+                    results[index]['out_rate'] = int(out_rate) // 8
                 continue
 
             # Match the format IF-MIB::FOO

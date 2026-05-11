@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS pmacct.nic_counters_raw
   interface_id UInt32 CODEC(T64, ZSTD(3)),
   device_id UInt32 CODEC(T64, ZSTD(3)),
   snmp_index UInt32 CODEC(T64, ZSTD(3)),
+  member_slug LowCardinality(String) DEFAULT '' CODEC(ZSTD(3)),
+  service_slug LowCardinality(String) DEFAULT '' CODEC(ZSTD(3)),
   admin_status UInt8 CODEC(ZSTD(3)),
   oper_status UInt8 CODEC(ZSTD(3)),
   out_octets UInt64 CODEC(T64, ZSTD(3)),
@@ -31,6 +33,8 @@ CREATE TABLE IF NOT EXISTS pmacct.nic_deltas_5m
   ts DateTime CODEC(Delta, ZSTD(3)),
   interface_id UInt32 DEFAULT 0 CODEC(T64, ZSTD(3)),
   accounting_source_id UInt32 DEFAULT 0 CODEC(T64, ZSTD(3)),
+  member_slug LowCardinality(String) DEFAULT '' CODEC(ZSTD(3)),
+  service_slug LowCardinality(String) DEFAULT '' CODEC(ZSTD(3)),
   metric LowCardinality(String) CODEC(ZSTD(3)),
   delta Float64 CODEC(ZSTD(3))
 )
@@ -44,6 +48,8 @@ CREATE TABLE IF NOT EXISTS pmacct.nic_deltas_1h
   ts DateTime CODEC(Delta, ZSTD(3)),
   interface_id UInt32 DEFAULT 0 CODEC(T64, ZSTD(3)),
   accounting_source_id UInt32 DEFAULT 0 CODEC(T64, ZSTD(3)),
+  member_slug LowCardinality(String) DEFAULT '' CODEC(ZSTD(3)),
+  service_slug LowCardinality(String) DEFAULT '' CODEC(ZSTD(3)),
   metric LowCardinality(String) CODEC(ZSTD(3)),
   delta Float64 CODEC(ZSTD(3))
 )
@@ -96,6 +102,8 @@ WITH
             ts,
             interface_id,
             toUInt32(0) as accounting_source_id,
+            member_slug,
+            service_slug,
             in_octets, out_octets,
             in_unicast_packets, out_unicast_packets,
             in_nunicast_packets, out_nunicast_packets,
@@ -113,7 +121,7 @@ WITH
         FROM pmacct.nic_counters_raw
     )
 SELECT
-    ts, interface_id, accounting_source_id, 'in_octets' as metric,
+    ts, interface_id, accounting_source_id, member_slug, service_slug, 'in_octets' as metric,
     if(in_rate > 0, CAST(in_rate, 'Float64'),
        if(prev_ts != toDateTime(0) AND ts > prev_ts AND in_octets >= prev_in_octets,
           (in_octets - prev_in_octets) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0)
@@ -122,7 +130,7 @@ SELECT
 FROM raw_with_lag
 UNION ALL
 SELECT
-    ts, interface_id, accounting_source_id, 'out_octets' as metric,
+    ts, interface_id, accounting_source_id, member_slug, service_slug, 'out_octets' as metric,
     if(out_rate > 0, CAST(out_rate, 'Float64'),
        if(prev_ts != toDateTime(0) AND ts > prev_ts AND out_octets >= prev_out_octets,
           (out_octets - prev_out_octets) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0)
@@ -131,49 +139,49 @@ SELECT
 FROM raw_with_lag
 UNION ALL
 SELECT
-    ts, interface_id, accounting_source_id, 'in_unicast_packets' as metric,
+    ts, interface_id, accounting_source_id, member_slug, service_slug, 'in_unicast_packets' as metric,
     if(prev_ts != toDateTime(0) AND ts > prev_ts AND in_unicast_packets >= prev_in_ucast,
        (in_unicast_packets - prev_in_ucast) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0) as delta,
     'raw_calc' as source
 FROM raw_with_lag
 UNION ALL
 SELECT
-    ts, interface_id, accounting_source_id, 'out_unicast_packets' as metric,
+    ts, interface_id, accounting_source_id, member_slug, service_slug, 'out_unicast_packets' as metric,
     if(prev_ts != toDateTime(0) AND ts > prev_ts AND out_unicast_packets >= prev_out_ucast,
        (out_unicast_packets - prev_out_ucast) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0) as delta,
     'raw_calc' as source
 FROM raw_with_lag
 UNION ALL
 SELECT
-    ts, interface_id, accounting_source_id, 'in_nunicast_packets' as metric,
+    ts, interface_id, accounting_source_id, member_slug, service_slug, 'in_nunicast_packets' as metric,
     if(prev_ts != toDateTime(0) AND ts > prev_ts AND in_nunicast_packets >= prev_in_nucast,
        (in_nunicast_packets - prev_in_nucast) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0) as delta,
     'raw_calc' as source
 FROM raw_with_lag
 UNION ALL
 SELECT
-    ts, interface_id, accounting_source_id, 'out_nunicast_packets' as metric,
+    ts, interface_id, accounting_source_id, member_slug, service_slug, 'out_nunicast_packets' as metric,
     if(prev_ts != toDateTime(0) AND ts > prev_ts AND out_nunicast_packets >= prev_out_nucast,
        (out_nunicast_packets - prev_out_nucast) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0) as delta,
     'raw_calc' as source
 FROM raw_with_lag
 UNION ALL
 SELECT
-    ts, interface_id, accounting_source_id, 'in_errors' as metric,
+    ts, interface_id, accounting_source_id, member_slug, service_slug, 'in_errors' as metric,
     if(prev_ts != toDateTime(0) AND ts > prev_ts AND in_errors >= prev_in_errors,
        (in_errors - prev_in_errors) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0) as delta,
     'raw_calc' as source
 FROM raw_with_lag
 UNION ALL
 SELECT
-    ts, interface_id, accounting_source_id, 'out_errors' as metric,
+    ts, interface_id, accounting_source_id, member_slug, service_slug, 'out_errors' as metric,
     if(prev_ts != toDateTime(0) AND ts > prev_ts AND out_errors >= prev_out_errors,
        (out_errors - prev_out_errors) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0) as delta,
     'raw_calc' as source
 FROM raw_with_lag
 UNION ALL
 SELECT
-    ts, interface_id, accounting_source_id, metric, delta, 'legacy_delta' as source
+    ts, interface_id, accounting_source_id, member_slug, service_slug, metric, delta, 'legacy_delta' as source
 FROM pmacct.nic_deltas_5m;
 
 CREATE OR REPLACE VIEW pmacct.v_snmp_mapping AS

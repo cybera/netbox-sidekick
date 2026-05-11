@@ -25,7 +25,7 @@ def migrate_file(file_info):
     """
     Worker function to process a single Whisper file.
     """
-    full_path, iface_id, acc_id, metric, ch_params, last_ts, skip_zeros, trim_zeros = file_info
+    full_path, iface_id, acc_id, member_slug, service_slug, metric, ch_params, last_ts, skip_zeros, trim_zeros = file_info
 
     try:
         ch = ClickHouseHTTP(**ch_params)
@@ -65,6 +65,8 @@ def migrate_file(file_info):
                 "ts": datetime.fromtimestamp(current_ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
                 "interface_id": iface_id,
                 "accounting_source_id": acc_id,
+                "member_slug": member_slug,
+                "service_slug": service_slug,
                 "metric": metric,
                 "delta": val_float
             })
@@ -137,16 +139,18 @@ class Command(BaseCommand):
             try:
                 # Query max(ts) for each interface/metric or accounting source/metric
                 query = (
-                    f"SELECT interface_id, accounting_source_id, metric, toUnixTimestamp(max(ts)) "
-                    f"FROM {options['database']}.nic_deltas_5m GROUP BY interface_id, accounting_source_id, metric"
+                    f"SELECT interface_id, accounting_source_id, member_slug, service_slug, metric, toUnixTimestamp(max(ts)) "
+                    f"FROM {options['database']}.nic_deltas_5m GROUP BY interface_id, accounting_source_id, member_slug, service_slug, metric"
                 )
                 raw_data = ch.execute(query + " FORMAT JSON")
                 data = json.loads(raw_data)
                 for row in data['data']:
-                    # Key is (iface_id, acc_id, metric)
+                    # Key is (iface_id, acc_id, member_slug, service_slug, metric)
                     iface_id = int(row[0]) if row[0] is not None else 0
                     acc_id = int(row[1]) if row[1] is not None else 0
-                    checkpoints[(iface_id, acc_id, row[2])] = int(row[3])
+                    member_slug = row[2] if row[2] is not None else ""
+                    service_slug = row[3] if row[3] is not None else ""
+                    checkpoints[(iface_id, acc_id, member_slug, service_slug, row[4])] = int(row[5])
                 self.stdout.write(f"Found {len(checkpoints)} existing metric checkpoints.")
             except Exception as e:
                 self.stdout.write(self.style.WARNING(f"Could not fetch state (normal on first run): {e}"))
@@ -157,6 +161,12 @@ class Command(BaseCommand):
         dir_dev_segment = os.path.basename(options["whisper_dir"].rstrip(os.sep))
 
         for root, dirs, files in os.walk(options["whisper_dir"]):
+            # Only process files under the 'interface', 'accounting', or 'services' top-level directories.
+            rel_root = os.path.relpath(root, options["whisper_dir"])
+            top_level = rel_root.split(os.sep)[0]
+            if top_level not in ('.', 'interface', 'accounting', 'services'):
+                continue
+
             for filename in files:
                 if not filename.endswith(".wsp"):
                     continue
@@ -167,10 +177,25 @@ class Command(BaseCommand):
 
                 iface_id = 0
                 acc_id = 0
+                member_slug = ""
+                service_slug = ""
                 metric = None
 
+                if "services" in parts:
+                    idx = parts.index("services")
+                    if len(parts) >= idx + 6:
+                        member_slug = parts[idx + 1]
+                        service_slug = parts[idx + 2]
+                        dev_segment = clean_seg(parts[idx + 3])
+                        if_segment = clean_seg(parts[idx + 4])
+                        metric = parts[idx + 5].replace(".wsp", "")
+                        iface_id = iface_map.get((dev_segment, if_segment))
+                        if not iface_id:
+                            short_if = if_segment.lower().replace("gi", "gigabitethernet").replace("te", "ten-gigabitethernet").replace("xe", "ten-gigabitethernet").replace("et", "ethernet")
+                            iface_id = iface_map.get((dev_segment, short_if))
+
                 # Check for Accounting path: accounting/member_profile/destination/metric.wsp
-                if "accounting" in parts:
+                elif "accounting" in parts:
                     # assuming structure: .../accounting/member_profile/destination/metric.wsp
                     idx = parts.index("accounting")
                     if len(parts) >= idx + 4:
@@ -179,8 +204,8 @@ class Command(BaseCommand):
                         metric = parts[idx + 3].replace(".wsp", "")
                         acc_id = acc_map.get((acc_name, dest_name))
 
-                # If not accounting, try interface structure
-                if not acc_id:
+                # If not accounting or services, try interface structure
+                elif not acc_id:
                     # Check for standard Graphite structure: device/interface/metric.wsp
                     # or pointed-at structure: interface/metric.wsp
                     if len(parts) == 2:
@@ -203,9 +228,9 @@ class Command(BaseCommand):
 
                 if iface_id or acc_id:
                     # Get last timestamp for this specific metric
-                    last_ts = checkpoints.get((iface_id, acc_id, metric), 0)
+                    last_ts = checkpoints.get((iface_id, acc_id, member_slug, service_slug, metric), 0)
                     tasks.append((
-                        full_path, iface_id, acc_id, metric, ch_params, last_ts,
+                        full_path, iface_id, acc_id, member_slug, service_slug, metric, ch_params, last_ts,
                         options['skip_zeros'], options['trim_zeros']
                     ))
 

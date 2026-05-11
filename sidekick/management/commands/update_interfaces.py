@@ -482,12 +482,23 @@ class Command(BaseCommand):
                         continue
 
                     if ch is not None:
+                        member_slug = ""
+                        service_slug = ""
+                        nsd = NetworkServiceDevice.objects.filter(device=device, interface=existing_interface.name).first()
+                        if nsd and nsd.network_service:
+                            from django.utils.text import slugify
+                            service_slug = slugify(nsd.network_service.name)
+                            if nsd.network_service.member:
+                                member_slug = slugify(nsd.network_service.member.name)
+
                         ch_rows.append(
                             {
                                 "ts": now_utc_str(),
                                 "interface_id": existing_interface.id,
                                 "device_id": device.id,
                                 "snmp_index": to_int(iface_index),
+                                "member_slug": member_slug,
+                                "service_slug": service_slug,
                                 "admin_status": to_int(admin_status),
                                 "oper_status": to_int(oper_status),
                                 "out_octets": to_int(out_octets),

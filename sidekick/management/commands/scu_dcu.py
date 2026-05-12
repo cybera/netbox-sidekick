@@ -141,6 +141,8 @@ class Command(BaseCommand):
                             "ts": now_utc_str(),
                             "interface_id": 0,
                             "accounting_source_id": accounting_source.id,
+                            "member_slug": accounting_source.graphite_name(),
+                            "service_slug": "",
                             "metric": cat,
                             "delta": float(results[cat]),
                         })

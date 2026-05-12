@@ -197,6 +197,7 @@ class Command(BaseCommand):
                         dest_name = parts[idx + 2]
                         metric = parts[idx + 3].replace(".wsp", "")
                         acc_id = acc_map.get((acc_name, dest_name))
+                        member_slug = acc_name
 
                 # If not accounting or services, try interface structure
                 elif not acc_id:

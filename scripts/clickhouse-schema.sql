@@ -43,21 +43,6 @@ PARTITION BY toYYYYMM(ts)
 ORDER BY (interface_id, accounting_source_id, metric, ts)
 TTL ts + INTERVAL 5 YEAR;
 
-CREATE TABLE IF NOT EXISTS pmacct.nic_deltas_1h
-(
-  ts DateTime CODEC(Delta, ZSTD(3)),
-  interface_id UInt32 DEFAULT 0 CODEC(T64, ZSTD(3)),
-  accounting_source_id UInt32 DEFAULT 0 CODEC(T64, ZSTD(3)),
-  member_slug LowCardinality(String) DEFAULT '' CODEC(ZSTD(3)),
-  service_slug LowCardinality(String) DEFAULT '' CODEC(ZSTD(3)),
-  metric LowCardinality(String) CODEC(ZSTD(3)),
-  delta Float64 CODEC(ZSTD(3))
-)
-ENGINE = ReplacingMergeTree
-PARTITION BY toYYYYMM(ts)
-ORDER BY (interface_id, accounting_source_id, metric, ts)
-TTL ts + INTERVAL 10 YEAR;
-
 CREATE TABLE IF NOT EXISTS pmacct.dim_interface_labels
 (
   interface_id UInt32,

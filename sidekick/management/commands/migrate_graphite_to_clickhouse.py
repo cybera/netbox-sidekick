@@ -135,6 +135,9 @@ class Command(BaseCommand):
         self.stdout.write("Building service interface mapping...")
         service_interfaces = set()
         for nsd in NetworkServiceDevice.objects.select_related('device').all():
+            if not nsd.device or not nsd.device.name or not nsd.interface:
+                continue
+
             dev_segment = nsd.device.name.lower().replace(" ", "_").replace(".", "_").replace("(", "").replace(")", "")
             if_segment = nsd.interface.lower().replace("/", "-").replace(".", "_").replace("(", "").replace(")", "")
             iface_id = iface_map.get((dev_segment, if_segment))

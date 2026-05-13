@@ -10,7 +10,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from sidekick.utils.clickhouse import ClickHouseHTTP
 from dcim.models import Interface
-from sidekick.models import AccountingSource
+from sidekick.models import AccountingSource, NetworkServiceDevice
 
 # Configure logging for workers
 logging.basicConfig(level=logging.INFO)
@@ -132,6 +132,20 @@ class Command(BaseCommand):
             key = (acc.graphite_name(), acc.graphite_destination_name())
             acc_map[key] = acc.id
 
+        self.stdout.write("Building service interface mapping...")
+        service_interfaces = set()
+        for nsd in NetworkServiceDevice.objects.select_related('device').all():
+            dev_segment = nsd.device.name.lower().replace(" ", "_").replace(".", "_").replace("(", "").replace(")", "")
+            if_segment = nsd.interface.lower().replace("/", "-").replace(".", "_").replace("(", "").replace(")", "")
+            iface_id = iface_map.get((dev_segment, if_segment))
+            
+            if not iface_id:
+                short_if = if_segment.replace("gi", "gigabitethernet").replace("te", "ten-gigabitethernet").replace("xe", "ten-gigabitethernet").replace("et", "ethernet")
+                iface_id = iface_map.get((dev_segment, short_if))
+                
+            if iface_id:
+                service_interfaces.add(iface_id)
+
         # High-water mark state checking
         checkpoints = {}
         if not options['no_state_check']:
@@ -200,9 +214,10 @@ class Command(BaseCommand):
                         member_slug = acc_name
 
                 # If not accounting or services, try interface structure
-                elif not acc_id:
+                elif not acc_id and not iface_id:
                     # Check for standard Graphite structure: device/interface/metric.wsp
                     # or pointed-at structure: interface/metric.wsp
+                    temp_iface_id = 0
                     if len(parts) == 2:
                         dev_segment = clean_seg(dir_dev_segment)
                         if_segment = clean_seg(parts[0])
@@ -214,12 +229,19 @@ class Command(BaseCommand):
                     else:
                         continue
 
-                    iface_id = iface_map.get((dev_segment, if_segment))
+                    temp_iface_id = iface_map.get((dev_segment, if_segment))
 
                     # Fallback: Try matching shorthand interface names (e.g. gi0-1 -> gigabitethernet0-1)
-                    if not iface_id:
+                    if not temp_iface_id:
                         short_if = if_segment.lower().replace("gi", "gigabitethernet").replace("te", "ten-gigabitethernet").replace("xe", "ten-gigabitethernet").replace("et", "ethernet")
-                        iface_id = iface_map.get((dev_segment, short_if))
+                        temp_iface_id = iface_map.get((dev_segment, short_if))
+                        
+                    # DEDUPLICATION: If this interface is already part of a Service, we skip importing 
+                    # the raw hardware metric because it was already imported via the services/ tree.
+                    if temp_iface_id and temp_iface_id in service_interfaces:
+                        continue
+                    
+                    iface_id = temp_iface_id
 
                 if iface_id or acc_id:
                     # Get last timestamp for this specific metric

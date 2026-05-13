@@ -182,8 +182,7 @@ FROM raw_with_lag
 UNION ALL
 SELECT
     ts, interface_id, accounting_source_id, member_slug, service_slug, metric, delta, 'legacy_delta' as source
-FROM pmacct.nic_deltas_5m
-WHERE (interface_id > 0 AND member_slug = '') OR interface_id = 0;
+FROM pmacct.nic_deltas_5m;
 
 CREATE OR REPLACE VIEW pmacct.v_snmp_mapping AS
 SELECT

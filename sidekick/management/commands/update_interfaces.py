@@ -397,6 +397,7 @@ class Command(BaseCommand):
                                     existing_interface.save()
 
             ch_rows = []
+            ch_rows_deltas = []
 
             # Obtain the counters on each interface.
             # For each interface that is not supposed to be ignored,
@@ -514,74 +515,87 @@ class Command(BaseCommand):
                             }
                         )
 
-                # Send the metrics to Graphite if graphite_host has been set.
-                graphite_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_host', None)
-                if graphite_host is not None:
-                    graphyte.init(graphite_host)
-
-                    # Determine the difference between the last two updates.
-                    # This is because Cybera's metrics were previously stored in RRD
-                    # files which only retains the derivative and not what the actual
-                    # counters were.
-                    previous_entries = NIC.objects.filter(
-                        interface_id=existing_interface.id).order_by('-last_updated')
-                    if len(previous_entries) < 2:
-                        continue
-
+                # Determine the difference between the last two updates.
+                previous_entries = NIC.objects.filter(
+                    interface_id=existing_interface.id).order_by('-last_updated')
+                if len(previous_entries) >= 2:
                     e1 = previous_entries[0]
                     e2 = previous_entries[1]
                     total_seconds = (e1.last_updated - e2.last_updated).total_seconds()
+                    
+                    if total_seconds > 0:
+                        graphite_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_host', None)
+                        if graphite_host is not None:
+                            graphyte.init(graphite_host)
+                            
+                        graphite_prefix = "{}.{}".format(
+                            e1.graphite_device_name(), e1.graphite_interface_name())
 
-                    graphite_prefix = "{}.{}".format(
-                        e1.graphite_device_name(), e1.graphite_interface_name())
+                        member_slug = ""
+                        service_slug = ""
+                        nsd = NetworkServiceDevice.objects.filter(device=device, interface=existing_interface.name).first()
+                        if nsd and nsd.network_service:
+                            from django.utils.text import slugify
+                            service_slug = slugify(nsd.network_service.name)
+                            if nsd.network_service.member:
+                                member_slug = slugify(nsd.network_service.member.name)
 
-                    for cat in METRIC_CATEGORIES:
-                        m1 = getattr(e1, cat, None)
-                        m2 = getattr(e2, cat, None)
-                        if m1 is not None and m2 is not None:
-                            diff = (m1 - m2)
+                        for cat in METRIC_CATEGORIES:
+                            m1 = getattr(e1, cat, None)
+                            m2 = getattr(e2, cat, None)
+                            if m1 is not None and m2 is not None:
+                                diff = (m1 - m2)
 
-                            if diff != 0:
-                                diff = diff / total_seconds
-                            graphite_name = f"{graphite_prefix}.{cat}"
-                            if options['dry_run']:
-                                self.stdout.write(f"Would have updated graphite: {graphite_name} {diff} {total_seconds}")
-                            else:
-                                graphyte.send(graphite_name, diff)
-
-                    # Determine if the interface is part of a member's network service.
-                    # If so, send a second set of metrics to Graphite with a prefix
-                    # dedicated to that service.
-                    try:
-                        nsd = NetworkServiceDevice.objects.get(
-                            device=device, interface=existing_interface.name,
-                            network_service__active=True)
-                    except NetworkServiceDevice.MultipleObjectsReturned:
-                        self.stdout.write(f"Multiple results found for network service using "
-                                          f"{device} {existing_interface.name}")
-                        continue
-                    except NetworkServiceDevice.DoesNotExist:
-                        continue
-
-                    ns = nsd.network_service
-                    service_prefix = f"{ns.graphite_service_name()}.{graphite_prefix}"
-
-                    for cat in ['in_octets', 'out_octets']:
-                        graphite_name = f"{service_prefix}.{cat}"
-                        m1 = getattr(e1, cat, None)
-                        m2 = getattr(e2, cat, None)
-                        if m1 is not None and m2 is not None:
-                            diff = (m1 - m2)
-
-                            if options['dry_run']:
-                                self.stdout.write(f"Would have updated graphite: {graphite_name} {diff} {total_seconds}")
-                            else:
                                 if diff != 0:
                                     diff = diff / total_seconds
-                                graphyte.send(graphite_name, diff)
+                                    
+                                if ch is not None:
+                                    ch_rows_deltas.append({
+                                        "ts": now_utc_str(),
+                                        "interface_id": existing_interface.id,
+                                        "accounting_source_id": 0,
+                                        "member_slug": member_slug,
+                                        "service_slug": service_slug,
+                                        "metric": cat,
+                                        "delta": float(diff),
+                                        "source": "live_delta"
+                                    })
+                                
+                                if graphite_host is not None:
+                                    graphite_name = f"{graphite_prefix}.{cat}"
+                                    if options['dry_run']:
+                                        self.stdout.write(f"Would have updated graphite: {graphite_name} {diff} {total_seconds}")
+                                    else:
+                                        graphyte.send(graphite_name, diff)
 
-            if ch is not None and ch_rows:
-                try:
-                    ch.insert_json_each_row(f"{ch_db}.{ch_table}", ch_rows)
-                except Exception as e:
-                    self.stdout.write(f"WARNING: ClickHouse insert failed: {e}")
+                        # Determine if the interface is part of a member's network service.
+                        if nsd and nsd.network_service and nsd.network_service.active:
+                            ns = nsd.network_service
+                            service_prefix = f"{ns.graphite_service_name()}.{graphite_prefix}"
+
+                            for cat in ['in_octets', 'out_octets']:
+                                m1 = getattr(e1, cat, None)
+                                m2 = getattr(e2, cat, None)
+                                if m1 is not None and m2 is not None:
+                                    diff = (m1 - m2)
+                                    if diff != 0:
+                                        diff = diff / total_seconds
+                                    if graphite_host is not None:
+                                        graphite_name = f"{service_prefix}.{cat}"
+                                        if options['dry_run']:
+                                            self.stdout.write(f"Would have updated graphite: {graphite_name} {diff} {total_seconds}")
+                                        else:
+                                            graphyte.send(graphite_name, diff)
+
+            if ch is not None:
+                if ch_rows:
+                    try:
+                        ch.insert_json_each_row(f"{ch_db}.{ch_table}", ch_rows)
+                    except Exception as e:
+                        self.stdout.write(f"WARNING: ClickHouse insert raw failed: {e}")
+                
+                if ch_rows_deltas:
+                    try:
+                        ch.insert_json_each_row(f"{ch_db}.nic_deltas_5m", ch_rows_deltas)
+                    except Exception as e:
+                        self.stdout.write(f"WARNING: ClickHouse insert deltas failed: {e}")

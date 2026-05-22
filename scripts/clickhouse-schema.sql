@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS pmacct.nic_deltas_5m
   member_slug LowCardinality(String) DEFAULT '' CODEC(ZSTD(3)),
   service_slug LowCardinality(String) DEFAULT '' CODEC(ZSTD(3)),
   metric LowCardinality(String) CODEC(ZSTD(3)),
-  delta Float64 CODEC(ZSTD(3))
+  delta Float64 CODEC(ZSTD(3)),
+  source LowCardinality(String) DEFAULT 'legacy_delta' CODEC(ZSTD(3))
 )
 ENGINE = ReplacingMergeTree
 PARTITION BY toYYYYMM(ts)
@@ -79,94 +80,9 @@ ENGINE = ReplacingMergeTree(updated_at)
 ORDER BY (accounting_source_id);
 
 -- Unified View for seamless querying of legacy and new data.
--- Calculates rates dynamically from raw counters using Window Functions.
 CREATE OR REPLACE VIEW pmacct.nic_metrics_unified AS
-WITH
-    raw_with_lag AS (
-        SELECT
-            ts,
-            interface_id,
-            toUInt32(0) as accounting_source_id,
-            member_slug,
-            service_slug,
-            in_octets, out_octets,
-            in_unicast_packets, out_unicast_packets,
-            in_nunicast_packets, out_nunicast_packets,
-            in_errors, out_errors,
-            in_rate, out_rate,
-            lagInFrame(ts) OVER (PARTITION BY interface_id ORDER BY ts ASC ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) as prev_ts,
-            lagInFrame(in_octets) OVER (PARTITION BY interface_id ORDER BY ts ASC ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) as prev_in_octets,
-            lagInFrame(out_octets) OVER (PARTITION BY interface_id ORDER BY ts ASC ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) as prev_out_octets,
-            lagInFrame(in_unicast_packets) OVER (PARTITION BY interface_id ORDER BY ts ASC ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) as prev_in_ucast,
-            lagInFrame(out_unicast_packets) OVER (PARTITION BY interface_id ORDER BY ts ASC ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) as prev_out_ucast,
-            lagInFrame(in_nunicast_packets) OVER (PARTITION BY interface_id ORDER BY ts ASC ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) as prev_in_nucast,
-            lagInFrame(out_nunicast_packets) OVER (PARTITION BY interface_id ORDER BY ts ASC ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) as prev_out_nucast,
-            lagInFrame(in_errors) OVER (PARTITION BY interface_id ORDER BY ts ASC ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) as prev_in_errors,
-            lagInFrame(out_errors) OVER (PARTITION BY interface_id ORDER BY ts ASC ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) as prev_out_errors
-        FROM pmacct.nic_counters_raw
-    )
 SELECT
-    ts, interface_id, accounting_source_id, member_slug, service_slug, 'in_octets' as metric,
-    if(in_rate > 0, CAST(in_rate, 'Float64'),
-       if(prev_ts != toDateTime(0) AND ts > prev_ts AND in_octets >= prev_in_octets,
-          (in_octets - prev_in_octets) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0)
-    ) as delta,
-    if(in_rate > 0, 'raw_device', 'raw_calc') as source
-FROM raw_with_lag
-UNION ALL
-SELECT
-    ts, interface_id, accounting_source_id, member_slug, service_slug, 'out_octets' as metric,
-    if(out_rate > 0, CAST(out_rate, 'Float64'),
-       if(prev_ts != toDateTime(0) AND ts > prev_ts AND out_octets >= prev_out_octets,
-          (out_octets - prev_out_octets) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0)
-    ) as delta,
-    if(out_rate > 0, 'raw_device', 'raw_calc') as source
-FROM raw_with_lag
-UNION ALL
-SELECT
-    ts, interface_id, accounting_source_id, member_slug, service_slug, 'in_unicast_packets' as metric,
-    if(prev_ts != toDateTime(0) AND ts > prev_ts AND in_unicast_packets >= prev_in_ucast,
-       (in_unicast_packets - prev_in_ucast) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0) as delta,
-    'raw_calc' as source
-FROM raw_with_lag
-UNION ALL
-SELECT
-    ts, interface_id, accounting_source_id, member_slug, service_slug, 'out_unicast_packets' as metric,
-    if(prev_ts != toDateTime(0) AND ts > prev_ts AND out_unicast_packets >= prev_out_ucast,
-       (out_unicast_packets - prev_out_ucast) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0) as delta,
-    'raw_calc' as source
-FROM raw_with_lag
-UNION ALL
-SELECT
-    ts, interface_id, accounting_source_id, member_slug, service_slug, 'in_nunicast_packets' as metric,
-    if(prev_ts != toDateTime(0) AND ts > prev_ts AND in_nunicast_packets >= prev_in_nucast,
-       (in_nunicast_packets - prev_in_nucast) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0) as delta,
-    'raw_calc' as source
-FROM raw_with_lag
-UNION ALL
-SELECT
-    ts, interface_id, accounting_source_id, member_slug, service_slug, 'out_nunicast_packets' as metric,
-    if(prev_ts != toDateTime(0) AND ts > prev_ts AND out_nunicast_packets >= prev_out_nucast,
-       (out_nunicast_packets - prev_out_nucast) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0) as delta,
-    'raw_calc' as source
-FROM raw_with_lag
-UNION ALL
-SELECT
-    ts, interface_id, accounting_source_id, member_slug, service_slug, 'in_errors' as metric,
-    if(prev_ts != toDateTime(0) AND ts > prev_ts AND in_errors >= prev_in_errors,
-       (in_errors - prev_in_errors) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0) as delta,
-    'raw_calc' as source
-FROM raw_with_lag
-UNION ALL
-SELECT
-    ts, interface_id, accounting_source_id, member_slug, service_slug, 'out_errors' as metric,
-    if(prev_ts != toDateTime(0) AND ts > prev_ts AND out_errors >= prev_out_errors,
-       (out_errors - prev_out_errors) / (toUnixTimestamp(ts) - toUnixTimestamp(prev_ts)), 0) as delta,
-    'raw_calc' as source
-FROM raw_with_lag
-UNION ALL
-SELECT
-    ts, interface_id, accounting_source_id, member_slug, service_slug, metric, delta, 'legacy_delta' as source
+    ts, interface_id, accounting_source_id, member_slug, service_slug, metric, delta, source
 FROM pmacct.nic_deltas_5m;
 
 CREATE OR REPLACE VIEW pmacct.v_snmp_mapping AS

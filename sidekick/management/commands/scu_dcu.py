@@ -143,8 +143,9 @@ class Command(BaseCommand):
                             "accounting_source_id": accounting_source.id,
                             "member_slug": accounting_source.graphite_name(),
                             "service_slug": "",
-                            "metric": cat,
+                            "metric": scudcu_map[cat],
                             "delta": float(results[cat]),
+                            "source": "live_delta"
                         })
 
                 # Send the metrics to Graphite if graphite_host has been set.

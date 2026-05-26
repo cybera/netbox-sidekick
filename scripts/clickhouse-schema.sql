@@ -80,10 +80,19 @@ ENGINE = ReplacingMergeTree(updated_at)
 ORDER BY (accounting_source_id);
 
 -- Unified View for seamless querying of legacy and new data.
+-- Aggregates metrics to prevent duplication and handles multiple samples per time bucket.
 CREATE OR REPLACE VIEW pmacct.nic_metrics_unified AS
 SELECT
-    ts, interface_id, accounting_source_id, member_slug, service_slug, metric, delta, source
-FROM pmacct.nic_deltas_5m;
+    toStartOfInterval(ts, toIntervalMinute(5)) AS ts,
+    interface_id,
+    accounting_source_id,
+    member_slug,
+    service_slug,
+    metric,
+    avg(delta) AS delta,
+    any(source) AS source
+FROM pmacct.nic_deltas_5m
+GROUP BY ts, interface_id, accounting_source_id, member_slug, service_slug, metric;
 
 CREATE OR REPLACE VIEW pmacct.v_snmp_mapping AS
 SELECT

@@ -531,15 +531,7 @@ class Command(BaseCommand):
                         graphite_prefix = "{}.{}".format(
                             e1.graphite_device_name(), e1.graphite_interface_name())
 
-                        member_slug = ""
-                        service_slug = ""
-                        nsd = NetworkServiceDevice.objects.filter(device=device, interface=existing_interface.name).first()
-                        if nsd and nsd.network_service:
-                            from django.utils.text import slugify
-                            service_slug = slugify(nsd.network_service.name)
-                            if nsd.network_service.member:
-                                member_slug = slugify(nsd.network_service.member.name)
-
+                        nsds = NetworkServiceDevice.objects.filter(device=device, interface=existing_interface.name)
                         for cat in METRIC_CATEGORIES:
                             m1 = getattr(e1, cat, None)
                             m2 = getattr(e2, cat, None)
@@ -550,16 +542,39 @@ class Command(BaseCommand):
                                     diff = diff / total_seconds
                                     
                                 if ch is not None:
-                                    ch_rows_deltas.append({
-                                        "ts": now_utc_str(),
-                                        "interface_id": existing_interface.id,
-                                        "accounting_source_id": 0,
-                                        "member_slug": member_slug,
-                                        "service_slug": service_slug,
-                                        "metric": cat,
-                                        "delta": float(diff),
-                                        "source": "live_delta"
-                                    })
+                                    # If the interface is not part of any service, still log it with empty slugs
+                                    if not nsds.exists():
+                                        ch_rows_deltas.append({
+                                            "ts": now_utc_str(),
+                                            "interface_id": existing_interface.id,
+                                            "accounting_source_id": 0,
+                                            "member_slug": "",
+                                            "service_slug": "",
+                                            "metric": cat,
+                                            "delta": float(diff),
+                                            "source": "live_delta"
+                                        })
+                                    else:
+                                        # If the interface is part of one or more services, log it for each service
+                                        for nsd in nsds:
+                                            member_slug = ""
+                                            service_slug = ""
+                                            if nsd.network_service:
+                                                from django.utils.text import slugify
+                                                service_slug = slugify(nsd.network_service.name)
+                                                if nsd.network_service.member:
+                                                    member_slug = slugify(nsd.network_service.member.name)
+                                            
+                                            ch_rows_deltas.append({
+                                                "ts": now_utc_str(),
+                                                "interface_id": existing_interface.id,
+                                                "accounting_source_id": 0,
+                                                "member_slug": member_slug,
+                                                "service_slug": service_slug,
+                                                "metric": cat,
+                                                "delta": float(diff),
+                                                "source": "live_delta"
+                                            })
                                 
                                 if graphite_host is not None:
                                     graphite_name = f"{graphite_prefix}.{cat}"

@@ -763,3 +763,643 @@ def get_period(request):
     if period not in ['-1d', '-7d', '-30d', '-1y', '-5y']:
         return None
     return period
+
+
+# ============================================================
+# ClickHouse Query Utilities (Approach A: coexist with Graphite)
+# ============================================================
+
+import logging
+
+_ch_logger = logging.getLogger('sidekick.clickhouse')
+_ch_logger.setLevel(logging.INFO)
+# If no handler is attached, add a simple one so we don't lose logs
+if not _ch_logger.handlers:
+    class NullHandler(logging.NullHandler if hasattr(logging, 'NullHandler') else logging.Handler):
+        pass
+    _ch_logger.addHandler(NullHandler())
+
+
+def _get_clickhouse_client_from_config(config):
+    """Create a ClickHouseHTTP client from PLUGINS_CONFIG['sidekick'] settings."""
+    from .clickhouse import ClickHouseHTTP
+    url = config.get('clickhouse_url')
+    if not url:
+        return None
+    return ClickHouseHTTP(
+        base_url=url,
+        user=config.get('clickhouse_user', 'default'),
+        password=config.get('clickhouse_password', ''),
+        database=config.get('clickhouse_database', 'pmacct'),
+    )
+
+
+def _period_to_interval(period):
+    """Convert a Graphite-style period string to a ClickHouse INTERVAL value."""
+    period_map = {
+        '-1d': '1 DAY',
+        '-7d': '7 DAY',
+        '-30d': '30 DAY',
+        '-1y': '1 YEAR',
+        '-1Y': '1 YEAR',
+        '-5y': '5 YEAR',
+    }
+    return period_map.get(period)
+
+
+def _get_graph_title(period):
+    """Return the display title for a given period."""
+    title_map = {
+        '-1d': 'Last Day - GB',
+        '-7d': 'Last Week - GB',
+        '-30d': 'Last Month - GB',
+        '-1y': 'Last Year - GB',
+        '-1Y': 'Last Year - GB',
+        '-5y': 'Last 5 Years - GB',
+    }
+    return title_map.get(period, 'Unknown Period')
+
+
+def _parse_clickhouse_tsv(result_text):
+    """Parse ClickHouse TabSeparatedWithNames output into a list of lists (rows of values).
+    
+    The first row is the header (column names), which is stripped. Returns a list of
+    rows, where each row is a list of values (strings, ints, or floats).
+    """
+    if not result_text or not result_text.strip():
+        return []
+    lines = result_text.strip().split('\n')
+    if len(lines) <= 1:
+        # Only header or empty
+        return []
+    # Skip header (first line), parse remaining
+    rows = []
+    for line in lines[1:]:
+        if not line:
+            continue
+        row = []
+        for val in line.split('\t'):
+            v = val.strip()
+            if v == '' or v == '\\N':
+                row.append(None)
+            else:
+                try:
+                    if '.' in v:
+                        row.append(float(v))
+                    else:
+                        row.append(int(v))
+                except (ValueError, TypeError):
+                    row.append(v)
+        rows.append(row)
+    return rows
+
+
+def _escape_clickhouse_string(s):
+    """Escape a string for safe inclusion in a ClickHouse SQL literal.
+    
+    ClickHouse uses single quotes; internal single quotes are escaped by doubling.
+    """
+    if s is None:
+        return 'NULL'
+    return "'" + str(s).replace("'", "''") + "'"
+
+
+def _execute_clickhouse(ch_client, query):
+    """Execute a ClickHouse query and return parsed rows (list of lists).
+    
+    Returns (rows, raw_query) where rows is a list of parsed rows and
+    raw_query is the full SQL used (for debugging/debug display).
+    Appends FORMAT TabSeparatedWithNames to the query.
+    Logs errors to the 'sidekick.clickhouse' logger.
+    """
+    full_query = query + "\nFORMAT TabSeparatedWithNames"
+    try:
+        result = ch_client.execute(full_query)
+        rows = _parse_clickhouse_tsv(result)
+        _ch_logger.debug("ClickHouse query returned %d rows", len(rows))
+        return rows, full_query
+    except RuntimeError as e:
+        # Log the error but don't crash — caller decides whether to fall back
+        _ch_logger.error("ClickHouse query failed: %s | Query: %s", str(e), full_query[:500])
+        return [], full_query
+    except Exception as e:
+        # Catch-all for any other unexpected errors
+        _ch_logger.error("ClickHouse unexpected error: %s | Query: %s", str(e), full_query[:500])
+        return [], full_query
+
+
+def _get_interface_ids_for_service(ch_client, member_name, service_name):
+    """Query dim_interface_labels to find all interface_ids for a given member+service.
+    
+    Returns a list of interface_id strings for use in an IN clause.
+    Logs a warning if no results found (dimension table may be out of sync).
+    """
+    query = (
+        f"SELECT interface_id FROM dim_interface_labels "
+        f"WHERE member_name = {_escape_clickhouse_string(member_name)} "
+        f"AND service_name = {_escape_clickhouse_string(service_name)}"
+    )
+    rows, _ = _execute_clickhouse(ch_client, query)
+    ids = [str(r[0]) for r in rows if r and r[0] is not None]
+    if not ids:
+        _ch_logger.warning("No interface_ids found for member='%s' service='%s' — check dim_interface_labels",
+                          member_name, service_name)
+    return ids
+
+
+def _get_accounting_source_ids(ch_client, accounting_sources):
+    """Query dim_accounting_sources to find accounting_source_ids for given AccountingSource objects.
+    
+    Returns a list of accounting_source_id strings for use in an IN clause.
+    Uses (source_name, destination_name) pairs for the lookup.
+    """
+    if not accounting_sources:
+        return []
+    
+    conditions = []
+    for acct in accounting_sources:
+        source_name = getattr(acct, 'name', '')
+        dest = getattr(acct, 'destination', None)
+        dest_name = getattr(dest, 'name', '') if dest else ''
+        conditions.append(
+            f"(source_name = {_escape_clickhouse_string(source_name)} "
+            f"AND destination_name = {_escape_clickhouse_string(dest_name)})"
+        )
+    
+    query = (
+        f"SELECT accounting_source_id FROM dim_accounting_sources "
+        f"WHERE {' OR '.join(conditions)}"
+    )
+    rows, _ = _execute_clickhouse(ch_client, query)
+    return [str(r[0]) for r in rows if r and r[0] is not None]
+
+
+def _transpose_to_uplot(rows):
+    """Convert ClickHouse TSV rows [[ts, in, out], ...] to uPlot column-oriented format.
+
+    Returns [[timestamps], [in_vals], [out_vals]] for simple graphs.
+    """
+    if not rows:
+        return [[], [], []]
+    timestamps = []
+    in_vals = []
+    out_vals = []
+    for row in rows:
+        if row and len(row) >= 3:
+            timestamps.append(row[0])
+            in_vals.append(row[1])
+            out_vals.append(row[2])
+    return [timestamps, in_vals, out_vals]
+
+
+def _transpose_to_uplot_with_p95(rows, p95_in=0, p95_out=0):
+    """Convert ClickHouse TSV rows to uPlot format with p95 constant lines.
+
+    Returns [[timestamps], [in_vals], [out_vals], [p95_in]*n, [p95_out]*n].
+    Matches the exact shape returned by get_graphite_data().
+    """
+    if not rows:
+        return [[], [], [], [], []]
+    timestamps = []
+    in_vals = []
+    out_vals = []
+    for row in rows:
+        if row and len(row) >= 3:
+            timestamps.append(row[0])
+            in_vals.append(row[1])
+            out_vals.append(row[2])
+    p95_in_vals = [p95_in] * len(timestamps)
+    p95_out_vals = [p95_out] * len(timestamps)
+    return [timestamps, in_vals, out_vals, p95_in_vals, p95_out_vals]
+
+
+def get_clickhouse_nic_graph(nic, ch_client, period="-1Y"):
+    """ClickHouse equivalent of get_graphite_nic_graph.
+    
+    Queries a single interface's traffic from nic_metrics_unified via dim_interface_labels.
+    Returns the same JSON shape as get_graphite_nic_graph.
+    """
+    if ch_client is None:
+        return None
+    
+    # Get device name and interface name from the NIC model
+    # graphite_device_name() and graphite_interface_name() give the Graphite components
+    # but for dim_interface_labels we need the NetBox names
+    try:
+        device_name = nic.interface.device.name
+    except Exception:
+        device_name = None
+    
+    try:
+        interface_name = nic.interface.name
+    except Exception:
+        interface_name = None
+    
+    if not device_name or not interface_name:
+        return None
+    
+    # Find the interface_id via dim_interface_labels
+    interval = _period_to_interval(period)
+    if interval is None:
+        return None
+    
+    # Single combined query: find the interface_id and get the time series
+    query = (
+        f"SELECT "
+        f"    toUnixTimestamp(bucket) AS timestamp, "
+        f"    avg(CASE WHEN metric = 'in_octets' THEN delta ELSE 0 END) * 8 AS in_bps, "
+        f"    avg(CASE WHEN metric = 'out_octets' THEN delta ELSE 0 END) * -8 AS out_bps "
+        f"FROM nic_metrics_unified "
+        f"WHERE interface_id IN ("
+        f"    SELECT interface_id FROM dim_interface_labels "
+        f"    WHERE device_name = {_escape_clickhouse_string(device_name)} "
+        f"    AND interface_name = {_escape_clickhouse_string(interface_name)}"
+        f") "
+        f"AND metric IN ('in_octets', 'out_octets') "
+        f"AND ts >= now() - INTERVAL {interval} "
+        f"GROUP BY "
+        f"    toStartOfInterval(ts, toIntervalMinute(5)) AS bucket "
+        f"ORDER BY timestamp"
+    )
+    
+    rows, full_query = _execute_clickhouse(ch_client, query)
+    
+    if not rows:
+        # Return empty but valid structure
+        return {
+            'title': _get_graph_title(period),
+            'data': [[], [], []],
+            'query': full_query,
+        }
+    
+    # Transpose: [[timestamps], [in], [out]]
+    data = [[], [], []]
+    for row in rows:
+        if row and len(row) >= 3:
+            data[0].append(row[0])  # timestamp
+            data[1].append(row[1])  # in_bps
+            data[2].append(row[2])  # out_bps
+    
+    return {
+        'title': _get_graph_title(period),
+        'data': data,
+        'query': full_query,
+    }
+
+
+def get_clickhouse_service_graph(service, ch_client, period="-1Y"):
+    """ClickHouse equivalent of get_graphite_service_graph.
+    
+    Queries all interfaces for a single NetworkService from nic_metrics_unified.
+    Returns the same JSON shape as get_graphite_service_graph.
+    """
+    if ch_client is None:
+        return None
+    
+    # Get member and service names from the NetworkService model
+    try:
+        member_name = service.member.name
+    except Exception:
+        member_name = None
+    
+    if not member_name:
+        return None
+    
+    service_name = getattr(service, 'name', str(service))
+    
+    interval = _period_to_interval(period)
+    if interval is None:
+        return None
+    
+    # Sum all interfaces for this service
+    query = (
+        f"SELECT "
+        f"    toUnixTimestamp(bucket) AS timestamp, "
+        f"    sum(CASE WHEN metric = 'in_octets' THEN delta ELSE 0 END) * 8 AS in_bps, "
+        f"    sum(CASE WHEN metric = 'out_octets' THEN delta ELSE 0 END) * -8 AS out_bps "
+        f"FROM nic_metrics_unified "
+        f"WHERE interface_id IN ("
+        f"    SELECT interface_id FROM dim_interface_labels "
+        f"    WHERE member_name = {_escape_clickhouse_string(member_name)} "
+        f"    AND service_name = {_escape_clickhouse_string(service_name)}"
+        f") "
+        f"AND metric IN ('in_octets', 'out_octets') "
+        f"AND ts >= now() - INTERVAL {interval} "
+        f"GROUP BY "
+        f"    toStartOfInterval(ts, toIntervalMinute(5)) AS bucket "
+        f"ORDER BY timestamp"
+    )
+    
+    rows, full_query = _execute_clickhouse(ch_client, query)
+    
+    if not rows:
+        return {
+            'title': _get_graph_title(period),
+            'data': [[], [], []],
+            'query': full_query,
+        }
+    
+    data = [[], [], []]
+    for row in rows:
+        if row and len(row) >= 3:
+            data[0].append(row[0])
+            data[1].append(row[1])
+            data[2].append(row[2])
+    
+    return {
+        'title': _get_graph_title(period),
+        'data': data,
+        'query': full_query,
+    }
+
+
+def get_clickhouse_member_bandwidth(ch_client, member, services, accounting_sources, period="-1y"):
+    """ClickHouse equivalent for member bandwidth (services + accounting + remaining + p95).
+
+    Mirrors the combined behavior of get_graphite_service_graph + get_graphite_data for
+    member bandwidth pages (MemberBandwidthDataView, NetworkUsageMemberView, etc.).
+
+    Returns:
+        {
+            'service_data': {'data': [[ts], [in], [out], [p95_in], [p95_out]], 'query': '...'},
+            'accounting_data': {'data': [[ts], [in], [out], [p95_in], [p95_out]], 'query': '...'},
+            'remaining_data': {'data': [[ts], [in], [out], [p95_in], [p95_out]], 'query': '...'},
+        }
+    """
+    if ch_client is None:
+        return None
+
+    try:
+        member_name = member.name
+    except Exception:
+        return None
+
+    interval = _period_to_interval(period)
+    if interval is None:
+        return None
+
+    results = {
+        'service_data': {'data': [[], [], [], [], []], 'query': ''},
+        'accounting_data': {'data': [[], [], [], [], []], 'query': ''},
+        'remaining_data': {'data': [[], [], [], [], []], 'query': ''},
+    }
+
+    # --- 1. Service Data ---
+    service_interface_ids = []
+    for svc in services:
+        ids = _get_interface_ids_for_service(ch_client, member_name, svc.name)
+        service_interface_ids.extend(ids)
+    service_interface_ids = list(set(service_interface_ids))
+
+    svc_rows = []
+    if service_interface_ids:
+        svc_query = (
+            f"SELECT "
+            f"    toUnixTimestamp(bucket) AS timestamp, "
+            f"    sum(CASE WHEN metric = 'in_octets' THEN delta ELSE 0 END) * 8 AS in_bps, "
+            f"    sum(CASE WHEN metric = 'out_octets' THEN delta ELSE 0 END) * -8 AS out_bps "
+            f"FROM nic_metrics_unified "
+            f"WHERE interface_id IN ({', '.join(service_interface_ids)}) "
+            f"AND metric IN ('in_octets', 'out_octets') "
+            f"AND ts >= now() - INTERVAL {interval} "
+            f"GROUP BY toStartOfInterval(ts, toIntervalMinute(5)) AS bucket "
+            f"ORDER BY timestamp"
+        )
+        svc_rows, full_query = _execute_clickhouse(ch_client, svc_query)
+        results['service_data']['query'] = full_query
+    else:
+        results['service_data']['query'] = 'no service interfaces found'
+
+    # --- 2. Accounting Data ---
+    accounting_source_ids = _get_accounting_source_ids(ch_client, accounting_sources)
+
+    acct_rows = []
+    if accounting_source_ids:
+        acct_query = (
+            f"SELECT "
+            f"    toUnixTimestamp(bucket) AS timestamp, "
+            f"    sum(CASE WHEN metric = 'in_octets' THEN delta ELSE 0 END) * 8 AS in_bps, "
+            f"    sum(CASE WHEN metric = 'out_octets' THEN delta ELSE 0 END) * -8 AS out_bps "
+            f"FROM nic_metrics_unified "
+            f"WHERE accounting_source_id IN ({', '.join(accounting_source_ids)}) "
+            f"AND metric IN ('in_octets', 'out_octets') "
+            f"AND ts >= now() - INTERVAL {interval} "
+            f"GROUP BY toStartOfInterval(ts, toIntervalMinute(5)) AS bucket "
+            f"ORDER BY timestamp"
+        )
+        acct_rows, full_query = _execute_clickhouse(ch_client, acct_query)
+        results['accounting_data']['query'] = full_query
+    else:
+        results['accounting_data']['query'] = 'no accounting sources found'
+
+    # --- 3. Compute P95s ---
+    def _calc_p95(rows):
+        in_vals = [r[1] for r in rows if r and len(r) >= 2 and r[1] is not None]
+        out_vals = [r[2] for r in rows if r and len(r) >= 3 and r[2] is not None]
+        p95_in = 0
+        p95_out = 0
+        if in_vals:
+            in_sorted = sorted(in_vals)
+            idx = int(len(in_sorted) * 0.95)
+            p95_in = in_sorted[min(idx, len(in_sorted) - 1)]
+        if out_vals:
+            out_sorted = sorted(out_vals)
+            idx = int(len(out_sorted) * 0.95)
+            p95_out = out_sorted[min(idx, len(out_sorted) - 1)]
+        return p95_in, p95_out
+
+    svc_p95_in, svc_p95_out = _calc_p95(svc_rows)
+    acct_p95_in, acct_p95_out = _calc_p95(acct_rows)
+
+    # --- 4. Remaining (Services - Accounting, only positive) ---
+    svc_map = {}
+    for row in svc_rows:
+        if row and len(row) >= 3:
+            svc_map[row[0]] = [row[1], row[2], 0, 0]
+    for row in acct_rows:
+        if row and len(row) >= 3:
+            if row[0] in svc_map:
+                svc_map[row[0]][2] = row[1]
+                svc_map[row[0]][3] = row[2]
+
+    remaining_rows = []
+    for ts, vals in sorted(svc_map.items()):
+        rem_in = max(0, vals[0] - vals[2])
+        rem_out = min(0, vals[1] - vals[3])
+        remaining_rows.append([ts, rem_in, rem_out])
+
+    rem_p95_in, rem_p95_out = _calc_p95(remaining_rows)
+
+    # --- 5. Transpose all datasets to uPlot column-oriented format ---
+    results['service_data']['data'] = _transpose_to_uplot_with_p95(svc_rows, svc_p95_in, svc_p95_out)
+    results['accounting_data']['data'] = _transpose_to_uplot_with_p95(acct_rows, acct_p95_in, acct_p95_out)
+    results['remaining_data']['data'] = _transpose_to_uplot_with_p95(remaining_rows, rem_p95_in, rem_p95_out)
+    results['remaining_data']['query'] = 'computed in Python (services - accounting)'
+
+    return results
+
+
+def get_clickhouse_service_group_bandwidth(ch_client, service_group, period="-1y"):
+    """ClickHouse equivalent for service group bandwidth (multi-member aggregation).
+
+    Handles the NetworkServiceGroup case where services span multiple members.
+    For each member in the group, fetches service + accounting data, then sums across.
+
+    Args:
+        ch_client: ClickHouseHTTP client.
+        service_group: A NetworkServiceGroup model instance.
+        period: Period string (e.g., '-1y').
+
+    Returns:
+        {
+            'service_data': {'data': [[ts], [in], [out], [p95_in], [p95_out]], 'query': '...'},
+            'accounting_data': {'data': [[ts], [in], [out], [p95_in], [p95_out]], 'query': '...'},
+            'remaining_data': {'data': [[ts], [in], [out], [p95_in], [p95_out]], 'query': '...'},
+        }
+    """
+    if ch_client is None:
+        return None
+
+    interval = _period_to_interval(period)
+    if interval is None:
+        return None
+
+    results = {
+        'service_data': {'data': [[], [], [], [], []], 'query': ''},
+        'accounting_data': {'data': [[], [], [], [], []], 'query': ''},
+        'remaining_data': {'data': [[], [], [], [], []], 'query': ''},
+    }
+
+    # Collect all unique member+service pairs and their accounting sources
+    member_services_map = {}    # member_name -> [service_name, ...]
+    member_accounting_map = {}  # member_name -> [AccountingSource, ...]
+
+    for network_service in service_group.network_services.all():
+        member = network_service.member
+        member_name = member.name
+
+        if member_name not in member_services_map:
+            member_services_map[member_name] = []
+        member_services_map[member_name].append(network_service.name)
+
+        if member_name not in member_accounting_map:
+            member_accounting_map[member_name] = get_accounting_sources(member)
+
+    # Resolve all interface IDs and accounting source IDs now that the maps are built
+    all_service_interface_ids = []
+    all_accounting_source_ids = []
+
+    for member_name, svc_names in member_services_map.items():
+        for svc_name in svc_names:
+            ids = _get_interface_ids_for_service(ch_client, member_name, svc_name)
+            all_service_interface_ids.extend(ids)
+
+    for member_name, acct_sources in member_accounting_map.items():
+        ids = _get_accounting_source_ids(ch_client, acct_sources)
+        all_accounting_source_ids.extend(ids)
+
+    all_service_interface_ids = list(set(all_service_interface_ids))
+    all_accounting_source_ids = list(set(all_accounting_source_ids))
+
+    # --- 1. Service Data (sum across all interfaces in the group) ---
+    svc_rows = []
+    if all_service_interface_ids:
+        svc_query = (
+            f"SELECT "
+            f"    toUnixTimestamp(bucket) AS timestamp, "
+            f"    sum(CASE WHEN metric = 'in_octets' THEN delta ELSE 0 END) * 8 AS in_bps, "
+            f"    sum(CASE WHEN metric = 'out_octets' THEN delta ELSE 0 END) * -8 AS out_bps "
+            f"FROM nic_metrics_unified "
+            f"WHERE interface_id IN ({', '.join(all_service_interface_ids)}) "
+            f"AND metric IN ('in_octets', 'out_octets') "
+            f"AND ts >= now() - INTERVAL {interval} "
+            f"GROUP BY toStartOfInterval(ts, toIntervalMinute(5)) AS bucket "
+            f"ORDER BY timestamp"
+        )
+        svc_rows, full_query = _execute_clickhouse(ch_client, svc_query)
+        results['service_data']['query'] = full_query
+    else:
+        results['service_data']['query'] = 'no service interfaces found in group'
+
+    # --- 2. Accounting Data (sum across all accounting sources in the group) ---
+    acct_rows = []
+    if all_accounting_source_ids:
+        acct_query = (
+            f"SELECT "
+            f"    toUnixTimestamp(bucket) AS timestamp, "
+            f"    sum(CASE WHEN metric = 'in_octets' THEN delta ELSE 0 END) * 8 AS in_bps, "
+            f"    sum(CASE WHEN metric = 'out_octets' THEN delta ELSE 0 END) * -8 AS out_bps "
+            f"FROM nic_metrics_unified "
+            f"WHERE accounting_source_id IN ({', '.join(all_accounting_source_ids)}) "
+            f"AND metric IN ('in_octets', 'out_octets') "
+            f"AND ts >= now() - INTERVAL {interval} "
+            f"GROUP BY toStartOfInterval(ts, toIntervalMinute(5)) AS bucket "
+            f"ORDER BY timestamp"
+        )
+        acct_rows, full_query = _execute_clickhouse(ch_client, acct_query)
+        results['accounting_data']['query'] = full_query
+    else:
+        results['accounting_data']['query'] = 'no accounting sources found in group'
+
+    # --- 3. Compute P95s ---
+    def _calc_p95(rows):
+        in_vals = [r[1] for r in rows if r and len(r) >= 2 and r[1] is not None]
+        out_vals = [r[2] for r in rows if r and len(r) >= 3 and r[2] is not None]
+        p95_in = 0
+        p95_out = 0
+        if in_vals:
+            in_sorted = sorted(in_vals)
+            idx = int(len(in_sorted) * 0.95)
+            p95_in = in_sorted[min(idx, len(in_sorted) - 1)]
+        if out_vals:
+            out_sorted = sorted(out_vals)
+            idx = int(len(out_sorted) * 0.95)
+            p95_out = out_sorted[min(idx, len(out_sorted) - 1)]
+        return p95_in, p95_out
+
+    svc_p95_in, svc_p95_out = _calc_p95(svc_rows)
+    acct_p95_in, acct_p95_out = _calc_p95(acct_rows)
+
+    # --- 4. Remaining (Services - Accounting, only positive) ---
+    svc_map = {}
+    for row in svc_rows:
+        if row and len(row) >= 3:
+            svc_map[row[0]] = [row[1], row[2], 0, 0]
+    for row in acct_rows:
+        if row and len(row) >= 3:
+            if row[0] in svc_map:
+                svc_map[row[0]][2] = row[1]
+                svc_map[row[0]][3] = row[2]
+
+    remaining_rows = []
+    for ts, vals in sorted(svc_map.items()):
+        rem_in = max(0, vals[0] - vals[2])
+        rem_out = min(0, vals[1] - vals[3])
+        remaining_rows.append([ts, rem_in, rem_out])
+
+    rem_p95_in, rem_p95_out = _calc_p95(remaining_rows)
+
+    # --- 5. Transpose to uPlot column-oriented format ---
+    results['service_data']['data'] = _transpose_to_uplot_with_p95(svc_rows, svc_p95_in, svc_p95_out)
+    results['accounting_data']['data'] = _transpose_to_uplot_with_p95(acct_rows, acct_p95_in, acct_p95_out)
+    results['remaining_data']['data'] = _transpose_to_uplot_with_p95(remaining_rows, rem_p95_in, rem_p95_out)
+    results['remaining_data']['query'] = 'computed in Python (services - accounting)'
+
+    return results
+
+
+def _service_has_clickhouse_backend(settings):
+    """Check if the sidekick plugin is configured to use ClickHouse for queries.
+    
+    Reads from PLUGINS_CONFIG['sidekick']['use_clickhouse'].
+    Returns (True, ch_client) if ClickHouse should be used, (False, None) otherwise.
+    """
+    config = settings.PLUGINS_CONFIG.get('sidekick', {})
+    use_clickhouse = config.get('use_clickhouse', False)
+    if not use_clickhouse:
+        return (False, None)
+    ch_client = _get_clickhouse_client_from_config(config)
+    if ch_client is None:
+        _ch_logger.warning("use_clickhouse is True but no clickhouse_url configured — falling back to Graphite")
+        return (False, None)
+    return (use_clickhouse, ch_client)

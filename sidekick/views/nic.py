@@ -28,7 +28,9 @@ from sidekick.models import (
 )
 
 from sidekick.utils import (
-    get_graphite_nic_graph
+    get_graphite_nic_graph,
+    get_clickhouse_nic_graph,
+    _service_has_clickhouse_backend,
 )
 
 
@@ -64,7 +66,23 @@ class NICGraphiteDataView(PermissionRequiredMixin, View):
     model = Interface
 
     def get(self, request, pk):
-        graphite_render_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_render_host', None)
+        config = settings.PLUGINS_CONFIG.get('sidekick', {})
+        use_clickhouse, ch_client = _service_has_clickhouse_backend(settings)
+
+        if use_clickhouse and ch_client:
+            nics = NIC.objects.filter(interface__id=pk)
+            if len(nics) > 0:
+                period = request.GET.get('period', '-1y')
+                graph_data = get_clickhouse_nic_graph(nics[0], ch_client, period)
+                if graph_data is None:
+                    return JsonResponse({})
+                return JsonResponse({
+                    'graph_data': graph_data,
+                })
+            return JsonResponse({})
+
+        # Fall back to Graphite
+        graphite_render_host = config.get('graphite_render_host', None)
         if graphite_render_host is None:
             return JsonResponse({})
 

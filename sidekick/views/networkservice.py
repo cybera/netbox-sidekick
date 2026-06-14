@@ -54,6 +54,11 @@ from sidekick.models import (
 )
 
 from sidekick import utils
+from sidekick.utils import (
+    get_clickhouse_service_graph,
+    get_clickhouse_service_group_bandwidth,
+    _service_has_clickhouse_backend,
+)
 
 
 # Logical System Index
@@ -240,7 +245,21 @@ class NetworkServiceGraphiteDataView(PermissionRequiredMixin, View):
     model = NetworkService
 
     def get(self, request, pk):
-        graphite_render_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_render_host', None)
+        config = settings.PLUGINS_CONFIG.get('sidekick', {})
+        use_clickhouse, ch_client = _service_has_clickhouse_backend(settings)
+
+        if use_clickhouse and ch_client:
+            network_service = NetworkService.objects.get(pk=self.kwargs['pk'])
+            period = request.GET.get('period', '-1y')
+            graph_data = get_clickhouse_service_graph(network_service, ch_client, period)
+            if graph_data is None:
+                return JsonResponse({})
+            return JsonResponse({
+                'graph_data': graph_data,
+            })
+
+        # Fall back to Graphite
+        graphite_render_host = config.get('graphite_render_host', None)
         if graphite_render_host is None:
             return JsonResponse({})
 
@@ -257,11 +276,33 @@ class NetworkServiceGroupGraphiteDataView(PermissionRequiredMixin, View):
     model = NetworkServiceGroup
 
     def get(self, request, pk):
-        graphite_render_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_render_host', None)
+        config = settings.PLUGINS_CONFIG.get('sidekick', {})
+        use_clickhouse, ch_client = _service_has_clickhouse_backend(settings)
+
+        period = utils.get_period(request) or '-1y'
+
+        if use_clickhouse and ch_client:
+            service_group = NetworkServiceGroup.objects.get(pk=self.kwargs['pk'])
+            results = get_clickhouse_service_group_bandwidth(ch_client, service_group, period)
+            if results is None:
+                return JsonResponse({})
+            return JsonResponse({
+                'graph_data': {
+                    'service_data': results['service_data']['data'],
+                    'accounting_data': results['accounting_data']['data'],
+                    'remaining_data': results['remaining_data']['data'],
+                },
+                'queries': {
+                    'service_data': results['service_data']['query'],
+                    'accounting_data': results['accounting_data']['query'],
+                    'remaining_data': results['remaining_data']['query'],
+                },
+            })
+
+        # Fall back to Graphite
+        graphite_render_host = config.get('graphite_render_host', None)
         if graphite_render_host is None:
             return JsonResponse({})
-
-        period = utils.get_period(request)
 
         services_by_member = {}
         accounting_by_member = {}

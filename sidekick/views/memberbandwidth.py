@@ -13,6 +13,10 @@ from sidekick.models import (
 )
 
 from sidekick import utils
+from sidekick.utils import (
+    get_clickhouse_member_bandwidth,
+    _service_has_clickhouse_backend,
+)
 
 from tenancy.models import Tenant
 
@@ -49,18 +53,40 @@ class MemberBandwidthDataView(PermissionRequiredMixin, View):
     model = NetworkService
 
     def get(self, request, pk):
-        graphite_render_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_render_host', None)
+        member = Tenant.objects.get(pk=pk)
+        services = utils.get_services_for_graphite(member)
+        accounting_sources = utils.get_accounting_sources(member)
+        period = utils.get_period(request) or '-1y'
+
+        use_clickhouse, ch_client = _service_has_clickhouse_backend(settings)
+
+        if use_clickhouse and ch_client:
+            # ClickHouse path
+            results = get_clickhouse_member_bandwidth(ch_client, member, services, accounting_sources, period)
+            if results is None:
+                return JsonResponse({})
+            return JsonResponse({
+                'graph_data': {
+                    'service_data': results['service_data']['data'],
+                    'accounting_data': results['accounting_data']['data'],
+                    'remaining_data': results['remaining_data']['data'],
+                },
+                'queries': {
+                    'service_data': results['service_data']['query'],
+                    'accounting_data': results['accounting_data']['query'],
+                    'remaining_data': results['remaining_data']['query'],
+                },
+            })
+
+        # Fall back to Graphite
+        graphite_render_host = settings.PLUGINS_CONFIG.get('sidekick', {}).get('graphite_render_host', None)
         if graphite_render_host is None:
             return JsonResponse({})
 
-        member = Tenant.objects.get(pk=pk)
-        services = utils.get_services_for_graphite(member)
-        period = utils.get_period(request)
         (services_in, services_out) = utils.format_graphite_service_query(services)
         service_data = utils.get_graphite_data(graphite_render_host, [services_in], [services_out], period)
 
         accounting_data = None
-        accounting_sources = utils.get_accounting_sources(member)
         if len(accounting_sources) > 0:
             (accounting_in, accounting_out) = utils.format_graphite_accounting_query(accounting_sources)
             accounting_data = utils.get_graphite_data(graphite_render_host, [accounting_in], [accounting_out], period)

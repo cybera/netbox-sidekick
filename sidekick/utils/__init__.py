@@ -909,23 +909,25 @@ def _get_interface_ids_for_service(ch_client, member_name, service_name):
 
 def _get_accounting_source_ids(ch_client, accounting_sources):
     """Query dim_accounting_sources to find accounting_source_ids for given AccountingSource objects.
-    
+
     Returns a list of accounting_source_id strings for use in an IN clause.
     Uses (source_name, destination_name) pairs for the lookup.
+
+    NOTE: destination_name is the raw CharField value from the model, not a related object's name.
     """
     if not accounting_sources:
         return []
-    
+
     conditions = []
     for acct in accounting_sources:
         source_name = getattr(acct, 'name', '')
-        dest = getattr(acct, 'destination', None)
-        dest_name = getattr(dest, 'name', '') if dest else ''
+        # destination is a CharField on the model, not a ForeignKey
+        dest_name = getattr(acct, 'destination', '') or ''
         conditions.append(
             f"(source_name = {_escape_clickhouse_string(source_name)} "
             f"AND destination_name = {_escape_clickhouse_string(dest_name)})"
         )
-    
+
     query = (
         f"SELECT accounting_source_id FROM dim_accounting_sources "
         f"WHERE {' OR '.join(conditions)}"

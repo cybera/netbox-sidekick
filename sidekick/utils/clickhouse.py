@@ -47,7 +47,8 @@ class ClickHouseHTTP:
             ) from e
 
     def execute(self, query: str) -> str:
-        url = f"{self.base_url}/"
+        params = {"database": self.database}
+        url = f"{self.base_url}/?{urllib.parse.urlencode(params)}"
         return self._request(url, data=query.encode("utf-8"), content_type="text/plain; charset=utf-8")
 
     def execute_scalar_u8(self, query: str) -> int:
@@ -60,6 +61,6 @@ class ClickHouseHTTP:
             json.dumps(r, separators=(",", ":"), ensure_ascii=False) + "\n" for r in rows
         ).encode("utf-8")
         query = f"INSERT INTO {table} FORMAT JSONEachRow"
-        params = {"query": query}
+        params = {"database": self.database, "query": query}
         url = f"{self.base_url}/?{urllib.parse.urlencode(params)}"
         self._request(url, data=payload, content_type="application/json")

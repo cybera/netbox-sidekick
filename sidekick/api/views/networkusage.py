@@ -11,6 +11,7 @@ from netbox.api.authentication import TokenAuthentication
 from sidekick import utils
 from sidekick.utils import (
     get_clickhouse_member_bandwidth,
+    get_clickhouse_service_group_bandwidth,
     _service_has_clickhouse_backend,
 )
 from sidekick.models import (

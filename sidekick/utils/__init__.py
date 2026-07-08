@@ -907,6 +907,52 @@ def _get_interface_ids_for_service(ch_client, member_name, service_name):
     return ids
 
 
+def _get_interface_ids_for_services(ch_client, member_name, service_names):
+    """Batched: resolve interface_ids for all services of a member in one query.
+    
+    Replaces the N+1 pattern of calling _get_interface_ids_for_service per service.
+    Returns a list of interface_id strings for use in an IN clause.
+    """
+    if not service_names:
+        return []
+    names_csv = ', '.join(_escape_clickhouse_string(s) for s in service_names)
+    query = (
+        f"SELECT interface_id FROM dim_interface_labels "
+        f"WHERE member_name = {_escape_clickhouse_string(member_name)} "
+        f"AND service_name IN ({names_csv})"
+    )
+    rows, _ = _execute_clickhouse(ch_client, query)
+    return [str(r[0]) for r in rows if r and r[0] is not None]
+
+
+def _get_interface_ids_for_member_services(ch_client, member_services):
+    """Batched: resolve interface_ids for multiple members and their services.
+    
+    Takes a dict of {member_name: [service_name, ...]} and resolves all
+    interface_ids in a single query using tuple IN syntax.
+    Returns a list of interface_id strings for use in an IN clause.
+    """
+    if not member_services:
+        return []
+    conditions = []
+    for member_name, svc_names in member_services.items():
+        if not svc_names:
+            continue
+        names_csv = ', '.join(_escape_clickhouse_string(s) for s in svc_names)
+        conditions.append(
+            f"(member_name = {_escape_clickhouse_string(member_name)} "
+            f"AND service_name IN ({names_csv}))"
+        )
+    if not conditions:
+        return []
+    query = (
+        f"SELECT interface_id FROM dim_interface_labels "
+        f"WHERE {' OR '.join(conditions)}"
+    )
+    rows, _ = _execute_clickhouse(ch_client, query)
+    return [str(r[0]) for r in rows if r and r[0] is not None]
+
+
 def _get_accounting_source_ids(ch_client, accounting_sources):
     """Query dim_accounting_sources to find accounting_source_ids for given AccountingSource objects.
 
@@ -1148,9 +1194,8 @@ def get_clickhouse_member_bandwidth(ch_client, member, services, accounting_sour
 
     # --- 1. Service Data ---
     service_interface_ids = []
-    for svc in services:
-        ids = _get_interface_ids_for_service(ch_client, member_name, svc.name)
-        service_interface_ids.extend(ids)
+    svc_names = [getattr(svc, 'name', str(svc)) for svc in services]
+    service_interface_ids = _get_interface_ids_for_services(ch_client, member_name, svc_names)
     service_interface_ids = list(set(service_interface_ids))
 
     svc_rows = []
@@ -1288,19 +1333,13 @@ def get_clickhouse_service_group_bandwidth(ch_client, service_group, period="-1y
             member_accounting_map[member_name] = get_accounting_sources(member)
 
     # Resolve all interface IDs and accounting source IDs now that the maps are built
-    all_service_interface_ids = []
+    all_service_interface_ids = _get_interface_ids_for_member_services(ch_client, member_services_map)
+    all_service_interface_ids = list(set(all_service_interface_ids))
+
     all_accounting_source_ids = []
-
-    for member_name, svc_names in member_services_map.items():
-        for svc_name in svc_names:
-            ids = _get_interface_ids_for_service(ch_client, member_name, svc_name)
-            all_service_interface_ids.extend(ids)
-
     for member_name, acct_sources in member_accounting_map.items():
         ids = _get_accounting_source_ids(ch_client, acct_sources)
         all_accounting_source_ids.extend(ids)
-
-    all_service_interface_ids = list(set(all_service_interface_ids))
     all_accounting_source_ids = list(set(all_accounting_source_ids))
 
     # --- 1. Service Data (sum across all interfaces in the group) ---

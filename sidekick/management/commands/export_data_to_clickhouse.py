@@ -9,7 +9,7 @@ from django.utils.text import slugify
 
 from dcim.models import Interface
 
-from sidekick.models import NetworkServiceDevice, AccountingSource
+from sidekick.models import NetworkServiceDevice, AccountingSource, AccountingProfile
 from sidekick.utils.clickhouse import ClickHouseHTTP, now_utc_str
 
 
@@ -88,6 +88,8 @@ def ensure_accounting_table(ch: ClickHouseHTTP, full_name: str) -> None:
           source_name String,
           destination_name String,
           graphite_prefix String,
+          member_name Nullable(String),
+          member_slug Nullable(String),
           updated_at DateTime
         )
         ENGINE = ReplacingMergeTree(updated_at)
@@ -295,12 +297,24 @@ class Command(BaseCommand):
             else:
                 ensure_accounting_table(ch, target_acc_table)
 
+        # Build AccountingSource to Member mapping
+        acc_member_map = {}
+        for profile in AccountingProfile.objects.select_related('member').prefetch_related('accounting_sources'):
+            if profile.member:
+                for src in profile.accounting_sources.all():
+                    acc_member_map[src.id] = {
+                        'name': profile.member.name,
+                        'slug': slugify(profile.member.name)
+                    }
+
         acc_rows = []
         acc_count = 0
         for acc in AccountingSource.objects.select_related("device"):
             graphite_prefix = "accounting.{}.{}".format(
                 acc.graphite_name(),
                 acc.graphite_destination_name())
+
+            member_info = acc_member_map.get(acc.id, {})
 
             acc_rows.append({
                 "accounting_source_id": acc.id,
@@ -309,6 +323,8 @@ class Command(BaseCommand):
                 "source_name": acc.name,
                 "destination_name": acc.destination,
                 "graphite_prefix": graphite_prefix,
+                "member_name": member_info.get('name'),
+                "member_slug": member_info.get('slug'),
                 "updated_at": now_utc_str(),
             })
             acc_count += 1

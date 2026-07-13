@@ -365,9 +365,6 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"Dry run complete. Would export {count:,} interfaces and {acc_count:,} accounting sources."
             )
-        elif options["verbose"]:
-            self.stdout.write(f"Exported {count:,} interfaces to {target_table}.")
-            self.stdout.write(f"Exported {acc_count:,} accounting sources to {target_acc_table}.")
 
     def _flush_rows(self, ch: ClickHouseHTTP, target_table: str, rows: List[Dict[str, Any]]) -> None:
         ch.insert_json_each_row(target_table, rows)

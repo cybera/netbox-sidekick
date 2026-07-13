@@ -297,7 +297,15 @@ class Command(BaseCommand):
             else:
                 ensure_accounting_table(ch, target_acc_table)
 
-        # Build AccountingSource to Member mapping
+        # Build AccountingSource to Member mapping from AccountingProfile links.
+        # An AccountingProfile links a Tenant (member) to one or more
+        # AccountingSources. However, the same SCU/DCU class (identified by
+        # AccountingSource.name) can exist on multiple devices (e.g., an old
+        # MX480 and a new core router). Typically only the source on the newer
+        # device is linked to an AccountingProfile, leaving the old-device
+        # source's member_name NULL. To fix this, after building the direct
+        # mapping we backfill from siblings: any unlinked source whose name
+        # matches a linked source inherits that source's member info.
         acc_member_map = {}
         for profile in AccountingProfile.objects.select_related('member').prefetch_related('accounting_sources'):
             if profile.member:
@@ -306,6 +314,21 @@ class Command(BaseCommand):
                         'name': profile.member.name,
                         'slug': slugify(profile.member.name)
                     }
+
+        # Backfill: build a name → member_info lookup from linked sources,
+        # then propagate to unlinked sources with the same SCU/DCU class name.
+        if acc_member_map:
+            name_to_member = {}
+            for src in AccountingSource.objects.filter(id__in=list(acc_member_map.keys())):
+                name_to_member[src.name] = acc_member_map[src.id]
+
+            backfilled = 0
+            for src in AccountingSource.objects.exclude(id__in=list(acc_member_map.keys())):
+                if src.name in name_to_member:
+                    acc_member_map[src.id] = name_to_member[src.name]
+                    backfilled += 1
+            if backfilled and options['verbose']:
+                self.stdout.write(f"Backfilled member info for {backfilled} AccountingSources from siblings.")
 
         acc_rows = []
         acc_count = 0

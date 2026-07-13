@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS pmacct.dim_accounting_sources
   source_name String,
   destination_name String,
   graphite_prefix String,
+  member_name Nullable(String),
+  member_slug Nullable(String),
   updated_at DateTime
 )
 ENGINE = ReplacingMergeTree(updated_at)

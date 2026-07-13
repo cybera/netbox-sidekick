@@ -536,6 +536,23 @@ class Command(BaseCommand):
                             m1 = getattr(e1, cat, None)
                             m2 = getattr(e2, cat, None)
                             if m1 is not None and m2 is not None:
+                                # Counter-wrap / reset detection.
+                                # The ifHC* octet & packet counters are 64-bit and cannot
+                                # legitimately wrap within any realistic timeframe, so a
+                                # decrease (m1 < m2) always indicates a device reboot or
+                                # interface flap/reset during the polling interval. The
+                                # per-second rate across such a discontinuity is undefined;
+                                # emitting it produces multi-Tb/s spikes in Grafana. Skip
+                                # the delta entirely for this metric/interval instead.
+                                # (32-bit counters like ifInNUcastPkts/ifOutErrors are
+                                # also handled here: skipping one 5-min bucket on a wrap
+                                # is preferable to a garbage rate.)
+                                if m1 < m2:
+                                    # Counter reset: skip the delta for this
+                                    # metric/interval to avoid a spike. See
+                                    # ADR 003 for full rationale.
+                                    continue
+
                                 diff = (m1 - m2)
 
                                 if diff != 0:
@@ -592,6 +609,10 @@ class Command(BaseCommand):
                                 m1 = getattr(e1, cat, None)
                                 m2 = getattr(e2, cat, None)
                                 if m1 is not None and m2 is not None:
+                                    # Same counter-reset guard as above: a decrease
+                                    # means the device rebooted / interface flapped.
+                                    if m1 < m2:
+                                        continue
                                     diff = (m1 - m2)
                                     if diff != 0:
                                         diff = diff / total_seconds

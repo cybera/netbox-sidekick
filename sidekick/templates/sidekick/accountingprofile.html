@@ -34,9 +34,33 @@
               <td>{{ object.get_current_bandwidth_profile.burst_limit }}</td>
             </tr>
             <tr>
+              <td>Billable</td>
+              <td>{{ object.get_current_bandwidth_profile.billable }}</td>
+            </tr>
+            <tr>
               <td>Comments</td>
               <td>{{ object.comments }}</td>
             </tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h5 class="card-header">Accounting Sources</h5>
+        <div class="card-body table-responsive">
+          <table class="table table-hover attr-table">
+            <tr>
+              <td>Device</td>
+              <td>Source (SCU/DCU Class)</td>
+              <td>Destination</td>
+            </tr>
+            {% for src in object.accounting_sources.all %}
+            <tr>
+              <td>{{ src.device.name }}</td>
+              <td>{{ src.name }}</td>
+              <td>{{ src.destination }}</td>
+            </tr>
+            {% endfor %}
           </table>
         </div>
       </div>

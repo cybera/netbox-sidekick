@@ -22,6 +22,10 @@
               <td>{{ object.accounting_profile.member }}</td>
             </tr>
             <tr>
+              <td>Accounting Profile</td>
+              <td><a href="{{ object.accounting_profile.get_absolute_url }}">{{ object.accounting_profile }}</a></td>
+            </tr>
+            <tr>
               <td>Effective Date</td>
               <td>{{ object.effective_date }}</td>
             </tr>
@@ -37,6 +41,26 @@
               <td>Comments</td>
               <td>{{ object.comments }}</td>
             </tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h5 class="card-header">Accounting Sources</h5>
+        <div class="card-body table-responsive">
+          <table class="table table-hover attr-table">
+            <tr>
+              <td>Device</td>
+              <td>Source (SCU/DCU Class)</td>
+              <td>Destination</td>
+            </tr>
+            {% for src in object.accounting_profile.accounting_sources.all %}
+            <tr>
+              <td>{{ src.device.name }}</td>
+              <td>{{ src.name }}</td>
+              <td>{{ src.destination }}</td>
+            </tr>
+            {% endfor %}
           </table>
         </div>
       </div>
@@ -58,12 +82,14 @@
               <td>Date</td>
               <td>Traffic Cap</td>
               <td>Burst Limit</td>
+              <td>Billable</td>
             </tr>
-            {% for v in object.bandwidthprofile_set.all %}
+            {% for v in object.accounting_profile.bandwidthprofile_set.all|dictsort:"effective_date" %}
             <tr>
               <td><a href="{{ v.get_absolute_url }}">{{ v.effective_date }}</a></td>
               <td>{{ v.traffic_cap }}</td>
               <td>{{ v.burst_limit }}</td>
+              <td>{{ v.billable }}</td>
             </tr>
             {% endfor %}
           </table>

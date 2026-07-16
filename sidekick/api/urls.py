@@ -16,6 +16,7 @@ from .views import (
     NetworkServiceL3ViewSet,
     NetworkServiceGroupViewSet,
     NetworkServiceAdvertisedPrefixes,
+    NetworkServiceFastNetMonData,
     NetworkUsageListGroupsView,
     NetworkUsageListMembersView,
     NetworkUsageGroupView,
@@ -53,4 +54,5 @@ urlpatterns += [
     path('networkusage/group/<int:group_id>/', NetworkUsageGroupView.as_view(), name='networkusage_group'),
     path('nics/device/<int:device>/', NICListView.as_view(), name='nic_list_by_device'),
     path('advertised_prefixes/', NetworkServiceAdvertisedPrefixes.as_view(), name='networkservice_advertised_prefixes'),
+    path('fastnetmon_data/', NetworkServiceFastNetMonData.as_view(), name='networkservice_fastnetmon_data'),
 ]

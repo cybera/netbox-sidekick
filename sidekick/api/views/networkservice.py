@@ -98,6 +98,12 @@ class NetworkServiceDuplicateInterfaces(APIView):
 
 
 class NetworkServiceAdvertisedPrefixes(APIView):
+    """Returns advertised prefixes as plain text (one CIDR per line).
+
+    Query params:
+        service_type: repeatable, defaults to ['transit', 'c-all']
+        version: 4 (default) or 6
+    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     renderer_classes = (PlainTextRenderer,)
@@ -121,3 +127,120 @@ class NetworkServiceAdvertisedPrefixes(APIView):
                     prefixes.append(p)
 
         return Response("\n".join(prefixes))
+
+
+class NetworkServiceFastNetMonData(APIView):
+    """Returns a consolidated JSON payload for FastNetMon configuration.
+
+    This endpoint serves two purposes in a single call:
+
+    1. **all_prefixes**: A flat, sorted, deduplicated list of all advertised
+       prefixes from active transit/c-all network services. This is the source
+       of truth for FastNetMon's `networks_list` (Phase 2: replaces the manual
+       `fcli set main networks_list` procedure documented in the FNM SOP).
+
+    2. **members**: A per-member breakdown with transit cap and prefixes, for
+       building per-member FastNetMon hostgroups with thresholds derived from
+       contracted rates (Phase 3: `threshold_mbps = traffic_cap * multiplier`).
+
+    Query params:
+        service_type: repeatable, defaults to ['transit', 'c-all']
+        include_traffic_cap: if true (default), resolve the current
+            BandwidthProfile.traffic_cap for each member via the
+            NetworkService.accounting_profile relationship.
+
+    Response shape::
+
+        {
+          "all_prefixes": ["199.216.82.0/24", ...],
+          "members": [
+            {
+              "member_name": "Some Member",
+              "member_slug": "somemember",
+              "traffic_cap_mbps": 1000,
+              "has_traffic_cap": true,
+              "prefixes": ["199.216.82.0/24", ...]
+            },
+            ...
+          ]
+        }
+    """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    renderer_classes = (JSONRenderer,)
+
+    def get(self, request):
+        import re
+
+        service_type = request.query_params.getlist('service_type', ['transit', 'c-all'])
+        if not isinstance(service_type, list):
+            service_type = [service_type]
+
+        version = request.query_params.get('version', 4)
+        try:
+            version = int(version)
+        except ValueError:
+            version = 4
+
+        all_prefixes = set()
+        members = {}
+
+        services = NetworkService.objects.filter(
+            active=True,
+            network_service_type__name__in=service_type,
+        ).select_related(
+            'member',
+            'accounting_profile',
+        )
+
+        for ns in services:
+            # Resolve prefixes for this service.
+            ns_prefixes = []
+            for prefix in ns.get_prefixes(version=version):
+                p = str(prefix)
+                ns_prefixes.append(p)
+                all_prefixes.add(p)
+
+            # Resolve the member. NetworkServiceL3 may override the member for
+            # peering connections, but at the NetworkService level the member
+            # is the service owner.
+            if ns.member is None:
+                continue
+
+            member_name = ns.member.name
+            member_slug = re.sub(r'[^a-zA-Z0-9]', '', member_name).lower()
+
+            if member_slug not in members:
+                # Resolve the traffic cap from the accounting profile's current
+                # bandwidth profile (most recent effective_date <= now).
+                traffic_cap = None
+                if ns.accounting_profile is not None:
+                    bp = ns.accounting_profile.get_current_bandwidth_profile()
+                    if bp is not None and bp.traffic_cap is not None:
+                        traffic_cap = bp.traffic_cap
+
+                members[member_slug] = {
+                    'member_name': member_name,
+                    'member_slug': member_slug,
+                    'traffic_cap_mbps': traffic_cap,
+                    'has_traffic_cap': traffic_cap is not None,
+                    'prefixes': set(),
+                }
+
+            members[member_slug]['prefixes'].update(ns_prefixes)
+
+        # Build the response: convert sets to sorted lists.
+        members_list = []
+        for slug, data in sorted(members.items()):
+            members_list.append({
+                'member_name': data['member_name'],
+                'member_slug': slug,
+                'traffic_cap_mbps': data['traffic_cap_mbps'],
+                'has_traffic_cap': data['has_traffic_cap'],
+                'prefixes': sorted(data['prefixes']),
+            })
+
+        return Response({
+            'all_prefixes': sorted(all_prefixes),
+            'members': members_list,
+        })

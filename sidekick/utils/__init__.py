@@ -888,98 +888,65 @@ def _execute_clickhouse(ch_client, query):
         return [], full_query
 
 
-def _get_interface_ids_for_service(ch_client, member_name, service_name):
-    """Query dim_interface_labels to find all interface_ids for a given member+service.
-    
+def _get_interface_ids_for_service(ch_client, service_id):
+    """Query dim_interface_labels to find all interface_ids for a given service.
+
+    Resolves by the immutable NetworkService PK (service_id), NOT by name.
+    dim_interface_labels stores service_id (populated by export_data_to_clickhouse)
+    and the service_id -> interface_id mapping is unchanged by a rename, so this
+    lookup survives a service rename even between dim-table re-exports. See ADR-010.
+
     Returns a list of interface_id strings for use in an IN clause.
     Logs a warning if no results found (dimension table may be out of sync).
     """
     query = (
         f"SELECT interface_id FROM dim_interface_labels "
-        f"WHERE member_name = {_escape_clickhouse_string(member_name)} "
-        f"AND service_name = {_escape_clickhouse_string(service_name)}"
+        f"WHERE service_id = {int(service_id)}"
     )
     rows, _ = _execute_clickhouse(ch_client, query)
     ids = [str(r[0]) for r in rows if r and r[0] is not None]
     if not ids:
-        _ch_logger.warning("No interface_ids found for member='%s' service='%s' — check dim_interface_labels",
-                          member_name, service_name)
+        _ch_logger.warning("No interface_ids found for service_id=%s — check dim_interface_labels",
+                          service_id)
     return ids
 
 
-def _get_interface_ids_for_services(ch_client, member_name, service_names):
-    """Batched: resolve interface_ids for all services of a member in one query.
-    
-    Replaces the N+1 pattern of calling _get_interface_ids_for_service per service.
+def _get_interface_ids_for_services(ch_client, service_ids):
+    """Batched: resolve interface_ids for all given services in one query.
+
+    Resolves by the immutable NetworkService PK (service_id), NOT by name —
+    rename-proof between dim-table re-exports. See ADR-010.
+
     Returns a list of interface_id strings for use in an IN clause.
     """
-    if not service_names:
+    if not service_ids:
         return []
-    names_csv = ', '.join(_escape_clickhouse_string(s) for s in service_names)
+    ids_csv = ', '.join(str(int(s)) for s in service_ids)
     query = (
         f"SELECT interface_id FROM dim_interface_labels "
-        f"WHERE member_name = {_escape_clickhouse_string(member_name)} "
-        f"AND service_name IN ({names_csv})"
-    )
-    rows, _ = _execute_clickhouse(ch_client, query)
-    return [str(r[0]) for r in rows if r and r[0] is not None]
-
-
-def _get_interface_ids_for_member_services(ch_client, member_services):
-    """Batched: resolve interface_ids for multiple members and their services.
-    
-    Takes a dict of {member_name: [service_name, ...]} and resolves all
-    interface_ids in a single query using tuple IN syntax.
-    Returns a list of interface_id strings for use in an IN clause.
-    """
-    if not member_services:
-        return []
-    conditions = []
-    for member_name, svc_names in member_services.items():
-        if not svc_names:
-            continue
-        names_csv = ', '.join(_escape_clickhouse_string(s) for s in svc_names)
-        conditions.append(
-            f"(member_name = {_escape_clickhouse_string(member_name)} "
-            f"AND service_name IN ({names_csv}))"
-        )
-    if not conditions:
-        return []
-    query = (
-        f"SELECT interface_id FROM dim_interface_labels "
-        f"WHERE {' OR '.join(conditions)}"
+        f"WHERE service_id IN ({ids_csv})"
     )
     rows, _ = _execute_clickhouse(ch_client, query)
     return [str(r[0]) for r in rows if r and r[0] is not None]
 
 
 def _get_accounting_source_ids(ch_client, accounting_sources):
-    """Query dim_accounting_sources to find accounting_source_ids for given AccountingSource objects.
+    """Return accounting_source_ids for given AccountingSource objects.
+
+    The fact and dim tables key accounting rows on ``accounting_source_id``,
+    which is the immutable NetBox ``AccountingSource.id`` PK (written by
+    export_data_to_clickhouse.py). Resolve directly by id — no dim lookup, no
+    name matching — so this is immune to source_name/destination edits and to
+    dim-table re-export lag. See ADR-010.
 
     Returns a list of accounting_source_id strings for use in an IN clause.
-    Uses (source_name, destination_name) pairs for the lookup.
-
-    NOTE: destination_name is the raw CharField value from the model, not a related object's name.
     """
-    if not accounting_sources:
-        return []
-
-    conditions = []
-    for acct in accounting_sources:
-        source_name = getattr(acct, 'name', '')
-        # destination is a CharField on the model, not a ForeignKey
-        dest_name = getattr(acct, 'destination', '') or ''
-        conditions.append(
-            f"(source_name = {_escape_clickhouse_string(source_name)} "
-            f"AND destination_name = {_escape_clickhouse_string(dest_name)})"
-        )
-
-    query = (
-        f"SELECT accounting_source_id FROM dim_accounting_sources "
-        f"WHERE {' OR '.join(conditions)}"
-    )
-    rows, _ = _execute_clickhouse(ch_client, query)
-    return [str(r[0]) for r in rows if r and r[0] is not None]
+    # No ClickHouse query needed: accounting_source_id == AccountingSource.id.
+    return [
+        str(int(acct.id))
+        for acct in accounting_sources
+        if getattr(acct, 'id', None) is not None
+    ]
 
 
 def _transpose_to_uplot(rows):
@@ -1193,8 +1160,9 @@ def get_clickhouse_member_bandwidth(ch_client, member, services, accounting_sour
 
     # --- 1. Service Data ---
     service_interface_ids = []
-    svc_names = [getattr(svc, 'name', str(svc)) for svc in services]
-    service_interface_ids = _get_interface_ids_for_services(ch_client, member_name, svc_names)
+    svc_ids = [getattr(svc, 'id', None) for svc in services]
+    svc_ids = [sid for sid in svc_ids if sid is not None]
+    service_interface_ids = _get_interface_ids_for_services(ch_client, svc_ids)
     service_interface_ids = list(set(service_interface_ids))
 
     svc_rows = []
@@ -1316,29 +1284,26 @@ def get_clickhouse_service_group_bandwidth(ch_client, service_group, period="-1y
         'remaining_data': {'data': [[], [], [], [], []], 'query': ''},
     }
 
-    # Collect all unique member+service pairs and their accounting sources
-    member_services_map = {}    # member_name -> [service_name, ...]
-    member_accounting_map = {}  # member_name -> [AccountingSource, ...]
+    # Collect all service ids (immutable PKs) and accounting sources in the group.
+    # service_id is globally unique, so member grouping is not needed for
+    # interface resolution — a flat service_id IN (...) resolves all interfaces
+    # across every member in the group, rename-proof between dim re-exports.
+    all_service_ids = []
+    all_accounting_sources = []
 
     for network_service in service_group.network_services.all():
+        sid = getattr(network_service, 'id', None)
+        if sid is not None:
+            all_service_ids.append(sid)
         member = network_service.member
-        member_name = member.name
+        if member is not None:
+            all_accounting_sources.extend(get_accounting_sources(member))
 
-        if member_name not in member_services_map:
-            member_services_map[member_name] = []
-        member_services_map[member_name].append(network_service.name)
-
-        if member_name not in member_accounting_map:
-            member_accounting_map[member_name] = get_accounting_sources(member)
-
-    # Resolve all interface IDs and accounting source IDs now that the maps are built
-    all_service_interface_ids = _get_interface_ids_for_member_services(ch_client, member_services_map)
+    # Resolve all interface IDs and accounting source IDs
+    all_service_interface_ids = _get_interface_ids_for_services(ch_client, all_service_ids)
     all_service_interface_ids = list(set(all_service_interface_ids))
 
-    all_accounting_source_ids = []
-    for member_name, acct_sources in member_accounting_map.items():
-        ids = _get_accounting_source_ids(ch_client, acct_sources)
-        all_accounting_source_ids.extend(ids)
+    all_accounting_source_ids = _get_accounting_source_ids(ch_client, all_accounting_sources)
     all_accounting_source_ids = list(set(all_accounting_source_ids))
 
     # --- 1. Service Data (sum across all interfaces in the group) ---

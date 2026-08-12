@@ -1100,26 +1100,26 @@ def get_clickhouse_service_graph(service, ch_client, period="-1Y"):
     
     Queries all interfaces for a single NetworkService from nic_metrics_unified.
     Returns the same JSON shape as get_graphite_service_graph.
+
+    Resolution is by the immutable NetworkService PK (service_id), NOT by name.
+    dim_interface_labels stores service_id (populated by export_data_to_clickhouse)
+    and the service_id -> interface_id mapping is unchanged by a rename, so this
+    lookup survives a service rename even between dim-table re-exports. Resolving
+    by the service_name string instead would silently return an empty graph after
+    any rename until the dim table is next re-exported. See ADR-010.
     """
     if ch_client is None:
         return None
-    
-    # Get member and service names from the NetworkService model
-    try:
-        member_name = service.member.name
-    except Exception:
-        member_name = None
-    
-    if not member_name:
+
+    service_id = getattr(service, 'id', None)
+    if not service_id:
         return None
-    
-    service_name = getattr(service, 'name', str(service))
-    
+
     interval = _period_to_interval(period)
     if interval is None:
         return None
-    
-    # Sum all interfaces for this service
+
+    # Sum all interfaces for this service (resolved by immutable service_id)
     query = (
         f"SELECT "
         f"    toUnixTimestamp(bucket) AS timestamp, "
@@ -1128,8 +1128,7 @@ def get_clickhouse_service_graph(service, ch_client, period="-1Y"):
         f"FROM nic_metrics_unified "
         f"WHERE interface_id IN ("
         f"    SELECT interface_id FROM dim_interface_labels "
-        f"    WHERE member_name = {_escape_clickhouse_string(member_name)} "
-        f"    AND service_name = {_escape_clickhouse_string(service_name)}"
+        f"    WHERE service_id = {int(service_id)}"
         f") "
         f"AND metric IN ('in_octets', 'out_octets') "
         f"AND ts >= now() - INTERVAL {interval} "

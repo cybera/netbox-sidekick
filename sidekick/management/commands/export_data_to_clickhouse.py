@@ -9,7 +9,7 @@ from django.utils.text import slugify
 
 from dcim.models import Interface
 
-from sidekick.models import NetworkServiceDevice, AccountingSource, AccountingProfile
+from sidekick.models import NetworkService, NetworkServiceDevice, AccountingSource, AccountingProfile
 from sidekick.utils.clickhouse import ClickHouseHTTP, now_utc_str
 
 
@@ -94,6 +94,38 @@ def ensure_accounting_table(ch: ClickHouseHTTP, full_name: str) -> None:
         )
         ENGINE = ReplacingMergeTree(updated_at)
         ORDER BY (accounting_source_id)
+        """
+    )
+
+
+def ensure_members_table(ch: ClickHouseHTTP, full_name: str) -> None:
+    ch.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS {full_name}
+        (
+          member_id UInt32,
+          member_name String,
+          member_slug String,
+          traffic_cap_mbps Nullable(UInt32),
+          updated_at DateTime
+        )
+        ENGINE = ReplacingMergeTree(updated_at)
+        ORDER BY (member_slug)
+        """
+    )
+
+
+def ensure_member_prefixes_table(ch: ClickHouseHTTP, full_name: str) -> None:
+    ch.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS {full_name}
+        (
+          prefix String,
+          member_slug String,
+          updated_at DateTime
+        )
+        ENGINE = ReplacingMergeTree(updated_at)
+        ORDER BY (prefix, member_slug)
         """
     )
 
@@ -361,9 +393,111 @@ class Command(BaseCommand):
         if not options["dry_run"] and use_swap:
             swap_in(ch, insert_acc_table, target_acc_table)
 
+        # Export Members + Member Prefixes (central member dimension)
+        # dim_members: one row per member (Tenant) with current traffic cap.
+        # dim_member_prefixes: one row per (prefix, member_slug) pair from
+        # active transit/c-all network services. FNM attack events JOIN on
+        # this table to attribute an attacked IP to a member.
+        target_members_table = f"{db}.dim_members"
+        target_prefixes_table = f"{db}.dim_member_prefixes"
+        insert_members_table = target_members_table
+        insert_prefixes_table = target_prefixes_table
+
+        if not options["dry_run"]:
+            if use_swap:
+                insert_members_table = target_members_table + "__new"
+                insert_prefixes_table = target_prefixes_table + "__new"
+                ensure_members_table(ch, insert_members_table)
+                ensure_member_prefixes_table(ch, insert_prefixes_table)
+                truncate_table(ch, insert_members_table)
+                truncate_table(ch, insert_prefixes_table)
+            else:
+                ensure_members_table(ch, target_members_table)
+                ensure_member_prefixes_table(ch, target_prefixes_table)
+
+        # Build member rows from active transit/c-all network services.
+        # This mirrors the /fastnetmon_data/ API endpoint's logic but uses
+        # Django slugify() for consistent slugs across all dim_* tables.
+        members_map: Dict[str, Dict[str, Any]] = {}
+        member_prefix_rows: List[Dict[str, Any]] = []
+        member_prefix_count = 0
+
+        services = NetworkService.objects.filter(
+            active=True,
+            network_service_type__name__in=['transit', 'c-all'],
+        ).select_related('member', 'accounting_profile')
+
+        for ns in services:
+            if ns.member is None:
+                continue
+
+            member_name = ns.member.name
+            member_slug = slugify(member_name)
+
+            if member_slug not in members_map:
+                traffic_cap = None
+                if ns.accounting_profile is not None:
+                    bp = ns.accounting_profile.get_current_bandwidth_profile()
+                    if bp is not None and bp.traffic_cap is not None:
+                        traffic_cap = bp.traffic_cap
+
+                members_map[member_slug] = {
+                    'member_id': ns.member.id,
+                    'member_name': member_name,
+                    'member_slug': member_slug,
+                    'traffic_cap_mbps': traffic_cap,
+                    'prefixes': set(),
+                }
+
+            for prefix in ns.get_prefixes(version=4):
+                members_map[member_slug]['prefixes'].add(str(prefix))
+
+            for prefix in ns.get_prefixes(version=6):
+                members_map[member_slug]['prefixes'].add(str(prefix))
+
+        member_rows: List[Dict[str, Any]] = []
+        for slug, data in sorted(members_map.items()):
+            member_rows.append({
+                'member_id': data['member_id'],
+                'member_name': data['member_name'],
+                'member_slug': slug,
+                'traffic_cap_mbps': data['traffic_cap_mbps'],
+                'updated_at': now_utc_str(),
+            })
+            for prefix in sorted(data['prefixes']):
+                member_prefix_rows.append({
+                    'prefix': prefix,
+                    'member_slug': slug,
+                    'updated_at': now_utc_str(),
+                })
+                member_prefix_count += 1
+
+                if not options["dry_run"] and len(member_prefix_rows) >= options["batch_size"]:
+                    self._flush_rows(ch, insert_prefixes_table, member_prefix_rows)
+                    member_prefix_rows = []
+
+            if not options["dry_run"] and len(member_rows) >= options["batch_size"]:
+                self._flush_rows(ch, insert_members_table, member_rows)
+                member_rows = []
+
+        if member_rows and not options["dry_run"]:
+            self._flush_rows(ch, insert_members_table, member_rows)
+
+        if member_prefix_rows and not options["dry_run"]:
+            self._flush_rows(ch, insert_prefixes_table, member_prefix_rows)
+
+        if not options["dry_run"] and use_swap:
+            swap_in(ch, insert_members_table, target_members_table)
+            swap_in(ch, insert_prefixes_table, target_prefixes_table)
+
+        member_count = len(members_map)
+
         if options["dry_run"]:
             self.stdout.write(
-                f"Dry run complete. Would export {count:,} interfaces and {acc_count:,} accounting sources."
+                f"Dry run complete. Would export {count:,} interfaces, "
+                f"{acc_count:,} accounting sources, "
+                f"{member_count:,} members, and "
+                f"{member_prefix_count:,} member prefixes."
             )
 
     def _flush_rows(self, ch: ClickHouseHTTP, target_table: str, rows: List[Dict[str, Any]]) -> None:

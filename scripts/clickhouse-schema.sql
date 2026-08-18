@@ -81,6 +81,33 @@ CREATE TABLE IF NOT EXISTS pmacct.dim_accounting_sources
 ENGINE = ReplacingMergeTree(updated_at)
 ORDER BY (accounting_source_id);
 
+-- Central member dimension: one row per member (Tenant) with traffic cap.
+-- Populated by export_data_to_clickhouse.py from NetworkService + AccountingProfile.
+-- Referenced by dim_accounting_sources, dim_member_prefixes, and FNM attack events.
+CREATE TABLE IF NOT EXISTS pmacct.dim_members
+(
+  member_id UInt32,
+  member_name String,
+  member_slug String,
+  traffic_cap_mbps Nullable(UInt32),
+  updated_at DateTime
+)
+ENGINE = ReplacingMergeTree(updated_at)
+ORDER BY (member_slug);
+
+-- Prefix → member mapping: one row per (prefix, member) pair.
+-- Populated from NetworkService.get_prefixes() for active transit/c-all services.
+-- FNM attack events JOIN on this table to attribute an attacked IP to a member
+-- via isIPAddressInRange(ip, prefix) or IPv4CIDRToRange().
+CREATE TABLE IF NOT EXISTS pmacct.dim_member_prefixes
+(
+  prefix String,
+  member_slug String,
+  updated_at DateTime
+)
+ENGINE = ReplacingMergeTree(updated_at)
+ORDER BY (prefix, member_slug);
+
 -- Unified View for seamless querying of legacy and new data.
 -- Aggregates metrics to prevent duplication and handles multiple samples per time bucket.
 CREATE OR REPLACE VIEW pmacct.nic_metrics_unified AS

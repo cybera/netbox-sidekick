@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
 from rest_framework.views import APIView
 
+from django.utils.text import slugify
+
 from netbox.api.authentication import TokenAuthentication
 from netbox.api.viewsets import NetBoxModelViewSet
 
@@ -170,8 +172,6 @@ class NetworkServiceFastNetMonData(APIView):
     renderer_classes = (JSONRenderer,)
 
     def get(self, request):
-        import re
-
         service_type = request.query_params.getlist('service_type', ['transit', 'c-all'])
         if not isinstance(service_type, list):
             service_type = [service_type]
@@ -208,7 +208,7 @@ class NetworkServiceFastNetMonData(APIView):
                 continue
 
             member_name = ns.member.name
-            member_slug = re.sub(r'[^a-zA-Z0-9]', '', member_name).lower()
+            member_slug = slugify(member_name)
 
             if member_slug not in members:
                 # Resolve the traffic cap from the accounting profile's current

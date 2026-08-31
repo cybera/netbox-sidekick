@@ -1092,11 +1092,8 @@ def get_clickhouse_service_graph(service, ch_client, period="-1Y"):
         f"    toUnixTimestamp(bucket) AS timestamp, "
         f"    sum(CASE WHEN metric = 'in_octets' THEN delta ELSE 0 END) * 8 AS in_bps, "
         f"    sum(CASE WHEN metric = 'out_octets' THEN delta ELSE 0 END) * -8 AS out_bps "
-        f"FROM nic_metrics_unified "
-        f"WHERE interface_id IN ("
-        f"    SELECT interface_id FROM dim_interface_labels "
-        f"    WHERE service_id = {int(service_id)}"
-        f") "
+        f"FROM service_metrics_5m "
+        f"WHERE service_id = {int(service_id)} "
         f"AND metric IN ('in_octets', 'out_octets') "
         f"AND ts >= now() - INTERVAL {interval} "
         f"GROUP BY "
@@ -1159,21 +1156,18 @@ def get_clickhouse_member_bandwidth(ch_client, member, services, accounting_sour
     }
 
     # --- 1. Service Data ---
-    service_interface_ids = []
     svc_ids = [getattr(svc, 'id', None) for svc in services]
     svc_ids = [sid for sid in svc_ids if sid is not None]
-    service_interface_ids = _get_interface_ids_for_services(ch_client, svc_ids)
-    service_interface_ids = list(set(service_interface_ids))
 
     svc_rows = []
-    if service_interface_ids:
+    if svc_ids:
         svc_query = (
             f"SELECT "
             f"    toUnixTimestamp(bucket) AS timestamp, "
             f"    sum(CASE WHEN metric = 'in_octets' THEN delta ELSE 0 END) * 8 AS in_bps, "
             f"    sum(CASE WHEN metric = 'out_octets' THEN delta ELSE 0 END) * -8 AS out_bps "
-            f"FROM nic_metrics_unified "
-            f"WHERE interface_id IN ({', '.join(service_interface_ids)}) "
+            f"FROM service_metrics_5m "
+            f"WHERE service_id IN ({', '.join(str(int(s)) for s in svc_ids)}) "
             f"AND metric IN ('in_octets', 'out_octets') "
             f"AND ts >= now() - INTERVAL {interval} "
             f"GROUP BY toStartOfInterval(ts, toIntervalMinute(5)) AS bucket "
@@ -1299,23 +1293,21 @@ def get_clickhouse_service_group_bandwidth(ch_client, service_group, period="-1y
         if member is not None:
             all_accounting_sources.extend(get_accounting_sources(member))
 
-    # Resolve all interface IDs and accounting source IDs
-    all_service_interface_ids = _get_interface_ids_for_services(ch_client, all_service_ids)
-    all_service_interface_ids = list(set(all_service_interface_ids))
-
+    # Service leg reads service_metrics_5m directly by immutable service_id
+    # (no dim interface resolution needed); accounting leg resolves below.
     all_accounting_source_ids = _get_accounting_source_ids(ch_client, all_accounting_sources)
     all_accounting_source_ids = list(set(all_accounting_source_ids))
 
     # --- 1. Service Data (sum across all interfaces in the group) ---
     svc_rows = []
-    if all_service_interface_ids:
+    if all_service_ids:
         svc_query = (
             f"SELECT "
             f"    toUnixTimestamp(bucket) AS timestamp, "
             f"    sum(CASE WHEN metric = 'in_octets' THEN delta ELSE 0 END) * 8 AS in_bps, "
             f"    sum(CASE WHEN metric = 'out_octets' THEN delta ELSE 0 END) * -8 AS out_bps "
-            f"FROM nic_metrics_unified "
-            f"WHERE interface_id IN ({', '.join(all_service_interface_ids)}) "
+            f"FROM service_metrics_5m "
+            f"WHERE service_id IN ({', '.join(str(int(s)) for s in all_service_ids)}) "
             f"AND metric IN ('in_octets', 'out_octets') "
             f"AND ts >= now() - INTERVAL {interval} "
             f"GROUP BY toStartOfInterval(ts, toIntervalMinute(5)) AS bucket "

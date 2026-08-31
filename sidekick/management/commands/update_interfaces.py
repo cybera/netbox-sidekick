@@ -398,6 +398,7 @@ class Command(BaseCommand):
 
             ch_rows = []
             ch_rows_deltas = []
+            ch_rows_service_deltas = []
 
             # Obtain the counters on each interface.
             # For each interface that is not supposed to be ignored,
@@ -592,6 +593,22 @@ class Command(BaseCommand):
                                                 "delta": float(diff),
                                                 "source": "live_delta"
                                             })
+
+                                            # Service-keyed metric row (service_metrics_5m):
+                                            # write to the immutable service_id at collection
+                                            # time so interface moves/renames need no backfill.
+                                            if nsd.network_service:
+                                                svc = nsd.network_service
+                                                ch_rows_service_deltas.append({
+                                                    "ts": now_utc_str(),
+                                                    "service_id": svc.id,
+                                                    "service_name": svc.name,
+                                                    "member_id": svc.member.id if svc.member else None,
+                                                    "member_name": svc.member.name if svc.member else "",
+                                                    "metric": cat,
+                                                    "delta": float(diff),
+                                                    "source": "live",
+                                                })
                                 
                                 if graphite_host is not None:
                                     graphite_name = f"{graphite_prefix}.{cat}"
@@ -635,3 +652,9 @@ class Command(BaseCommand):
                         ch.insert_json_each_row(f"{ch_db}.nic_deltas_5m", ch_rows_deltas)
                     except Exception as e:
                         self.stdout.write(f"WARNING: ClickHouse insert deltas failed: {e}")
+
+                if ch_rows_service_deltas:
+                    try:
+                        ch.insert_json_each_row(f"{ch_db}.service_metrics_5m", ch_rows_service_deltas)
+                    except Exception as e:
+                        self.stdout.write(f"WARNING: ClickHouse insert service deltas failed: {e}")

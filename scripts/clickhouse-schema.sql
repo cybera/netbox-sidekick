@@ -108,6 +108,32 @@ CREATE TABLE IF NOT EXISTS pmacct.dim_member_prefixes
 ENGINE = ReplacingMergeTree(updated_at)
 ORDER BY (prefix, member_slug);
 
+-- ClickHouse dictionaries for IP → member lookup (used by Grafana dashboards
+-- and FNM attack event attribution). The ip_trie layout enables O(log N)
+-- CIDR prefix lookups via dictGet(). Refreshed every 5-60 minutes from
+-- dim_member_prefixes + dim_members, which are populated by the sidekick
+-- export_data_to_clickhouse management command.
+CREATE DICTIONARY IF NOT EXISTS pmacct.dict_member_prefixes
+(
+  prefix String,
+  member_slug String
+)
+PRIMARY KEY prefix
+LAYOUT(IP_TRIE())
+SOURCE(CLICKHOUSE(QUERY 'SELECT prefix, member_slug FROM pmacct.dim_member_prefixes'))
+LIFETIME(MIN 300 MAX 3600);
+
+CREATE DICTIONARY IF NOT EXISTS pmacct.dict_members
+(
+  member_slug String,
+  member_name String,
+  traffic_cap_mbps Nullable(UInt32)
+)
+PRIMARY KEY member_slug
+LAYOUT(HASHED())
+SOURCE(CLICKHOUSE(QUERY 'SELECT member_slug, member_name, traffic_cap_mbps FROM pmacct.dim_members'))
+LIFETIME(MIN 300 MAX 3600);
+
 -- Unified View for seamless querying of legacy and new data.
 -- Aggregates metrics to prevent duplication and handles multiple samples per time bucket.
 CREATE OR REPLACE VIEW pmacct.nic_metrics_unified AS

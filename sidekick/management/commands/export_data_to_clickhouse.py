@@ -1,40 +1,21 @@
 #!/usr/bin/env python3
 
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.utils.text import slugify
 
-from dcim.models import Interface
-
-from sidekick.models import NetworkService, NetworkServiceDevice, AccountingSource, AccountingProfile
 from sidekick.utils.clickhouse import ClickHouseHTTP, now_utc_str
+from sidekick.utils.dims import (
+    build_accounting_source_rows,
+    build_interface_label_rows,
+    build_member_rows,
+)
 
 
 def sql_str(v: str) -> str:
     return "'" + v.replace("'", "''") + "'"
-
-
-def graphite_device_name(device_name: str) -> str:
-    return (
-        device_name.lower()
-        .replace(" ", "_")
-        .replace(".", "_")
-        .replace("(", "")
-        .replace(")", "")
-    )
-
-
-def graphite_interface_name(interface_name: str) -> str:
-    return (
-        interface_name.lower()
-        .replace("/", "-")
-        .replace(".", "_")
-        .replace("(", "")
-        .replace(")", "")
-    )
 
 
 def table_exists(ch: ClickHouseHTTP, full_name: str) -> bool:
@@ -145,30 +126,8 @@ def swap_in(ch: ClickHouseHTTP, new_table: str, target_table: str) -> None:
         ch.execute(f"RENAME TABLE {new_table} TO {target_table}")
 
 
-def build_service_map() -> Tuple[Dict[Tuple[int, str], NetworkServiceDevice], List[Tuple[int, str]]]:
-    service_map: Dict[Tuple[int, str], NetworkServiceDevice] = {}
-    duplicates: List[Tuple[int, str]] = []
-
-    nsd_qs = (
-        NetworkServiceDevice.objects
-        .select_related("network_service__member", "device")
-        .filter(network_service__active=True)
-    )
-
-    for nsd in nsd_qs:
-        if nsd.device_id is None or not nsd.interface:
-            continue
-        key = (nsd.device_id, nsd.interface)
-        if key in service_map:
-            duplicates.append(key)
-            continue
-        service_map[key] = nsd
-
-    return service_map, duplicates
-
-
 class Command(BaseCommand):
-    help = "Export NetBox interface labels to ClickHouse for ad-hoc querying"
+    help = "Export NetBox dimension data to ClickHouse (interface labels, accounting sources, members, member prefixes). Row-building lives in sidekick.utils.dims so the push and the netflow-side pull (via the clickhouse-dims API endpoint) produce identical rows."
 
     def add_arguments(self, parser):
         sidekick_config = settings.PLUGINS_CONFIG.get('sidekick', {})
@@ -211,7 +170,12 @@ class Command(BaseCommand):
         parser.add_argument(
             "--no-swap",
             action="store_true",
-            help="Insert into the target table directly (skip staging+swap)",
+            help=(
+                "Insert into the target table directly (skip staging+swap). "
+                "Only affects dim_interface_labels and dim_accounting_sources; "
+                "dim_members/dim_member_prefixes are always direct "
+                "(dictionaries depend on them, which blocks RENAME)."
+            ),
         )
         parser.add_argument(
             "--dry-run",
@@ -235,6 +199,20 @@ class Command(BaseCommand):
         )
 
         db = options["database"]
+        batch_size = options["batch_size"]
+
+        def flush_batches(table: str, rows: List[Dict[str, Any]]) -> None:
+            """Stamp updated_at and insert rows in batches."""
+            if options["dry_run"] or not rows:
+                return
+            for row in rows:
+                row["updated_at"] = now_utc_str()
+            for i in range(0, len(rows), batch_size):
+                self._flush_rows(ch, table, rows[i:i + batch_size])
+
+        # ------------------------------------------------------------------
+        # Interface labels (dim_interface_labels)
+        # ------------------------------------------------------------------
         target_table = f"{db}.{options['table']}"
         use_swap = not options["no_swap"]
         insert_table = target_table
@@ -247,78 +225,20 @@ class Command(BaseCommand):
             else:
                 ensure_table(ch, target_table)
 
-        service_map, duplicates = build_service_map()
+        rows, duplicates = build_interface_label_rows()
         if duplicates and options['verbose']:
             self.stdout.write(
                 f"WARNING: {len(duplicates)} duplicate NetworkServiceDevice mappings found; using first instance."
             )
-
-        rows: List[Dict[str, Any]] = []
-        count = 0
-
-        qs = Interface.objects.select_related("device")
-
-        for iface in qs.iterator(chunk_size=2000):
-            device = iface.device
-            if device is None:
-                continue
-
-            device_segment = graphite_device_name(device.name)
-            interface_segment = graphite_interface_name(iface.name)
-            graphite_base = f"{device_segment}.{interface_segment}"
-
-            member_id = None
-            member_name = None
-            member_slug = None
-            service_id = None
-            service_name = None
-            service_slug = None
-            graphite_service_prefix = None
-
-            nsd = service_map.get((device.id, iface.name))
-            if nsd and nsd.network_service:
-                ns = nsd.network_service
-                service_id = ns.id
-                service_name = ns.name
-                service_slug = slugify(ns.name)
-                if ns.member:
-                    member_id = ns.member.id
-                    member_name = ns.member.name
-                    member_slug = slugify(ns.member.name)
-                graphite_service_prefix = f"{ns.graphite_service_name()}.{graphite_base}"
-
-            rows.append(
-                {
-                    "interface_id": iface.id,
-                    "device_id": device.id,
-                    "device_name": device.name,
-                    "interface_name": iface.name,
-                    "device_segment": device_segment,
-                    "interface_segment": interface_segment,
-                    "graphite_base": graphite_base,
-                    "member_id": member_id,
-                    "member_name": member_name,
-                    "member_slug": member_slug,
-                    "service_id": service_id,
-                    "service_name": service_name,
-                    "service_slug": service_slug,
-                    "graphite_service_prefix": graphite_service_prefix,
-                    "updated_at": now_utc_str(),
-                }
-            )
-            count += 1
-
-            if not options["dry_run"] and len(rows) >= options["batch_size"]:
-                self._flush_rows(ch, insert_table, rows)
-                rows = []
-
-        if rows and not options["dry_run"]:
-            self._flush_rows(ch, insert_table, rows)
+        count = len(rows)
+        flush_batches(insert_table, rows)
 
         if not options["dry_run"] and use_swap:
             swap_in(ch, insert_table, target_table)
 
-        # Export Accounting Sources
+        # ------------------------------------------------------------------
+        # Accounting sources (dim_accounting_sources)
+        # ------------------------------------------------------------------
         target_acc_table = f"{db}.dim_accounting_sources"
         insert_acc_table = target_acc_table
         if not options["dry_run"]:
@@ -329,168 +249,67 @@ class Command(BaseCommand):
             else:
                 ensure_accounting_table(ch, target_acc_table)
 
-        # Build AccountingSource to Member mapping from AccountingProfile links.
-        # An AccountingProfile links a Tenant (member) to one or more
-        # AccountingSources. However, the same SCU/DCU class (identified by
-        # AccountingSource.name) can exist on multiple devices (e.g., an old
-        # MX480 and a new core router). Typically only the source on the newer
-        # device is linked to an AccountingProfile, leaving the old-device
-        # source's member_name NULL. To fix this, after building the direct
-        # mapping we backfill from siblings: any unlinked source whose name
-        # matches a linked source inherits that source's member info.
-        acc_member_map = {}
-        for profile in AccountingProfile.objects.select_related('member').prefetch_related('accounting_sources'):
-            if profile.member:
-                for src in profile.accounting_sources.all():
-                    acc_member_map[src.id] = {
-                        'name': profile.member.name,
-                        'slug': slugify(profile.member.name)
-                    }
-
-        # Backfill: build a name → member_info lookup from linked sources,
-        # then propagate to unlinked sources with the same SCU/DCU class name.
-        if acc_member_map:
-            name_to_member = {}
-            for src in AccountingSource.objects.filter(id__in=list(acc_member_map.keys())):
-                name_to_member[src.name] = acc_member_map[src.id]
-
-            backfilled = 0
-            for src in AccountingSource.objects.exclude(id__in=list(acc_member_map.keys())):
-                if src.name in name_to_member:
-                    acc_member_map[src.id] = name_to_member[src.name]
-                    backfilled += 1
-            if backfilled and options['verbose']:
-                self.stdout.write(f"Backfilled member info for {backfilled} AccountingSources from siblings.")
-
-        acc_rows = []
-        acc_count = 0
-        for acc in AccountingSource.objects.select_related("device"):
-            graphite_prefix = "accounting.{}.{}".format(
-                acc.graphite_name(),
-                acc.graphite_destination_name())
-
-            member_info = acc_member_map.get(acc.id, {})
-
-            acc_rows.append({
-                "accounting_source_id": acc.id,
-                "device_id": acc.device.id,
-                "device_name": acc.device.name,
-                "source_name": acc.name,
-                "destination_name": acc.destination,
-                "graphite_prefix": graphite_prefix,
-                "member_name": member_info.get('name'),
-                "member_slug": member_info.get('slug'),
-                "updated_at": now_utc_str(),
-            })
-            acc_count += 1
-            if not options["dry_run"] and len(acc_rows) >= options["batch_size"]:
-                self._flush_rows(ch, insert_acc_table, acc_rows)
-                acc_rows = []
-
-        if acc_rows and not options["dry_run"]:
-            self._flush_rows(ch, insert_acc_table, acc_rows)
+        acc_rows, backfilled = build_accounting_source_rows()
+        if backfilled and options['verbose']:
+            self.stdout.write(f"Backfilled member info for {backfilled} AccountingSources from siblings.")
+        acc_count = len(acc_rows)
+        flush_batches(insert_acc_table, acc_rows)
 
         if not options["dry_run"] and use_swap:
             swap_in(ch, insert_acc_table, target_acc_table)
 
-        # Export Members + Member Prefixes (central member dimension)
+        # ------------------------------------------------------------------
+        # Members + member prefixes (dim_members, dim_member_prefixes)
+        #
         # dim_members: one row per member (Tenant) with current traffic cap.
         # dim_member_prefixes: one row per (prefix, member_slug) pair from
         # active transit/c-all network services. FNM attack events JOIN on
         # this table to attribute an attacked IP to a member.
+        #
+        # NOTE: these two tables are always refreshed with ensure+truncate+
+        # insert directly into the target table — never the staging+swap
+        # pattern, even with --swap (the default). The pmacct.dict_members
+        # and pmacct.dict_member_prefixes dictionaries (FastNetMon attack
+        # attribution, FastNetMon dashboards) declare these tables as
+        # dependencies, and ClickHouse refuses to RENAME tables that have
+        # dependents (HAVE_DEPENDENT_OBJECTS, code 630), which made the
+        # nightly export fail after every swap attempt. Both tables are
+        # tiny (<1k rows) so the non-atomic refresh is harmless: dictionary
+        # readers keep serving cached values across the refresh, and both
+        # dictionaries are reloaded explicitly once the insert completes.
+        # ------------------------------------------------------------------
         target_members_table = f"{db}.dim_members"
         target_prefixes_table = f"{db}.dim_member_prefixes"
-        insert_members_table = target_members_table
-        insert_prefixes_table = target_prefixes_table
 
         if not options["dry_run"]:
-            if use_swap:
-                insert_members_table = target_members_table + "__new"
-                insert_prefixes_table = target_prefixes_table + "__new"
-                ensure_members_table(ch, insert_members_table)
-                ensure_member_prefixes_table(ch, insert_prefixes_table)
-                truncate_table(ch, insert_members_table)
-                truncate_table(ch, insert_prefixes_table)
-            else:
-                ensure_members_table(ch, target_members_table)
-                ensure_member_prefixes_table(ch, target_prefixes_table)
+            # Remove staging leftovers from the swap era: dim_members__new /
+            # dim_member_prefixes__new were populated nightly by the failing
+            # RENAME and are no longer used by this export.
+            ch.execute(f"DROP TABLE IF EXISTS {target_members_table}__new")
+            ch.execute(f"DROP TABLE IF EXISTS {target_prefixes_table}__new")
+            ensure_members_table(ch, target_members_table)
+            ensure_member_prefixes_table(ch, target_prefixes_table)
+            truncate_table(ch, target_members_table)
+            truncate_table(ch, target_prefixes_table)
 
-        # Build member rows from active transit/c-all network services.
-        # This mirrors the /fastnetmon_data/ API endpoint's logic but uses
-        # Django slugify() for consistent slugs across all dim_* tables.
-        members_map: Dict[str, Dict[str, Any]] = {}
-        member_prefix_rows: List[Dict[str, Any]] = []
-        member_prefix_count = 0
+        member_rows, member_prefix_rows = build_member_rows()
+        member_count = len(member_rows)
+        member_prefix_count = len(member_prefix_rows)
+        flush_batches(target_members_table, member_rows)
+        flush_batches(target_prefixes_table, member_prefix_rows)
 
-        services = NetworkService.objects.filter(
-            active=True,
-            network_service_type__name__in=['transit', 'c-all'],
-        ).select_related('member', 'accounting_profile')
-
-        for ns in services:
-            if ns.member is None:
-                continue
-
-            member_name = ns.member.name
-            member_slug = slugify(member_name)
-
-            if member_slug not in members_map:
-                traffic_cap = None
-                if ns.accounting_profile is not None:
-                    bp = ns.accounting_profile.get_current_bandwidth_profile()
-                    if bp is not None and bp.traffic_cap is not None:
-                        traffic_cap = bp.traffic_cap
-
-                members_map[member_slug] = {
-                    'member_id': ns.member.id,
-                    'member_name': member_name,
-                    'member_slug': member_slug,
-                    'traffic_cap_mbps': traffic_cap,
-                    'prefixes': set(),
-                }
-
-            for prefix in ns.get_prefixes(version=4):
-                members_map[member_slug]['prefixes'].add(str(prefix))
-
-            for prefix in ns.get_prefixes(version=6):
-                members_map[member_slug]['prefixes'].add(str(prefix))
-
-        member_rows: List[Dict[str, Any]] = []
-        for slug, data in sorted(members_map.items()):
-            member_rows.append({
-                'member_id': data['member_id'],
-                'member_name': data['member_name'],
-                'member_slug': slug,
-                'traffic_cap_mbps': data['traffic_cap_mbps'],
-                'updated_at': now_utc_str(),
-            })
-            for prefix in sorted(data['prefixes']):
-                member_prefix_rows.append({
-                    'prefix': prefix,
-                    'member_slug': slug,
-                    'updated_at': now_utc_str(),
-                })
-                member_prefix_count += 1
-
-                if not options["dry_run"] and len(member_prefix_rows) >= options["batch_size"]:
-                    self._flush_rows(ch, insert_prefixes_table, member_prefix_rows)
-                    member_prefix_rows = []
-
-            if not options["dry_run"] and len(member_rows) >= options["batch_size"]:
-                self._flush_rows(ch, insert_members_table, member_rows)
-                member_rows = []
-
-        if member_rows and not options["dry_run"]:
-            self._flush_rows(ch, insert_members_table, member_rows)
-
-        if member_prefix_rows and not options["dry_run"]:
-            self._flush_rows(ch, insert_prefixes_table, member_prefix_rows)
-
-        if not options["dry_run"] and use_swap:
-            swap_in(ch, insert_members_table, target_members_table)
-            swap_in(ch, insert_prefixes_table, target_prefixes_table)
-
-        member_count = len(members_map)
+        if not options["dry_run"]:
+            # Refresh the member dictionaries immediately instead of
+            # waiting out their LIFETIME (5–60 min). Missing dictionaries
+            # (e.g. a fresh environment) are not an error.
+            for dict_name in (f"{db}.dict_members", f"{db}.dict_member_prefixes"):
+                try:
+                    ch.execute(f"SYSTEM RELOAD DICTIONARY {dict_name}")
+                except Exception as exc:  # noqa: BLE001 - best-effort refresh
+                    if options["verbose"]:
+                        self.stdout.write(
+                            f"WARNING: could not reload dictionary {dict_name}: {exc}"
+                        )
 
         if options["dry_run"]:
             self.stdout.write(
@@ -498,6 +317,13 @@ class Command(BaseCommand):
                 f"{acc_count:,} accounting sources, "
                 f"{member_count:,} members, and "
                 f"{member_prefix_count:,} member prefixes."
+            )
+        elif options["verbose"]:
+            self.stdout.write(
+                f"Exported {count:,} interfaces, "
+                f"{acc_count:,} accounting sources, "
+                f"{member_count:,} members, and "
+                f"{member_prefix_count:,} member prefixes to {db}.*."
             )
 
     def _flush_rows(self, ch: ClickHouseHTTP, target_table: str, rows: List[Dict[str, Any]]) -> None:

@@ -216,17 +216,28 @@ def build_member_rows() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     across all dim_* tables.
 
     ``traffic_cap_mbps`` semantics: the SUM of the current traffic caps of
-    each DISTINCT accounting profile linked to the member's active
-    transit/c-all services — i.e. the member's total contracted (billed)
-    capacity. Billing matches exactly: fee = traffic_cap_mbps * rate * 12
-    for every member (validated across the full base, 2026-09).
+    each of the tenant's accounting profiles that have a current bandwidth
+    profile — i.e. the member's total contracted (billed) capacity.
+    Billing matches exactly: fee = traffic_cap_mbps * rate * 12 for every
+    billable member (validated across the full base, 2026-09).
 
-    Multi-profile members are the reason for the sum: e.g. Alberta Health
-    Services has three profiles (Calgary 4000 + Edmonton 4000 + Guest 1000)
-    and bills 9000 Mbps; Lakeland College has two campuses at 500 each and
-    bills 1000. Taking the first service's profile (the previous behavior)
-    under-reported such members (AHS showed 1000).
+    Resolution goes through AccountingProfile.member (the billing
+    relationship), NOT through network-service links:
+    - Multi-profile members bill the SUM of their profiles (Alberta
+      Health Services: Calgary 4000 + Edmonton 4000 + Guest 1000 = 9000).
+    - Billed profiles may have no active service linking them (Lakeland
+      College's campus transit profiles 500 + 500 are billed while only
+      its c-all services are active).
+    - Profiles without a current bandwidth profile contribute nothing.
     """
+    # member_id -> {accounting_profile_id -> current traffic_cap (or None)}
+    profile_caps_by_member: Dict[int, Dict[int, Any]] = {}
+    for ap in AccountingProfile.objects.filter(member__isnull=False):
+        bp = ap.get_current_bandwidth_profile()
+        profile_caps_by_member.setdefault(ap.member_id, {})[ap.id] = (
+            bp.traffic_cap if bp is not None else None
+        )
+
     members_map: Dict[str, Dict[str, Any]] = {}
 
     services = NetworkService.objects.filter(
@@ -246,16 +257,8 @@ def build_member_rows() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
                 'member_id': ns.member.id,
                 'member_name': member_name,
                 'member_slug': member_slug,
-                # accounting_profile_id -> current traffic_cap (or None)
-                'profile_caps': {},
                 'prefixes': set(),
             }
-
-        if ns.accounting_profile is not None and ns.accounting_profile.id not in members_map[member_slug]['profile_caps']:
-            bp = ns.accounting_profile.get_current_bandwidth_profile()
-            members_map[member_slug]['profile_caps'][ns.accounting_profile.id] = (
-                bp.traffic_cap if bp is not None else None
-            )
 
         for prefix in ns.get_prefixes(version=4):
             members_map[member_slug]['prefixes'].add(str(prefix))
@@ -266,7 +269,10 @@ def build_member_rows() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     member_rows: List[Dict[str, Any]] = []
     member_prefix_rows: List[Dict[str, Any]] = []
     for slug, data in sorted(members_map.items()):
-        caps = [c for c in data['profile_caps'].values() if c is not None]
+        caps = [
+            c for c in profile_caps_by_member.get(data['member_id'], {}).values()
+            if c is not None
+        ]
         member_rows.append({
             'member_id': data['member_id'],
             'member_name': data['member_name'],

@@ -1,4 +1,4 @@
-from rest_framework.authentication import TokenAuthentication
+from netbox.api.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response

@@ -4,7 +4,15 @@ from sidekick.models import NIC
 
 class NICSerializer(ModelSerializer):
     interface = StringRelatedField()
+    interface_name = SerializerMethodField()
     description = SerializerMethodField()
+
+    # The 'interface' field renders via Interface.__str__ (e.g.
+    # 'xe-0/0/3:2.10 (MISSING)'), which is awkward to parse. Expose the
+    # raw interface name so consumers (e.g. Sensu check scripts using
+    # the bulk per-device endpoint) can match interfaces locally.
+    def get_interface_name(self, obj):
+        return obj.interface.name
 
     def get_description(self, obj):
         return obj.interface.description
@@ -13,6 +21,7 @@ class NICSerializer(ModelSerializer):
         model = NIC
         fields = (
             'interface',
+            'interface_name',
             'description',
             'last_updated',
             'admin_status', 'oper_status',

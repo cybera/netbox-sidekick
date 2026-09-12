@@ -6,8 +6,14 @@ import requests
 import time
 import whisper
 
-from pysnmp.hlapi import (
-    getCmd, nextCmd,
+# pysnmp >= 7 (lextudio): asyncio-only API; the 4.4.x asyncore transport is
+# gone since Python 3.12 removed asyncore. Public sync wrappers below bridge
+# with asyncio.run().
+import asyncio
+
+from pysnmp.hlapi.v3arch.asyncio import (
+    get_cmd as _get_cmd,
+    next_cmd as _next_cmd,
     CommunityData, ContextData,
     ObjectIdentity, ObjectType,
     SnmpEngine,
@@ -160,25 +166,29 @@ def decrypt_1pw_secret(token_path, host, vault, device, field):
     return secret
 
 
-def get_pysnmp_udp_transport_target(ipaddress):
+async def get_pysnmp_udp_transport_target(ipaddress):
     ip = ip_address(ipaddress)
 
     if ip.version == 4:
-        return UdpTransportTarget((ipaddress, 161))
+        return await UdpTransportTarget.create((ipaddress, 161))
     else:
-        return Udp6TransportTarget((ipaddress, 161))
+        return await Udp6TransportTarget.create((ipaddress, 161))
 
 
-def snmpget(remote_ip, community, oid):
-    pysnmp_udp_transport_target = get_pysnmp_udp_transport_target(remote_ip)
+async def _snmpget(remote_ip, community, oid):
+    pysnmp_udp_transport_target = await get_pysnmp_udp_transport_target(remote_ip)
 
-    iterator = getCmd(
+    return await _get_cmd(
         SnmpEngine(),
         CommunityData(community),
         pysnmp_udp_transport_target,
         ContextData(),
         ObjectType(ObjectIdentity(oid)))
-    errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
+
+
+def snmpget(remote_ip, community, oid):
+    errorIndication, errorStatus, errorIndex, varBinds = asyncio.run(
+        _snmpget(remote_ip, community, oid))
 
     if errorIndication:
         raise Exception(f"Error performing snmpget: {errorIndication}")
@@ -192,11 +202,11 @@ def snmpget(remote_ip, community, oid):
         return None
 
 
-def snmpwalk(remote_ip, community, oid):
+async def _snmpwalk(remote_ip, community, oid):
     _results = []
-    pysnmp_udp_transport_target = get_pysnmp_udp_transport_target(remote_ip)
+    pysnmp_udp_transport_target = await get_pysnmp_udp_transport_target(remote_ip)
 
-    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
+    async for (errorIndication, errorStatus, errorIndex, varBinds) in _next_cmd(
             SnmpEngine(),
             CommunityData(community),
             pysnmp_udp_transport_target,
@@ -219,7 +229,11 @@ def snmpwalk(remote_ip, community, oid):
     return None
 
 
-def snmpwalk_bulk_accounting(remote_ip, community):
+def snmpwalk(remote_ip, community, oid):
+    return asyncio.run(_snmpwalk(remote_ip, community, oid))
+
+
+async def _snmpwalk_bulk_accounting(remote_ip, community):
     data = []
     isps = {}
     class_names = {}
@@ -231,9 +245,9 @@ def snmpwalk_bulk_accounting(remote_ip, community):
     jnxScuStatsBytes_re = r'.*2636\.3\.16\.1\.1\.1\.5\.(\d+)\.1\.(\d+)\.(.+)'
     jnxDcuStatsBytes_re = r'.*2636\.3\.6\.2\.1\.5\.(\d+)\.1\.(\d+)\.(.+)'
 
-    pysnmp_udp_transport_target = get_pysnmp_udp_transport_target(remote_ip)
+    pysnmp_udp_transport_target = await get_pysnmp_udp_transport_target(remote_ip)
 
-    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
+    async for (errorIndication, errorStatus, errorIndex, varBinds) in _next_cmd(
             SnmpEngine(),
             CommunityData(community),
             pysnmp_udp_transport_target,
@@ -290,7 +304,7 @@ def snmpwalk_bulk_accounting(remote_ip, community):
     # Obtain the name for each ISP
     for isp in isps.keys():
         _oid = f".1.3.6.1.2.1.31.1.1.1.18.{isp}"
-        isp_name = snmpget(remote_ip, community, _oid)
+        isp_name = await _snmpget(remote_ip, community, _oid)
         if isp_name is not None:
             isps[isp] = f"{isp_name[0][1]}"
 
@@ -318,7 +332,11 @@ def snmpwalk_bulk_accounting(remote_ip, community):
     return classes
 
 
-def snmpwalk_bulk(remote_ip, community):
+def snmpwalk_bulk_accounting(remote_ip, community):
+    return asyncio.run(_snmpwalk_bulk_accounting(remote_ip, community))
+
+
+async def _snmpwalk_bulk(remote_ip, community):
     data = []
     results = {}
     ipv4_addresses = {}
@@ -339,9 +357,9 @@ def snmpwalk_bulk(remote_ip, community):
     jnxifHCIn1SecRate_re = r'.*2636\.3\.3\.1\.1\.7'
     jnxifHCOut1SecRate_re = r'.*2636\.3\.3\.1\.1\.8'
 
-    pysnmp_udp_transport_target = get_pysnmp_udp_transport_target(remote_ip)
+    pysnmp_udp_transport_target = await get_pysnmp_udp_transport_target(remote_ip)
 
-    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
+    async for (errorIndication, errorStatus, errorIndex, varBinds) in _next_cmd(
             SnmpEngine(),
             CommunityData(community),
             pysnmp_udp_transport_target,
@@ -467,6 +485,10 @@ def snmpwalk_bulk(remote_ip, community):
                     results[k]['ipv4'].append(f"{ipv4}/{ipv4_addresses[ipv4]}")
 
     return results
+
+
+def snmpwalk_bulk(remote_ip, community):
+    return asyncio.run(_snmpwalk_bulk(remote_ip, community))
 
 
 # Most of this was taken from

@@ -8,7 +8,7 @@ pysmi==0.3.4
 geopy==2.2.0
 graphyte==1.7.1
 git+https://github.com/1Password/connect-sdk-python@5198bd3cac80b960341caf5678e027ca5b7e4155
-pysnmp==4.4.12
+pysnmp==7.1.9
 python-dateutil
 napalm==3.4.0
 textfsm==1.1.2

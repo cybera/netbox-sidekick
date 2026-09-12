@@ -5,6 +5,7 @@ import re
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.utils.text import slugify
 
 from dcim.choices import InterfaceModeChoices, InterfaceTypeChoices
 from dcim.models import Device, Interface
@@ -143,9 +144,33 @@ class Command(BaseCommand):
 
             # If we're able to connect,
             # build a list of interface names already on the device.
+            # The interface list is fetched once (with its device and IP
+            # addresses prefetched) and reused by every loop below. The
+            # per-interface queries this command used to run made one
+            # invocation cost >9,000 queries on a core router (measured
+            # 2026-09-12).
             existing_interfaces = {}
-            for i in device.vc_interfaces():
+            for i in device.vc_interfaces().select_related(
+                    'device').prefetch_related('ip_addresses'):
                 existing_interfaces[i.name] = i
+
+            # One-time setup hoisted out of the per-interface loops.
+            graphite_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_host', None)
+            if graphite_host is not None:
+                graphyte.init(graphite_host)
+
+            # NetworkServiceDevice rows for this device, fetched once
+            # (with service and member prefetched) and grouped by
+            # interface name. The original code queried this table
+            # twice per interface (plus .exists() per metric), which
+            # dominated the query count.
+            nsd_first = {}
+            nsds_by_iface = {}
+            for _nsd in NetworkServiceDevice.objects.filter(
+                    device=device).select_related(
+                        'network_service', 'network_service__member'):
+                nsds_by_iface.setdefault(_nsd.interface, []).append(_nsd)
+                nsd_first.setdefault(_nsd.interface, _nsd)
 
             # Obtain the list of interfaces.
             # For each device that is not supposed to be ignored,
@@ -270,13 +295,14 @@ class Command(BaseCommand):
             # To account for one or more new interfaces being added above,
             # rebuild the list of interface names already on the device.
             existing_interfaces = {}
-            for i in device.vc_interfaces():
+            for i in device.vc_interfaces().select_related(
+                    'device').prefetch_related('ip_addresses'):
                 existing_interfaces[i.name] = i
 
             # Now check if there are interfaces in NetBox that no longer
             # exist on the device itself. This can happen if a card was
             # removed from the device or if a device was renamed.
-            for i in device.vc_interfaces():
+            for i in list(existing_interfaces.values()):
                 if i.name not in device_interface_names:
                     if i.name == "mgmt":
                         continue
@@ -351,16 +377,27 @@ class Command(BaseCommand):
 
                                     # If the IP assignment is on the same device, we will assume
                                     # a reconfiguration was made. In this case, we reassign the
-                                    # IP.
+                                    # IP. (Respect --dry-run: the original code saved here even
+                                    # in a dry run.)
                                     if ip.assigned_object.device.name == existing_interface.device.name:
-                                        ip.assigned_object = existing_interface
-                                        ip.save()
+                                        if options['dry_run']:
+                                            self.stdout.write(
+                                                f"Would have reassigned {interface_ip} to " +
+                                                f"{existing_interface.name} on {existing_interface.device.name}")
+                                        else:
+                                            ip.assigned_object = existing_interface
+                                            ip.save()
                                         continue
 
                                     # Reassign the IP to another device if the option was given
                                     if options['reassign_ip']:
-                                        ip.assigned_object = existing_interface
-                                        ip.save()
+                                        if options['dry_run']:
+                                            self.stdout.write(
+                                                f"Would have reassigned {interface_ip} to " +
+                                                f"{existing_interface.name} on {existing_interface.device.name}")
+                                        else:
+                                            ip.assigned_object = existing_interface
+                                            ip.save()
                                         continue
 
                                     self.stdout.write(
@@ -399,6 +436,21 @@ class Command(BaseCommand):
             ch_rows = []
             ch_rows_deltas = []
             ch_rows_service_deltas = []
+
+            # Previous NIC entries for every interface, fetched in one
+            # query and grouped by interface (NIC.save() pruning keeps
+            # at most 5 rows per interface). The per-interface e1/e2
+            # pair is resolved from this map below: in a live run e1 is
+            # the NIC saved moments ago and e2 is the newest entry from
+            # this map; in a dry run both come from the map.
+            nic_prev = {}
+            for _nic in NIC.objects.filter(
+                    interface_id__in=[i.id for i in existing_interfaces.values()]
+                ).select_related('interface', 'interface__device').order_by(
+                    'interface_id', '-last_updated'):
+                _lst = nic_prev.setdefault(_nic.interface_id, [])
+                if len(_lst) < 2:
+                    _lst.append(_nic)
 
             # Obtain the counters on each interface.
             # For each interface that is not supposed to be ignored,
@@ -486,9 +538,8 @@ class Command(BaseCommand):
                     if ch is not None:
                         member_slug = ""
                         service_slug = ""
-                        nsd = NetworkServiceDevice.objects.filter(device=device, interface=existing_interface.name).first()
+                        nsd = nsd_first.get(existing_interface.name)
                         if nsd and nsd.network_service:
-                            from django.utils.text import slugify
                             service_slug = slugify(nsd.network_service.name)
                             if nsd.network_service.member:
                                 member_slug = slugify(nsd.network_service.member.name)
@@ -517,22 +568,29 @@ class Command(BaseCommand):
                         )
 
                 # Determine the difference between the last two updates.
-                previous_entries = NIC.objects.filter(
-                    interface_id=existing_interface.id).order_by('-last_updated')
-                if len(previous_entries) >= 2:
-                    e1 = previous_entries[0]
-                    e2 = previous_entries[1]
+                # In a live run e1 is the NIC object saved above (the
+                # original code re-queried it after save); in a dry run
+                # there is no save, so both entries come from the
+                # prefetched map. Either way e2 is the newest
+                # previously-known entry, matching the original
+                # top-two-by-last_updated semantics.
+                if options['dry_run']:
+                    _prev = nic_prev.get(existing_interface.id, [])
+                    if len(_prev) >= 2:
+                        e1, e2 = _prev[0], _prev[1]
+                    else:
+                        e1 = e2 = None
+                else:
+                    e1 = nic
+                    e2 = nic_prev.get(existing_interface.id, [None])[0]
+                if e1 is not None and e2 is not None:
                     total_seconds = (e1.last_updated - e2.last_updated).total_seconds()
-                    
+
                     if total_seconds > 0:
-                        graphite_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_host', None)
-                        if graphite_host is not None:
-                            graphyte.init(graphite_host)
-                            
                         graphite_prefix = "{}.{}".format(
                             e1.graphite_device_name(), e1.graphite_interface_name())
 
-                        nsds = NetworkServiceDevice.objects.filter(device=device, interface=existing_interface.name)
+                        nsds = nsds_by_iface.get(existing_interface.name, [])
                         for cat in METRIC_CATEGORIES:
                             m1 = getattr(e1, cat, None)
                             m2 = getattr(e2, cat, None)
@@ -561,7 +619,7 @@ class Command(BaseCommand):
                                     
                                 if ch is not None:
                                     # If the interface is not part of any service, still log it with empty slugs
-                                    if not nsds.exists():
+                                    if not nsds:
                                         ch_rows_deltas.append({
                                             "ts": now_utc_str(),
                                             "interface_id": existing_interface.id,
@@ -578,7 +636,6 @@ class Command(BaseCommand):
                                             member_slug = ""
                                             service_slug = ""
                                             if nsd.network_service:
-                                                from django.utils.text import slugify
                                                 service_slug = slugify(nsd.network_service.name)
                                                 if nsd.network_service.member:
                                                     member_slug = slugify(nsd.network_service.member.name)
@@ -618,8 +675,14 @@ class Command(BaseCommand):
                                         graphyte.send(graphite_name, diff)
 
                         # Determine if the interface is part of a member's network service.
-                        if nsd and nsd.network_service and nsd.network_service.active:
-                            ns = nsd.network_service
+                        # (nsd_first is prefetched for every interface, so this
+                        # block works whether or not ClickHouse is configured -
+                        # previously `nsd` was only assigned inside the
+                        # ClickHouse branch and raised UnboundLocalError
+                        # when ClickHouse was disabled.)
+                        _svc_nsd = nsd_first.get(existing_interface.name)
+                        if _svc_nsd and _svc_nsd.network_service and _svc_nsd.network_service.active:
+                            ns = _svc_nsd.network_service
                             service_prefix = f"{ns.graphite_service_name()}.{graphite_prefix}"
 
                             for cat in ['in_octets', 'out_octets']:

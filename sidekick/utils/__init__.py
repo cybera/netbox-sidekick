@@ -4,7 +4,6 @@ import onepasswordconnectsdk
 import re
 import requests
 import time
-import whisper
 
 # pysnmp >= 7 (lextudio): asyncio-only API; the 4.4.x asyncore transport is
 # gone since Python 3.12 removed asyncore. Public sync wrappers below bridge
@@ -489,92 +488,6 @@ async def _snmpwalk_bulk(remote_ip, community):
 
 def snmpwalk_bulk(remote_ip, community):
     return asyncio.run(_snmpwalk_bulk(remote_ip, community))
-
-
-# Most of this was taken from
-# https://github.com/graphite-project/whisper/blob/master/bin/rrd2whisper.py
-# https://github.com/graphite-project/whisper/blob/master/bin/whisper-resize.py
-def convert_rrd(rrd_file, dest_dir):
-    # Legacy graphite/rrd tooling: rrdtool C bindings no longer build against
-    # modern librrd + Python >=3.12, so import lazily — only this path needs it.
-    import rrdtool
-
-    datasource_map = {
-        'OUTOCTETS': 'out_octets',
-        'OUTUCASTPKTS': 'out_unicast_packets',
-        'OUTNUCASTPKTS': 'out_nunicast_packets',
-        'INNUCASTPKTS': 'in_nunicast_packets',
-        'INERRORS': 'in_errors',
-        'OUTERRORS': 'out_errors',
-        'INUCASTPKTS': 'in_unicast_packets',
-        'INOCTETS': 'in_octets',
-    }
-
-    rra_indices = []
-    rrd_info = rrdtool.info(rrd_file)
-    seconds_per_pdp = rrd_info['step']
-    for key in rrd_info:
-        if key.startswith('rra['):
-            index = int(key.split('[')[1].split(']')[0])
-            rra_indices.append(index)
-
-    rra_count = max(rra_indices) + 1
-    rras = []
-    for i in range(rra_count):
-        rra_info = {}
-        rra_info['pdp_per_row'] = rrd_info['rra[%d].pdp_per_row' % i]
-        rra_info['rows'] = rrd_info['rra[%d].rows' % i]
-        rra_info['cf'] = rrd_info['rra[%d].cf' % i]
-        if 'xff' in rrd_info:
-            rra_info['xff'] = rrd_info['rra[%d].xff' % i]
-        rras.append(rra_info)
-
-    datasources = []
-    if 'ds' in rrd_info:
-        datasources = rrd_info['ds'].keys()
-    else:
-        ds_keys = [key for key in rrd_info if key.startswith('ds[')]
-        datasources = list(set(key[3:].split(']')[0] for key in ds_keys))
-
-    relevant_rras = []
-    for rra in rras:
-        if rra['cf'] == 'MAX':
-            relevant_rras.append(rra)
-
-    archives = []
-    for rra in relevant_rras:
-        precision = rra['pdp_per_row'] * seconds_per_pdp
-        points = rra['rows']
-        archives.append((precision, points))
-
-    for datasource in datasources:
-        now = int(time.time())
-        d = datasource_map[datasource]
-        dest_path = f"{dest_dir}/{d}.wsp"
-        try:
-            whisper.create(dest_path, archives, xFilesFactor=0.5)
-        except whisper.InvalidConfiguration:
-            pass
-
-        datapoints = []
-        for precision, points in reversed(archives):
-            retention = precision * points
-            endTime = now - now % precision
-            startTime = endTime - retention
-            (time_info, columns, rows) = rrdtool.fetch(
-                rrd_file,
-                'MAX',
-                '-r', str(precision),
-                '-s', str(startTime),
-                '-e', str(endTime),
-                '-a')
-            column_index = list(columns).index(datasource)
-            rows.pop()
-            values = [row[column_index] for row in rows]
-            timestamps = list(range(*time_info))
-            datapoints = zip(timestamps, values)
-            datapoints = [datapoint for datapoint in datapoints if datapoint[1] is not None]
-            whisper.update_many(dest_path, datapoints)
 
 
 def get_graphite_nic_graph(nic, graphite_render_host=None, period="-1Y"):

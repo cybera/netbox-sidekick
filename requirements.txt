@@ -12,7 +12,7 @@ pysnmp==7.1.9
 python-dateutil
 napalm==5.2.0
 textfsm
-whisper==1.1.8
 meraki==1.40.1
+whisper==1.1.8
 pyasn1==0.4.8
 pyasn1-modules==0.2.8

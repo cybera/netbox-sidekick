@@ -3,7 +3,6 @@ import netaddr
 import onepasswordconnectsdk
 import re
 import requests
-import rrdtool
 import time
 import whisper
 
@@ -474,6 +473,10 @@ def snmpwalk_bulk(remote_ip, community):
 # https://github.com/graphite-project/whisper/blob/master/bin/rrd2whisper.py
 # https://github.com/graphite-project/whisper/blob/master/bin/whisper-resize.py
 def convert_rrd(rrd_file, dest_dir):
+    # Legacy graphite/rrd tooling: rrdtool C bindings no longer build against
+    # modern librrd + Python >=3.12, so import lazily — only this path needs it.
+    import rrdtool
+
     datasource_map = {
         'OUTOCTETS': 'out_octets',
         'OUTUCASTPKTS': 'out_unicast_packets',

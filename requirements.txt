@@ -10,7 +10,7 @@ graphyte==1.7.1
 git+https://github.com/1Password/connect-sdk-python@5198bd3cac80b960341caf5678e027ca5b7e4155
 pysnmp==7.1.9
 python-dateutil
-napalm==3.4.0
+napalm==5.2.0
 textfsm==1.1.2
 whisper==1.1.8
 meraki==1.40.1

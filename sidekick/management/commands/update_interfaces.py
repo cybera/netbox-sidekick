@@ -592,8 +592,13 @@ class Command(BaseCommand):
 
                         nsds = nsds_by_iface.get(existing_interface.name, [])
                         for cat in METRIC_CATEGORIES:
-                            m1 = getattr(e1, cat, None)
-                            m2 = getattr(e2, cat, None)
+                            # e1 may be the just-saved NIC object, whose
+                            # counter fields are still the raw SNMP strings
+                            # (Django coerces on save but does not re-cast
+                            # the in-memory attributes); e2 comes from the
+                            # database as an int. Coerce both.
+                            m1 = to_int(getattr(e1, cat, None), None)
+                            m2 = to_int(getattr(e2, cat, None), None)
                             if m1 is not None and m2 is not None:
                                 # Counter-wrap / reset detection.
                                 # The ifHC* octet & packet counters are 64-bit and cannot
@@ -686,8 +691,8 @@ class Command(BaseCommand):
                             service_prefix = f"{ns.graphite_service_name()}.{graphite_prefix}"
 
                             for cat in ['in_octets', 'out_octets']:
-                                m1 = getattr(e1, cat, None)
-                                m2 = getattr(e2, cat, None)
+                                m1 = to_int(getattr(e1, cat, None), None)
+                                m2 = to_int(getattr(e2, cat, None), None)
                                 if m1 is not None and m2 is not None:
                                     # Same counter-reset guard as above: a decrease
                                     # means the device rebooted / interface flapped.

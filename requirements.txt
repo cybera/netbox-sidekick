@@ -11,7 +11,7 @@ git+https://github.com/1Password/connect-sdk-python@5198bd3cac80b960341caf5678e0
 pysnmp==7.1.9
 python-dateutil
 napalm==5.2.0
-textfsm==1.1.2
+textfsm
 whisper==1.1.8
 meraki==1.40.1
 pyasn1==0.4.8

@@ -7,7 +7,7 @@ from django.db.models import Q
 from netbox.filtersets import NetBoxModelFilterSet
 from netbox.forms import NetBoxModelFilterSetForm
 from tenancy.models import Tenant
-from utilities.forms import DynamicModelMultipleChoiceField
+from utilities.forms.fields import DynamicModelMultipleChoiceField
 from utilities.forms.constants import BOOLEAN_WITH_BLANK_CHOICES
 from utilities.forms.widgets import Select as StaticSelect
 

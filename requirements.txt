@@ -1,6 +1,8 @@
-backports.weakref
-backports-datetime-fromisoformat
-django-extensions==3.1.5
+# Sidekick requirements — netbox4 branch (NetBox 4.7 / Django 6.1 / Python 3.12+)
+# Dropped vs master: backports.weakref, backports-datetime-fromisoformat,
+# pytz (py<3.11 shims and Django 5+/zoneinfo era), django-extensions pin now
+# unpinned (4.1 supports Django 6.x).
+django-extensions
 flake8
 pysmi==0.3.4
 geopy==2.2.0
@@ -12,7 +14,6 @@ rrdtool==0.1.15
 napalm==3.4.0
 textfsm==1.1.2
 whisper==1.1.8
-pytz==2022.1
 meraki==1.40.1
 pyasn1==0.4.8
 pyasn1-modules==0.2.8

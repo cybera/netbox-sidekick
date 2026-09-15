@@ -52,6 +52,25 @@ def to_int(v, default=0):
         return default
 
 
+def down_poll_baseline(e1_in, e1_out, e2_in, e2_out):
+    """Return True when the previous sample (e2) is an invalid baseline.
+
+    A poll of an unreachable device stores a sample with zero counters.
+    If that sample is the most recent previous entry while the current
+    sample (e1) has traffic, any delta computed against it would be the
+    interface's entire lifetime counter divided by the poll interval —
+    an enormous positive spike (observed as ~110-420 Gbps rows after the
+    2026-09-10 cgy_core outage). The counter-reset guard only catches
+    *decreasing* counters and cannot see this case.
+
+    Returns True when a delta must NOT be emitted for this interval.
+    """
+    return bool(
+        e2_in == 0 and e2_out == 0
+        and ((e1_in or 0) > 0 or (e1_out or 0) > 0)
+    )
+
+
 class Command(BaseCommand):
     help = "Update Interface/NIC data on a device"
 
@@ -590,8 +609,21 @@ class Command(BaseCommand):
                         graphite_prefix = "{}.{}".format(
                             e1.graphite_device_name(), e1.graphite_interface_name())
 
+                        # Down-poll baseline guard: skip the whole interval
+                        # when e2 is a zero-counter sample from an unreachable
+                        # device (see down_poll_baseline()). The next poll
+                        # pairs two valid samples and resumes normal emission.
+                        e1_in = to_int(getattr(e1, 'in_octets', None), None)
+                        e1_out = to_int(getattr(e1, 'out_octets', None), None)
+                        e2_in = to_int(getattr(e2, 'in_octets', None), None)
+                        e2_out = to_int(getattr(e2, 'out_octets', None), None)
+                        baseline_valid = not down_poll_baseline(
+                            e1_in, e1_out, e2_in, e2_out)
+
                         nsds = nsds_by_iface.get(existing_interface.name, [])
                         for cat in METRIC_CATEGORIES:
+                            if not baseline_valid:
+                                continue
                             # e1 may be the just-saved NIC object, whose
                             # counter fields are still the raw SNMP strings
                             # (Django coerces on save but does not re-cast
@@ -691,6 +723,10 @@ class Command(BaseCommand):
                             service_prefix = f"{ns.graphite_service_name()}.{graphite_prefix}"
 
                             for cat in ['in_octets', 'out_octets']:
+                                # Same down-poll baseline guard as above: a
+                                # zero-baseline e2 makes the delta invalid.
+                                if not baseline_valid:
+                                    continue
                                 m1 = to_int(getattr(e1, cat, None), None)
                                 m2 = to_int(getattr(e2, cat, None), None)
                                 if m1 is not None and m2 is not None:

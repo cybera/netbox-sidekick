@@ -18,6 +18,12 @@ goes backwards, and the ``nic_metrics_unified`` view clamps negatives to zero
 (``greatest(delta, 0)``) at read time.  This command handles the *historical*
 bad rows that were written before those fixes existed.
 
+As of 2026-09-16, ``update_interfaces`` also skips the whole interval when the
+previous sample is a zero-counter down-poll (device unreachable): computing a
+delta against a zero baseline emits the interface's entire lifetime counter as
+a per-second rate (observed as ~110-420 Gbps rows after the 2026-09-10
+cgy_core outage).
+
 Safety
 ------
 * **DRY RUN by default.**  Without ``--apply`` the command only reports.

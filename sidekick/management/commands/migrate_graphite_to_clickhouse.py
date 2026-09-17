@@ -17,9 +17,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-
 def clean_seg(s):
     return s.lower().replace(" ", "_").replace(".", "_").replace("(", "").replace(")", "").replace("/", "-")
+
 
 def migrate_file(file_info):
     """
@@ -141,11 +141,11 @@ class Command(BaseCommand):
             dev_segment = nsd.device.name.lower().replace(" ", "_").replace(".", "_").replace("(", "").replace(")", "")
             if_segment = nsd.interface.lower().replace("/", "-").replace(".", "_").replace("(", "").replace(")", "")
             iface_id = iface_map.get((dev_segment, if_segment))
-            
+
             if not iface_id:
                 short_if = if_segment.replace("gi", "gigabitethernet").replace("te", "ten-gigabitethernet").replace("xe", "ten-gigabitethernet").replace("et", "ethernet")
                 iface_id = iface_map.get((dev_segment, short_if))
-                
+
             if iface_id:
                 service_interfaces.add(iface_id)
 
@@ -238,12 +238,12 @@ class Command(BaseCommand):
                     if not temp_iface_id:
                         short_if = if_segment.lower().replace("gi", "gigabitethernet").replace("te", "ten-gigabitethernet").replace("xe", "ten-gigabitethernet").replace("et", "ethernet")
                         temp_iface_id = iface_map.get((dev_segment, short_if))
-                        
-                    # DEDUPLICATION: If this interface is already part of a Service, we skip importing 
+
+                    # DEDUPLICATION: If this interface is already part of a Service, we skip importing
                     # the raw hardware metric because it was already imported via the services/ tree.
                     if temp_iface_id and temp_iface_id in service_interfaces:
                         continue
-                    
+
                     iface_id = temp_iface_id
 
                 if iface_id or acc_id:

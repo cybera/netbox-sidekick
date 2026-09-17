@@ -1,4 +1,5 @@
 import json
+import logging
 import netaddr
 import onepasswordconnectsdk
 import re
@@ -769,8 +770,6 @@ def get_period(request):
 # ClickHouse Query Utilities (Approach A: coexist with Graphite)
 # ============================================================
 
-import logging
-
 _ch_logger = logging.getLogger('sidekick.clickhouse')
 _ch_logger.setLevel(logging.INFO)
 # If no handler is attached, add a simple one so we don't lose logs
@@ -822,7 +821,7 @@ def _get_graph_title(period):
 
 def _parse_clickhouse_tsv(result_text):
     """Parse ClickHouse TabSeparatedWithNames output into a list of lists (rows of values).
-    
+
     The first row is the header (column names), which is stripped. Returns a list of
     rows, where each row is a list of values (strings, ints, or floats).
     """
@@ -856,7 +855,7 @@ def _parse_clickhouse_tsv(result_text):
 
 def _escape_clickhouse_string(s):
     """Escape a string for safe inclusion in a ClickHouse SQL literal.
-    
+
     ClickHouse uses single quotes; internal single quotes are escaped by doubling.
     """
     if s is None:
@@ -866,7 +865,7 @@ def _escape_clickhouse_string(s):
 
 def _execute_clickhouse(ch_client, query):
     """Execute a ClickHouse query and return parsed rows (list of lists).
-    
+
     Returns (rows, raw_query) where rows is a list of parsed rows and
     raw_query is the full SQL used (for debugging/debug display).
     Appends FORMAT TabSeparatedWithNames to the query.
@@ -907,7 +906,7 @@ def _get_interface_ids_for_service(ch_client, service_id):
     ids = [str(r[0]) for r in rows if r and r[0] is not None]
     if not ids:
         _ch_logger.warning("No interface_ids found for service_id=%s — check dim_interface_labels",
-                          service_id)
+                           service_id)
     return ids
 
 
@@ -990,13 +989,13 @@ def _transpose_to_uplot_with_p95(rows, p95_in=0, p95_out=0):
 
 def get_clickhouse_nic_graph(nic, ch_client, period="-1Y"):
     """ClickHouse equivalent of get_graphite_nic_graph.
-    
+
     Queries a single interface's traffic from nic_metrics_unified via dim_interface_labels.
     Returns the same JSON shape as get_graphite_nic_graph.
     """
     if ch_client is None:
         return None
-    
+
     # Get device name and interface name from the NIC model
     # graphite_device_name() and graphite_interface_name() give the Graphite components
     # but for dim_interface_labels we need the NetBox names
@@ -1004,20 +1003,20 @@ def get_clickhouse_nic_graph(nic, ch_client, period="-1Y"):
         device_name = nic.interface.device.name
     except Exception:
         device_name = None
-    
+
     try:
         interface_name = nic.interface.name
     except Exception:
         interface_name = None
-    
+
     if not device_name or not interface_name:
         return None
-    
+
     # Find the interface_id via dim_interface_labels
     interval = _period_to_interval(period)
     if interval is None:
         return None
-    
+
     # Single combined query: find the interface_id and get the time series
     query = (
         f"SELECT "
@@ -1036,9 +1035,9 @@ def get_clickhouse_nic_graph(nic, ch_client, period="-1Y"):
         f"    toStartOfInterval(ts, toIntervalMinute(5)) AS bucket "
         f"ORDER BY timestamp"
     )
-    
+
     rows, full_query = _execute_clickhouse(ch_client, query)
-    
+
     if not rows:
         # Return empty but valid structure
         return {
@@ -1046,7 +1045,7 @@ def get_clickhouse_nic_graph(nic, ch_client, period="-1Y"):
             'data': [[], [], []],
             'query': full_query,
         }
-    
+
     # Transpose: [[timestamps], [in], [out]]
     data = [[], [], []]
     for row in rows:
@@ -1054,7 +1053,7 @@ def get_clickhouse_nic_graph(nic, ch_client, period="-1Y"):
             data[0].append(row[0])  # timestamp
             data[1].append(row[1])  # in_bps
             data[2].append(row[2])  # out_bps
-    
+
     return {
         'title': _get_graph_title(period),
         'data': data,
@@ -1064,7 +1063,7 @@ def get_clickhouse_nic_graph(nic, ch_client, period="-1Y"):
 
 def get_clickhouse_service_graph(service, ch_client, period="-1Y"):
     """ClickHouse equivalent of get_graphite_service_graph.
-    
+
     Queries all interfaces for a single NetworkService from nic_metrics_unified.
     Returns the same JSON shape as get_graphite_service_graph.
 
@@ -1100,23 +1099,23 @@ def get_clickhouse_service_graph(service, ch_client, period="-1Y"):
         f"    toStartOfInterval(ts, toIntervalMinute(5)) AS bucket "
         f"ORDER BY timestamp"
     )
-    
+
     rows, full_query = _execute_clickhouse(ch_client, query)
-    
+
     if not rows:
         return {
             'title': _get_graph_title(period),
             'data': [[], [], []],
             'query': full_query,
         }
-    
+
     data = [[], [], []]
     for row in rows:
         if row and len(row) >= 3:
             data[0].append(row[0])
             data[1].append(row[1])
             data[2].append(row[2])
-    
+
     return {
         'title': _get_graph_title(period),
         'data': data,
@@ -1140,9 +1139,7 @@ def get_clickhouse_member_bandwidth(ch_client, member, services, accounting_sour
     if ch_client is None:
         return None
 
-    try:
-        member_name = member.name
-    except Exception:
+    if member is None or not getattr(member, 'name', None):
         return None
 
     interval = _period_to_interval(period)
@@ -1387,7 +1384,7 @@ def get_clickhouse_service_group_bandwidth(ch_client, service_group, period="-1y
 
 def _service_has_clickhouse_backend(settings):
     """Check if the sidekick plugin is configured to use ClickHouse for queries.
-    
+
     Reads from PLUGINS_CONFIG['sidekick']['use_clickhouse'].
     Returns (True, ch_client) if ClickHouse should be used, (False, None) otherwise.
     """

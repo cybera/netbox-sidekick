@@ -444,10 +444,10 @@ class Command(BaseCommand):
             # the NIC saved moments ago and e2 is the newest entry from
             # this map; in a dry run both come from the map.
             nic_prev = {}
-            for _nic in NIC.objects.filter(
-                    interface_id__in=[i.id for i in existing_interfaces.values()]
-                ).select_related('interface', 'interface__device').order_by(
-                    'interface_id', '-last_updated'):
+            nic_qs = NIC.objects.filter(
+                interface_id__in=[i.id for i in existing_interfaces.values()]
+            ).select_related('interface', 'interface__device').order_by('interface_id', '-last_updated')
+            for _nic in nic_qs:
                 _lst = nic_prev.setdefault(_nic.interface_id, [])
                 if len(_lst) < 2:
                     _lst.append(_nic)
@@ -621,7 +621,7 @@ class Command(BaseCommand):
 
                                 if diff != 0:
                                     diff = diff / total_seconds
-                                    
+
                                 if ch is not None:
                                     # If the interface is not part of any service, still log it with empty slugs
                                     if not nsds:
@@ -644,7 +644,7 @@ class Command(BaseCommand):
                                                 service_slug = slugify(nsd.network_service.name)
                                                 if nsd.network_service.member:
                                                     member_slug = slugify(nsd.network_service.member.name)
-                                            
+
                                             ch_rows_deltas.append({
                                                 "ts": now_utc_str(),
                                                 "interface_id": existing_interface.id,
@@ -671,7 +671,7 @@ class Command(BaseCommand):
                                                     "delta": float(diff),
                                                     "source": "live",
                                                 })
-                                
+
                                 if graphite_host is not None:
                                     graphite_name = f"{graphite_prefix}.{cat}"
                                     if options['dry_run']:
@@ -714,7 +714,7 @@ class Command(BaseCommand):
                         ch.insert_json_each_row(f"{ch_db}.{ch_table}", ch_rows)
                     except Exception as e:
                         self.stdout.write(f"WARNING: ClickHouse insert raw failed: {e}")
-                
+
                 if ch_rows_deltas:
                     try:
                         ch.insert_json_each_row(f"{ch_db}.nic_deltas_5m", ch_rows_deltas)

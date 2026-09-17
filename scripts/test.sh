@@ -26,12 +26,12 @@ if [[ $RC != 0 ]]; then
 fi
 
 # Install NetBox
-mkdir build
+mkdir -p build
 cd build
 git clone https://github.com/netbox-community/netbox
 cd netbox
 git checkout $NETBOX_VERSION
-pip install -r requirements.txt 2>&1 > /dev/null
+pip install -r requirements.txt
 cd ../..
 
 # Install sidekick

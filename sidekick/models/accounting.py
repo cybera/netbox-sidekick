@@ -176,7 +176,13 @@ class BandwidthProfile(NetBoxModel):
         help_text='The date when the profile goes into effect',
         blank=True,
         null=True,
-        default=timezone.now,
+        # localdate(), not now(): this is a DateField, so the default must be a
+        # date. now() returns a datetime, which Django renders into the inline
+        # formset's initial-* hidden input as "YYYY-MM-DD HH:MM:SS+00:00".
+        # DateField.to_python() cannot parse that, so the field's has_changed()
+        # takes its "assume changed" branch and every save of the parent
+        # AccountingProfile would create a phantom BandwidthProfile row.
+        default=timezone.localdate,
     )
 
     comments = models.TextField(

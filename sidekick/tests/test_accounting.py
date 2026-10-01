@@ -1,3 +1,5 @@
+from html.parser import HTMLParser
+
 from django.urls import reverse
 
 from sidekick.models import (
@@ -7,6 +9,50 @@ from sidekick.models import (
 )
 
 from .utils import BaseTest
+
+
+class _FormsetInputParser(HTMLParser):
+    """
+    Collect the bandwidth-profile formset's inputs from a rendered edit page,
+    exactly as a browser would submit them: checked checkboxes only, textarea
+    contents included.
+    """
+
+    PREFIX = 'bandwidth_profiles-'
+
+    def __init__(self):
+        super().__init__()
+        self.values = {}
+        self._textarea = None
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        name = attrs.get('name', '')
+        # Capture both the field inputs and the initial-* hidden inputs Django
+        # renders for change detection. Omitting the initial-* inputs would
+        # itself make every field look changed.
+        is_field = name.startswith(self.PREFIX)
+        is_initial = name.startswith(f'initial-{self.PREFIX}')
+        if not (is_field or is_initial):
+            return
+        if tag == 'input':
+            itype = attrs.get('type', 'text')
+            if itype in ('checkbox', 'radio'):
+                if 'checked' in attrs:
+                    self.values[name] = attrs.get('value', 'on')
+            elif itype != 'file':
+                self.values[name] = attrs.get('value', '')
+        elif tag == 'textarea':
+            self._textarea = name
+            self.values[name] = ''
+
+    def handle_data(self, data):
+        if self._textarea:
+            self.values[self._textarea] += data
+
+    def handle_endtag(self, tag):
+        if tag == 'textarea':
+            self._textarea = None
 
 
 class AccountingTest(BaseTest):
@@ -159,6 +205,41 @@ class AccountingProfileInlineTest(BaseTest):
         resp = self.client.post(self.url, self.post_data(rows))
         self.assertEqual(resp.status_code, 302)
         self.assertFalse(BandwidthProfile.objects.filter(pk=1).exists())
+
+    def test_submitting_the_rendered_page_unchanged_creates_nothing(self):
+        """
+        Regression test for a phantom-row bug.
+
+        The blank row's effective_date is pre-filled from the model default.
+        While that default was timezone.now() -- a datetime on a DateField --
+        Django rendered it into the initial-* hidden input as
+        "YYYY-MM-DD HH:MM:SS+00:00", which DateField.to_python() cannot parse.
+        BoundField._has_changed() then took its "assume changed" branch, so the
+        blank row was always considered changed and every save of the profile
+        created an empty BandwidthProfile.
+
+        The earlier test posted an empty date, which masked the bug. This one
+        submits the form exactly as the page renders it.
+        """
+        html = self.client.get(self.url).content.decode()
+        parser = _FormsetInputParser()
+        parser.feed(html)
+        formset_data = parser.values
+
+        # Sanity: the page really did render a blank row with a pre-filled date.
+        blank = formset_data['bandwidth_profiles-INITIAL_FORMS']
+        self.assertIn(f'bandwidth_profiles-{blank}-effective_date', formset_data)
+
+        data = self.post_data([])
+        data.pop('bandwidth_profiles-TOTAL_FORMS')
+        data.update(formset_data)
+
+        resp = self.client.post(self.url, data)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(
+            self.profile.bandwidthprofile_set.count(), 1,
+            'saving the profile untouched must not create a bandwidth profile',
+        )
 
     def test_untouched_blank_row_creates_nothing(self):
         # The edit page always shows one blank row. Submitting the form without

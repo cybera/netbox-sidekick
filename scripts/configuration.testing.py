@@ -38,3 +38,10 @@ REDIS = {
 }
 
 SECRET_KEY = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
+# NetBox 4.x creates v2 API tokens by default, and creating one requires at
+# least one pepper of 50+ characters. Without this, any test that calls
+# Token.objects.create() fails with "API_TOKEN_PEPPERS is not defined".
+API_TOKEN_PEPPERS = {
+    1: 'sidekick-test-pepper-not-a-secret-0123456789-abcdefghij',
+}

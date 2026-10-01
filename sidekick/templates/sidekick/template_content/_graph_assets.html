@@ -1,0 +1,58 @@
+<script src="https://leeoniya.github.io/uPlot/dist/uPlot.iife.min.js"></script>
+<link rel="stylesheet" href="https://leeoniya.github.io/uPlot/dist/uPlot.min.css" />
+<script type="text/javascript">
+  function sidekickBits(bits) {
+    if (bits == 0) return '';
+    if (bits < 0) bits *= -1;
+    var s = ['bits', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb'];
+    var e = Math.floor(Math.log(bits) / Math.log(1000));
+    var value = ((bits / Math.pow(1000, Math.floor(e))).toFixed(2));
+    e = (e < 0) ? (-e) : e;
+    value += ' ' + s[e];
+    return value;
+  }
+
+  function sidekickGraphSize(div) {
+    return {
+      height: 300,
+      width: $('#' + div).width(),
+    }
+  }
+
+  // Guard against empty or malformed payloads from the graph endpoints.
+  function sidekickHasData(payload) {
+    return !!(payload && payload.graph_data && payload.graph_data.data);
+  }
+
+  function sidekickSeriesOpts(size) {
+    return {
+      width: size.width,
+      height: size.height,
+      axes: [
+        {},
+        {
+          scale: "bits",
+          size: 75,
+          values: (self, ticks) => ticks.map(rawValue => sidekickBits(rawValue)),
+        },
+      ],
+      series: [
+        {},
+        {
+          label: "In",
+          stroke: "#2E7D32",
+          fill: "#66BB6A",
+          scale: "bits",
+          value: (self, rawValue) => sidekickBits(rawValue),
+        },
+        {
+          label: "Out",
+          stroke: "#1565C0",
+          fill: "#42A5F5",
+          scale: "bits",
+          value: (self, rawValue) => sidekickBits(rawValue * -1),
+        },
+      ],
+    };
+  }
+</script>

@@ -1,7 +1,3 @@
-from .member import (  # noqa: F401
-    MemberCreateForm,
-)
-
 from .accounting import (  # noqa: F401
     AccountingProfileForm,
     AccountingSourceForm,

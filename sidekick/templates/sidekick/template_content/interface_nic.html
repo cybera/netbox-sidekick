@@ -1,0 +1,50 @@
+{% include 'sidekick/template_content/_graph_assets.html' %}
+<div class="card">
+  <h5 class="card-header">Sidekick Interface Statistics</h5>
+  <div class="card-body">
+    <table class="table table-hover attr-table">
+      <tr><td>Admin Status</td><td>{{ nic.admin_status }}</td></tr>
+      <tr><td>Oper Status</td><td>{{ nic.oper_status }}</td></tr>
+      <tr><td>In Rate</td><td>{{ nic.in_rate }}</td></tr>
+      <tr><td>Out Rate</td><td>{{ nic.out_rate }}</td></tr>
+      <tr><td>In Octets</td><td>{{ nic.in_octets }}</td></tr>
+      <tr><td>Out Octets</td><td>{{ nic.out_octets }}</td></tr>
+      <tr><td>In Unicast Packets</td><td>{{ nic.in_unicast_packets }}</td></tr>
+      <tr><td>Out Unicast Packets</td><td>{{ nic.out_unicast_packets }}</td></tr>
+      <tr><td>In Nunicast Packets</td><td>{{ nic.in_nunicast_packets }}</td></tr>
+      <tr><td>Out Nunicast Packets</td><td>{{ nic.out_nunicast_packets }}</td></tr>
+      <tr><td>In Errors</td><td>{{ nic.in_errors }}</td></tr>
+      <tr><td>Out Errors</td><td>{{ nic.out_errors }}</td></tr>
+    </table>
+  </div>
+</div>
+<div class="card">
+  <h5 class="card-header">Graphs</h5>
+  <div class="card-body">
+    <div id="sidekick-nic-graph"></div>
+  </div>
+</div>
+<script type="text/javascript">
+(function () {
+  $(document).ready(function () {
+    $.ajax({
+      url: "{% url 'plugins:sidekick:nic_graphite_data' pk=object.pk %}",
+      dataType: 'json',
+      success: function (json) {
+        if (!sidekickHasData(json)) {
+          return;
+        }
+        var size = sidekickGraphSize('sidekick-nic-graph');
+        var u = new uPlot(
+          sidekickSeriesOpts(size),
+          json.graph_data.data,
+          document.getElementById('sidekick-nic-graph')
+        );
+        window.addEventListener("resize", function () {
+          u.setSize(sidekickGraphSize('sidekick-nic-graph'));
+        });
+      }
+    });
+  });
+})();
+</script>

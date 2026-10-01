@@ -1,0 +1,105 @@
+{% include 'sidekick/template_content/_graph_assets.html' %}
+<div class="row">
+  <div class="col-md-12">
+    <a href="#" class="sidekick-group-period" data-period="-1d">Last Day</a> |
+    <a href="#" class="sidekick-group-period" data-period="-7d">Last Week</a> |
+    <a href="#" class="sidekick-group-period" data-period="-30d">Last Month</a> |
+    <a href="#" class="sidekick-group-period" data-period="-1y">Last Year</a> |
+    <a href="#" class="sidekick-group-period" data-period="-5y">Last Five Years</a>
+    <hr>
+  </div>
+  <div class="col-md-4">
+    <div class="card mb-4 rounded-2">
+      <div class="card-header py-2"><h6>Total Traffic</h6></div>
+      <div class="card-body"><div id="sidekick-group-service-graph"></div></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card mb-4 rounded-2">
+      <div class="card-header py-2"><h6>Total Peering and R&amp;E</h6></div>
+      <div class="card-body"><div id="sidekick-group-remaining-graph"></div></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card mb-4 rounded-2">
+      <div class="card-header py-2"><h6>Total Transit</h6></div>
+      <div class="card-body"><div id="sidekick-group-accounting-graph"></div></div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+(function () {
+  var baseUrl = "{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}";
+
+  function clearGraphs() {
+    $('#sidekick-group-service-graph').empty();
+    $('#sidekick-group-accounting-graph').empty();
+    $('#sidekick-group-remaining-graph').empty();
+  }
+
+  function renderGraphs(url) {
+    return $.ajax({
+      url: url,
+      dataType: 'json',
+      success: function (json) {
+        var graph = json && json.graph_data;
+        if (!graph) {
+          return;
+        }
+        var serviceData = graph.service_data;
+        var accountingData = graph.accounting_data;
+        var remainingData = graph.remaining_data;
+        if (!serviceData) {
+          return;
+        }
+
+        var size = sidekickGraphSize('sidekick-group-service-graph');
+        var mooSync = uPlot.sync("sidekick");
+        var matchSyncKeys = (own, ext) => own == ext;
+        var cursorOpts = {
+          lock: true,
+          focus: { prox: 16 },
+          sync: { key: mooSync.key, setSeries: true, match: [matchSyncKeys, matchSyncKeys] },
+        };
+
+        var allData = [];
+        [serviceData, accountingData, remainingData].forEach(function (series) {
+          if (series && series.length > 2) {
+            allData = allData.concat(series[1], series[2]);
+          }
+        });
+        var max = allData.length ? Math.round(Math.max.apply(null, allData)) : 1;
+        var min = allData.length ? Math.round(Math.min.apply(null, allData)) : 0;
+
+        var opts = sidekickSeriesOpts(size);
+        opts.cursor = cursorOpts;
+        opts.axes[1].size = 95;
+        opts.scales = { "bits": { auto: false, range: [min, max] } };
+
+        [['service_graph', serviceData],
+         ['accounting_graph', accountingData],
+         ['remaining_graph', remainingData]].forEach(function (pair) {
+          var divId = 'sidekick-group-' + pair[0].replace('_', '-');
+          if (!pair[1]) {
+            return;
+          }
+          var u = new uPlot(opts, pair[1], document.getElementById(divId));
+          window.addEventListener("resize", function () {
+            u.setSize(sidekickGraphSize(divId));
+          });
+        });
+      }
+    });
+  }
+
+  $(document).ready(function () {
+    renderGraphs(baseUrl);
+  });
+
+  $(".sidekick-group-period").click(function (e) {
+    e.preventDefault();
+    clearGraphs();
+    renderGraphs(baseUrl + "?period=" + $(this).data('period'));
+  });
+})();
+</script>

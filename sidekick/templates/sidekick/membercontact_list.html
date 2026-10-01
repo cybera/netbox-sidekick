@@ -1,6 +1,8 @@
 {% extends 'base/layout.html' %}
 {% load render_table from django_tables2 %}
 
+{% block title %}Member Contacts{% endblock %}
+
 {% block content %}
 <div class="row">
   <div class="col col-md-7">
@@ -17,38 +19,37 @@
       <h5 class="card-header">Search</h5>
       <div class="card-body">
         <form action="{{ request.path }}" method="get" id="contact_form">
-          {% csrf_token %}
-          <legend><h6>Members</h6></legend>
-          <select name="member" id="member" class="netbox-static-select">
-            <option value="">---</option>
-            {% for member in members %}
-            <option value="{{ member.id }}" {% if selected_member == member.id %} selected {% endif %}>{{ member.name }}</option>
-            {% endfor %}
-          </select>
-          <br>
-          <br>
-          <legend><h6>Network Service Groups</h6></legend>
-          <select name="network_service_group" id="network_service_group" class="netbox-static-select">
-            <option value="">---</option>
-            {% for network_service_group in network_service_groups %}
-            <option value="{{ network_service_group.id }}" {% if selected_network_service_group == network_service_group.id %} selected {% endif %}>{{ network_service_group.name }}</option>
-            {% endfor %}
-          </select>
-          <br>
-          <br>
-          <legend><h6>Role</h6></legend>
-          <select name="contact_role" id="contact_role" class="netbox-static-select">
-            <option value="">---</option>
-            {% for contact_role in contact_roles %}
-            <option value="{{ contact_role.id }}" {% if selected_contact_role_id == contact_role.id %} selected {% endif %}>{{ contact_role.name }}</option>
-            {% endfor %}
-          </select>
-          <br>
-          <br>
+          <div class="mb-3">
+            <label class="form-label" for="member">Members</label>
+            <select name="member" id="member" class="form-select">
+              <option value="">---</option>
+              {% for member in members %}
+              <option value="{{ member.id }}" {% if selected_member == member.id %} selected {% endif %}>{{ member.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="network_service_group">Network Service Groups</label>
+            <select name="network_service_group" id="network_service_group" class="form-select">
+              <option value="">---</option>
+              {% for network_service_group in network_service_groups %}
+              <option value="{{ network_service_group.id }}" {% if selected_network_service_group == network_service_group.id %} selected {% endif %}>{{ network_service_group.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="contact_role">Role</label>
+            <select name="contact_role" id="contact_role" class="form-select">
+              <option value="">---</option>
+              {% for contact_role in contact_roles %}
+              <option value="{{ contact_role.id }}" {% if selected_contact_role_id == contact_role.id %} selected {% endif %}>{{ contact_role.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
           <button type="submit" name="submit" value="table" class="btn btn-primary">Search</button>
         </form>
       </div>
     </div>
+  </div>
 </div>
-
 {% endblock %}

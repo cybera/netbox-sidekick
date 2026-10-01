@@ -107,12 +107,16 @@
       url: url,
       dataType: 'json',
       success: function(json) {
+        let graph = json && json.graph_data;
+        if (!graph || !graph.service_data) {
+          return;
+        }
         let size = getSize('service_graph');
         let mooSync = uPlot.sync("moo");
 
-        let service_data = json['graph_data']['service_data'];
-        let accounting_data = json['graph_data']['accounting_data'];
-        let remaining_data = json['graph_data']['remaining_data'];
+        let service_data = graph.service_data;
+        let accounting_data = graph.accounting_data || [service_data[0], [], []];
+        let remaining_data = graph.remaining_data || [service_data[0], [], []];
         let all_data = [].concat(service_data[1], service_data[2], accounting_data[1], accounting_data[2], remaining_data[1], remaining_data[2]);
 
         let max = Math.round(getMax(all_data));

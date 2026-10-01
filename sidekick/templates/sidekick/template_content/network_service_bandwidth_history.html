@@ -1,0 +1,27 @@
+{% if object.accounting_profile %}
+<div class="card">
+  <h5 class="card-header">Bandwidth History</h5>
+  <div class="card-body table-responsive">
+    <table class="table table-hover attr-table">
+      <tr>
+        <th>Date</th>
+        <th>Traffic Cap</th>
+        <th>Burst Limit</th>
+        <th>Billable</th>
+      </tr>
+      {% for v in object.accounting_profile.bandwidthprofile_set.all|dictsort:"effective_date" %}
+      <tr>
+        <td><a href="{{ v.get_absolute_url }}">{{ v.effective_date }}</a></td>
+        <td>{{ v.traffic_cap }}</td>
+        <td>{{ v.burst_limit }}</td>
+        <td>{{ v.billable }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="text-muted">No bandwidth profiles defined.</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endif %}

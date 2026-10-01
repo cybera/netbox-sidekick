@@ -105,6 +105,12 @@ class NetworkServiceFilterSet(NetBoxModelFilterSet):
         distinct=True,
         label='Routing type (ID)',
     )
+    network_service_group_id = django_filters.ModelMultipleChoiceFilter(
+        field_name='networkservicegroup',
+        queryset=NetworkServiceGroup.objects.all(),
+        distinct=True,
+        label='Network service group (ID)',
+    )
 
     class Meta:
         model = NetworkService

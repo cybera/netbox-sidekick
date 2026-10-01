@@ -175,6 +175,9 @@ NETWORK_SERVICE_L3_LAYOUT = layout.SimpleLayout(
 NETWORK_SERVICE_GROUP_LAYOUT = layout.SimpleLayout(
     left_panels=[NetworkServiceGroupPanel(), TagsPanel(), CustomFieldsPanel()],
     right_panels=[RelatedObjectsPanel()],
+    bottom_panels=[
+        ObjectsTablePanel('sidekick.NetworkService', filters={'network_service_group_id': lambda ctx: ctx['object'].pk}),
+    ],
 )
 
 ACCOUNTING_SOURCE_LAYOUT = layout.SimpleLayout(

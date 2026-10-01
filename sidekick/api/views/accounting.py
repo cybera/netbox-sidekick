@@ -21,7 +21,9 @@ from sidekick.api.serializers import (
 )
 
 from sidekick.filtersets import (
-    AccountingProfileFilterSet
+    AccountingProfileFilterSet,
+    AccountingSourceFilterSet,
+    BandwidthProfileFilterSet,
 )
 
 from sidekick.models import (
@@ -41,11 +43,13 @@ class AccountingProfileViewSet(NetBoxModelViewSet):
 class AccountingSourceViewSet(NetBoxModelViewSet):
     queryset = AccountingSource.objects.all()
     serializer_class = AccountingSourceSerializer
+    filterset_class = AccountingSourceFilterSet
 
 
 class BandwidthProfileViewSet(NetBoxModelViewSet):
     queryset = BandwidthProfile.objects.all()
     serializer_class = BandwidthProfileSerializer
+    filterset_class = BandwidthProfileFilterSet
 
 
 class CurrentBandwidthView(APIView):

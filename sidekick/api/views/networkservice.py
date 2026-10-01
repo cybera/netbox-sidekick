@@ -32,45 +32,64 @@ from sidekick.models import (
     NetworkServiceGroup,
 )
 
+from sidekick.filtersets import (
+    LogicalSystemFilterSet,
+    RoutingTypeFilterSet,
+    NetworkServiceTypeFilterSet,
+    NetworkServiceFilterSet,
+    NetworkServiceDeviceFilterSet,
+    NetworkServiceL2FilterSet,
+    NetworkServiceL3FilterSet,
+    NetworkServiceGroupFilterSet,
+)
+
 
 class LogicalSystemViewSet(NetBoxModelViewSet):
     queryset = LogicalSystem.objects.all()
     serializer_class = LogicalSystemSerializer
+    filterset_class = LogicalSystemFilterSet
 
 
 class RoutingTypeViewSet(NetBoxModelViewSet):
     queryset = RoutingType.objects.all()
     serializer_class = RoutingTypeSerializer
+    filterset_class = RoutingTypeFilterSet
 
 
 class NetworkServiceTypeViewSet(NetBoxModelViewSet):
     queryset = NetworkServiceType.objects.all()
     serializer_class = NetworkServiceTypeSerializer
+    filterset_class = NetworkServiceTypeFilterSet
 
 
 class NetworkServiceViewSet(NetBoxModelViewSet):
     queryset = NetworkService.objects.all()
     serializer_class = NetworkServiceSerializer
+    filterset_class = NetworkServiceFilterSet
 
 
 class NetworkServiceDeviceViewSet(NetBoxModelViewSet):
     queryset = NetworkServiceDevice.objects.all()
     serializer_class = NetworkServiceDeviceSerializer
+    filterset_class = NetworkServiceDeviceFilterSet
 
 
 class NetworkServiceL2ViewSet(NetBoxModelViewSet):
     queryset = NetworkServiceL2.objects.all()
     serializer_class = NetworkServiceL2Serializer
+    filterset_class = NetworkServiceL2FilterSet
 
 
 class NetworkServiceL3ViewSet(NetBoxModelViewSet):
     queryset = NetworkServiceL3.objects.all()
     serializer_class = NetworkServiceL3Serializer
+    filterset_class = NetworkServiceL3FilterSet
 
 
 class NetworkServiceGroupViewSet(NetBoxModelViewSet):
     queryset = NetworkServiceGroup.objects.all()
     serializer_class = NetworkServiceGroupSerializer
+    filterset_class = NetworkServiceGroupFilterSet
 
 
 class NetworkServiceDuplicateInterfaces(APIView):

@@ -1,95 +1,99 @@
 # Installation
 
-## Current development instructions:
+`netbox-sidekick` targets **NetBox 4.0 – 4.7** on **Python 3.12+**.
 
-1. Have a working [NetBox](https://netbox.readthedocs.io/en/stable/) installation.
+## Installation
 
-2. Clone the `netbox-sidekick` repo somewhere on the NetBox server:
+1. Have a working [NetBox](https://netbox.readthedocs.io/en/stable/) 4.x
+   installation.
 
-```shell
-$ cd /opt
-$ git clone https://github.com/cybera/netbox-sidekick
-```
+2. Add the plugin to NetBox's `local_requirements.txt`:
 
-3. Install it:
-
-```shell
-$ cd netbox-sidekick
-$ python setup.py develop
-```
-
-4. Follow the Post-Install instructions
-
-## Future stable instructions:
-
-1. Have a working [NetBox](https://netbox.readthedocs.io/en/stable/) installation.
-
-2. Add `netbox-sidekick` to `local_requirements.txt` in the root of the NetBox
-installation directory.
+   ```
+   git+https://github.com/cybera/netbox-sidekick
+   ```
 
 3. Install the requirements:
 
-```shell
-$ pip install -r local_requirements.txt
-```
+   ```shell
+   $ pip install -r local_requirements.txt
+   ```
 
-4. Follow the Post-Install instructions
+4. Follow the Post-Install instructions below.
 
-## Post-Install instructions
+## Post-Install
 
-1. Modify the NetBox `configuration.py` file to enable the plugin:
+1. Enable the plugin in NetBox's `configuration.py`:
 
-```
-PLUGINS = [
-  'sidekick',
-]
-```
+   ```python
+   PLUGINS = [
+       'sidekick',
+   ]
+   ```
+
+   Configuration options (all optional) are passed via `PLUGINS_CONFIG`, for
+   example:
+
+   ```python
+   PLUGINS_CONFIG = {
+       'sidekick': {
+           # Traffic graph backend. When False (the default), sidekick falls
+           # back to Graphite.
+           'use_clickhouse': True,
+           'clickhouse_url': 'http://clickhouse.example:8123',
+           'clickhouse_database': 'pmacct',
+           'clickhouse_user': 'default',
+           'clickhouse_password': '',
+           # Legacy Graphite endpoints (used when use_clickhouse is False)
+           'graphite_host': None,
+           'graphite_render_host': None,
+           # 1Password Connect (SNMP credential retrieval)
+           '1pw_connect_host': None,
+           '1pw_connect_token_path': None,
+           '1pw_connect_readonly_vault': None,
+       },
+   }
+   ```
 
 2. Install the migrations:
 
-```shell
-$ cd /opt/netbox/netbox
-$ python manage.py migrate sidekick
-```
+   ```shell
+   $ cd /opt/netbox/netbox
+   $ python manage.py migrate sidekick
+   ```
 
-3. Run the setup script:
+3. Restart NetBox:
 
-```shell
-$ cd /opt/netbox/netbox
-$ python manage.py migrate setup_sidekick
-```
+   ```shell
+   $ sudo systemctl restart netbox netbox-rq
+   ```
 
-4. Restart NetBox:
+## Removing
 
-```shell
-$ sudo service netbox restart
-$ sudo service netbox-rq restart
-```
+1. Remove `sidekick` from `PLUGINS` in `configuration.py` and restart NetBox.
 
-# Removing
+2. To delete the plugin's data, drop its tables from the NetBox database and
+   remove its migration records:
 
-If you are terrified of what you've just installed or it's simply not useful,
-you can remove this plugin by:
+   ```sql
+   DROP TABLE sidekick_nic;
+   DROP TABLE sidekick_networkservicel3;
+   DROP TABLE sidekick_networkservicel2;
+   DROP TABLE sidekick_networkservicedevice;
+   DROP TABLE sidekick_networkservice;
+   DROP TABLE sidekick_networkservicegroup_network_services;
+   DROP TABLE sidekick_networkservicegroup;
+   DROP TABLE sidekick_accountingsourcecounter;
+   DROP TABLE sidekick_accountingsource;
+   DROP TABLE sidekick_accountingprofile_accounting_sources;
+   DROP TABLE sidekick_accountingprofile;
+   DROP TABLE sidekick_bandwidthprofile;
+   DROP TABLE sidekick_logicalsystem;
+   DROP TABLE sidekick_routingtype;
+   DROP TABLE sidekick_networkservicetype;
 
-1. Modify the NetBox `configuration.py` file and remove `sidekick` from
-   the list of plugins.
+   DELETE FROM django_migrations WHERE app = 'sidekick';
+   ```
 
-2. You can delete all data from the database by doing:
-
-```
-psql netbox
-\d
-drop table sidekick_nic;
-drop table sidekick_networkservicel3;
-drop table sidekick_networkservicel2;
-drop table sidekick_networkservicedevice;
-drop table sidekick_networkservice;
-drop table sidekick_logicalsystem;
-drop table sidekick_routingtype;
-drop table sidekick_networkservicetype;
-drop table sidekick_membercontact;
-drop table sidekick_contact;
-drop table sidekick_contacttype;
-
-delete from django_migrations where app = 'sidekick';
-```
+   > **Warning:** this permanently deletes sidekick data. Take a database backup
+   > first, and confirm the table names against `\dt sidekick_*` before running.

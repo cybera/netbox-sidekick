@@ -25,7 +25,8 @@ class AccountingTest(BaseTest):
     def test_view_accountingsource_detail(self):
         v = AccountingSource.objects.get(device=1, name='Client-EastUniversity')
         resp = self.client.get(v.get_absolute_url())
-        self.assertContains(resp, "Router 1: Client-EastUniversity")
+        self.assertContains(resp, 'Client-EastUniversity')
+        self.assertContains(resp, 'Primary ISP')
 
     # Accounting Profile
     def test_accountingprofile_basic(self):

@@ -19,24 +19,37 @@ let g:syntastic_python_flake8_post_args='--ignore=W504,E501'
 If you need to create a model, please use the following process:
 
 1. Define the model in either a new or an existing related file under the
-   `models` directory.
+   `models` directory, then add an import statement to `models/__init__.py`.
+   New or changed models require a migration (see "Update Migrations" below).
 
-2. Once created, add an import statement to the `models/__init__.py` file.
+2. Define a filter for the model in the `filtersets` directory (a
+   `NetBoxModelFilterSet` plus a matching `NetBoxModelFilterSetForm`) and add
+   an import statement to `filtersets/__init__.py`. Provide a `search()` method
+   so the list view's search box works, and declare `<field>_id` filters for
+   foreign keys so related-object tables and panels can link to filtered lists.
 
-3. Add an admin entry for the model to the `admin.py` file.
+3. Define the model's table in the `tables` directory and export it from
+   `tables/__init__.py`.
 
-4. Define a filter for the model in the `filters` directory. Either add the
-   filter to a new or an existing related file. Also add an import statement
-   to the `filters/__init__.py` file.
+4. Define the model's form(s) in the `forms` directory and export them from
+   `forms/__init__.py`.
 
-4. Repeat the process for `tables` and `views`.
+5. Register the views in `views/` using `@register_model_view` (list, detail,
+   add/edit, delete, bulk operations). Detail views should render a
+   `SimpleLayout` from `ui/panels.py` rather than a hand-written template, and
+   should inherit `SidekickObjectView` so the related-objects panel works.
 
-5. Define at least two standard templates for indexing and detail views in the
-   `templates/sidekick` directory.
+6. Wire the model's URLs in `urls.py` with `get_model_urls('sidekick',
+   '<model_name>')` (list views with `detail=False`, detail views with the
+   default `detail=True`).
 
-8. Add new URLs to the `urls.py` fiile.
+7. Add navigation entries to the `navigation.py` menu, and (optionally) a
+   `SearchIndex` to `search.py`.
 
-7. Add navigation entries to the `navigation.py` file.
+8. Inject any additional per-object content (graphs, etc.) via a
+   `PluginTemplateExtension` in `template_content/` and register it in
+   `template_content/__init__.py`. Note: there is no Django admin integration —
+   NetBox 4 removed `django.contrib.admin` (see ADR-064).
 
 Once this is in place, add some basic unit tests to ensure basic functionality
 works:
@@ -139,7 +152,7 @@ docker compose -f scripts/docker-compose.ci.yml run --rm ci-runner
 ```
 
 This environment uses:
-- **Python:** 3.9 (Bullseye)
+- **Python:** 3.12 (Bookworm)
 - **PostgreSQL:** 13 (Alpine)
 - **Redis:** Alpine
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-NETBOX_VERSION="v3.2.1"
+NETBOX_VERSION="v4.7.0"
 
 EXIT=0
 
@@ -35,7 +35,7 @@ pip install -r requirements.txt
 cd ../..
 
 # Install sidekick
-python setup.py develop
+pip install -e .
 
 cp scripts/configuration.testing.py build/netbox/netbox/netbox/configuration.py
 

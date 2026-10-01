@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from dcim.models import Device, Interface, Site
 from netbox.forms import NetBoxModelImportForm
 from tenancy.models import Tenant
-from utilities.forms.fields import CSVModelChoiceField, SlugField
+from utilities.forms.fields import CSVModelChoiceField, CSVModelMultipleChoiceField, SlugField
 
 from sidekick.models import (
     AccountingProfile,
@@ -161,7 +161,7 @@ class NetworkServiceL3ImportForm(NetBoxModelImportForm):
 
 class NetworkServiceGroupImportForm(NetBoxModelImportForm):
     slug = SlugField()
-    network_services = CSVModelChoiceField(
+    network_services = CSVModelMultipleChoiceField(
         label=_('Network services'),
         queryset=NetworkService.objects.all(),
         required=False,
@@ -191,7 +191,7 @@ class AccountingProfileImportForm(NetBoxModelImportForm):
         queryset=Tenant.objects.all(),
         to_field_name='pk',
     )
-    accounting_sources = CSVModelChoiceField(
+    accounting_sources = CSVModelMultipleChoiceField(
         label=_('Accounting sources'),
         queryset=AccountingSource.objects.all(),
         required=False,

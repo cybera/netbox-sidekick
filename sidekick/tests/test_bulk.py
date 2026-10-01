@@ -73,3 +73,9 @@ class DetailRenderTest(BaseTest):
         # uPlot must be served from the plugin's own static files, not a CDN.
         self.assertContains(resp, 'sidekick/uplot/uPlot.iife.min.js')
         self.assertNotContains(resp, 'leeoniya.github.io')
+
+        # NetBox 4.x ships no jQuery, so the graph JS must be vanilla. The
+        # pre-rewrite templates loaded jQuery from a CDN and called $().
+        self.assertNotContains(resp, 'code.jquery.com')
+        self.assertNotContains(resp, '$.ajax')
+        self.assertContains(resp, 'sidekickFetchJson')

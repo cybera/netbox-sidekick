@@ -32,16 +32,13 @@
   var baseUrl = "{% url 'plugins:sidekick:networkservicegroup_data' pk=object.pk %}";
 
   function clearGraphs() {
-    $('#sidekick-group-service-graph').empty();
-    $('#sidekick-group-accounting-graph').empty();
-    $('#sidekick-group-remaining-graph').empty();
+    sidekickClear('sidekick-group-service-graph');
+    sidekickClear('sidekick-group-accounting-graph');
+    sidekickClear('sidekick-group-remaining-graph');
   }
 
   function renderGraphs(url) {
-    return $.ajax({
-      url: url,
-      dataType: 'json',
-      success: function (json) {
+    sidekickFetchJson(url, function (json) {
         var graph = json && json.graph_data;
         if (!graph) {
           return;
@@ -49,7 +46,13 @@
         var serviceData = graph.service_data;
         var accountingData = graph.accounting_data;
         var remainingData = graph.remaining_data;
-        if (!serviceData) {
+        if (!serviceData || !serviceData.slice(1).some(function (s) {
+          return s && s.length;
+        })) {
+          ['sidekick-group-service-graph', 'sidekick-group-accounting-graph',
+           'sidekick-group-remaining-graph'].forEach(function (div) {
+            sidekickShowEmpty(div, 'No bandwidth data available for this service group.');
+          });
           return;
         }
 
@@ -88,18 +91,19 @@
             u.setSize(sidekickGraphSize(divId));
           });
         });
-      }
     });
   }
 
-  $(document).ready(function () {
+  sidekickOnReady(function () {
     renderGraphs(baseUrl);
   });
 
-  $(".sidekick-group-period").click(function (e) {
-    e.preventDefault();
-    clearGraphs();
-    renderGraphs(baseUrl + "?period=" + $(this).data('period'));
+  document.querySelectorAll(".sidekick-group-period").forEach(function (link) {
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
+      clearGraphs();
+      renderGraphs(baseUrl + "?period=" + link.dataset.period);
+    });
   });
 })();
 </script>

@@ -15,16 +15,59 @@
     return value;
   }
 
-  function sidekickGraphSize(div) {
-    return {
-      height: 300,
-      width: $('#' + div).width(),
+  // NetBox 4.x does not ship jQuery on its UI pages -- the only copy in the
+  // tree belongs to the DRF browsable API. These are the vanilla equivalents
+  // of the jQuery helpers the graph templates used to call. Do not
+  // reintroduce jQuery here; the previous templates loaded it from a CDN,
+  // which the first-class rewrite removed without replacing the call sites.
+  function sidekickOnReady(fn) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fn);
+    } else {
+      fn();
     }
   }
 
-  // Guard against empty or malformed payloads from the graph endpoints.
+  function sidekickGraphSize(div) {
+    var el = document.getElementById(div);
+    return {
+      height: 300,
+      width: el ? el.clientWidth : 600,
+    }
+  }
+
+  function sidekickClear(div) {
+    var el = document.getElementById(div);
+    if (el) el.innerHTML = '';
+  }
+
+  function sidekickFetchJson(url, onData) {
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (response) {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.json();
+      })
+      .then(onData)
+      .catch(function (error) {
+        console.error('sidekick: could not load graph data from ' + url, error);
+      });
+  }
+
+  function sidekickShowEmpty(div, message) {
+    var el = document.getElementById(div);
+    if (el) el.innerHTML = '<p class="text-muted mb-0">' + message + '</p>';
+  }
+
+  // Guard against empty or malformed payloads from the graph endpoints. uPlot
+  // data is [xvalues, series1, series2, ...]; a payload whose series are all
+  // empty (which is what a service with no ClickHouse rows returns) would
+  // otherwise render as a blank chart frame that looks broken.
   function sidekickHasData(payload) {
-    return !!(payload && payload.graph_data && payload.graph_data.data);
+    var data = payload && payload.graph_data && payload.graph_data.data;
+    if (!data || !data.length) return false;
+    return data.slice(1).some(function (series) {
+      return series && series.length;
+    });
   }
 
   function sidekickSeriesOpts(size) {

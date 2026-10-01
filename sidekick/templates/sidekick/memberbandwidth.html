@@ -3,12 +3,6 @@
 
 {% block title %}Member Bandwidth Report for {{ member.name }}{% endblock %}
 
-{% block header %}
-<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-<script src="https://leeoniya.github.io/uPlot/dist/uPlot.iife.min.js"></script>
-<link rel="stylesheet" href="https://leeoniya.github.io/uPlot/dist/uPlot.min.css" />
-{% endblock %}
-
 {% block content %}
 <h1>Bandwidth Report for {{ member.name }}</h1>
 <div class="row">
@@ -56,6 +50,7 @@
 {% endblock %}
 
 {% block javascript %}
+{% include 'sidekick/template_content/_graph_assets.html' %}
 <script type="text/javascript">
   function bits(bits) {
     if (bits == 0) return 0;
@@ -69,17 +64,13 @@
   }
 
   function getSize(div) {
-    var v = '#' + div;
-    return {
-      height: 300,
-      width: $(v).width(),
-    }
+    return sidekickGraphSize(div);
   }
 
   function clearGraphs() {
-    $("#service_graph").empty();
-    $("#accounting_graph").empty();
-    $("#remaining_graph").empty();
+    sidekickClear('service_graph');
+    sidekickClear('accounting_graph');
+    sidekickClear('remaining_graph');
   }
 
   function getMax(arr) {
@@ -103,12 +94,13 @@
   }
 
   function renderGraphs(url) {
-    return $.ajax({
-      url: url,
-      dataType: 'json',
-      success: function(json) {
+    sidekickFetchJson(url, function(json) {
         let graph = json && json.graph_data;
-        if (!graph || !graph.service_data) {
+        if (!graph || !graph.service_data ||
+            !graph.service_data.slice(1).some(function (s) { return s && s.length; })) {
+          ['service_graph', 'accounting_graph', 'remaining_graph'].forEach(function (div) {
+            sidekickShowEmpty(div, 'No bandwidth data available for this member.');
+          });
           return;
         }
         let size = getSize('service_graph');
@@ -198,35 +190,29 @@
         window.addEventListener("resize", e => {
           remaining_graph.setSize(getSize('remaining_graph'));
         });
-      }
     });
   }
 
-  $(document).ready(renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}"));
+  var memberBandwidthUrl = "{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}";
 
-  $("#last_day").click(function() {
+  function reloadGraphs(period) {
     clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-1d");
+    renderGraphs(period ? memberBandwidthUrl + '?period=' + period : memberBandwidthUrl);
+  }
+
+  sidekickOnReady(function () {
+    renderGraphs(memberBandwidthUrl);
   });
 
-  $("#last_week").click(function() {
-    clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-7d");
-  });
-
-  $("#last_month").click(function() {
-    clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-30d");
-  });
-
-  $("#last_year").click(function() {
-    clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-1y");
-  });
-
-  $("#last_five").click(function() {
-    clearGraphs();
-    renderGraphs("{% url 'plugins:sidekick:memberbandwidth_data' pk=member.pk %}?period=-5y");
+  [['last_day', '-1d'], ['last_week', '-7d'], ['last_month', '-30d'],
+   ['last_year', '-1y'], ['last_five', '-5y']].forEach(function (pair) {
+    var link = document.getElementById(pair[0]);
+    if (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        reloadGraphs(pair[1]);
+      });
+    }
   });
 
 </script>

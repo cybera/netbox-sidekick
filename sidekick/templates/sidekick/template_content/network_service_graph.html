@@ -7,25 +7,26 @@
 </div>
 <script type="text/javascript">
 (function () {
-  $(document).ready(function () {
-    $.ajax({
-      url: "{% url 'plugins:sidekick:network_service_graphite_data' pk=object.pk %}",
-      dataType: 'json',
-      success: function (json) {
+  var div = 'sidekick-service-graph';
+  sidekickOnReady(function () {
+    sidekickFetchJson(
+      "{% url 'plugins:sidekick:network_service_graphite_data' pk=object.pk %}",
+      function (json) {
         if (!sidekickHasData(json)) {
+          sidekickShowEmpty(div, 'No bandwidth data available for this service.');
           return;
         }
-        var size = sidekickGraphSize('sidekick-service-graph');
+        var size = sidekickGraphSize(div);
         var u = new uPlot(
           sidekickSeriesOpts(size),
           json.graph_data.data,
-          document.getElementById('sidekick-service-graph')
+          document.getElementById(div)
         );
         window.addEventListener("resize", function () {
-          u.setSize(sidekickGraphSize('sidekick-service-graph'));
+          u.setSize(sidekickGraphSize(div));
         });
       }
-    });
+    );
   });
 })();
 </script>

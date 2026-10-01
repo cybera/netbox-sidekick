@@ -30,9 +30,6 @@ class LogicalSystem(NetBoxModel):
     def __str__(self):
         return self.name
 
-    def get_absolute_url(self):
-        return reverse('plugins:sidekick:logicalsystem_detail', args=[self.pk])
-
 
 # RoutingType represents the routing type for a network service.
 class RoutingType(NetBoxModel):
@@ -54,9 +51,6 @@ class RoutingType(NetBoxModel):
 
     def __str__(self):
         return self.name
-
-    def get_absolute_url(self):
-        return reverse('plugins:sidekick:routingtype_detail', args=[self.pk])
 
 
 # NetworkServiceType is a Type of Network Service
@@ -89,9 +83,6 @@ class NetworkServiceType(NetBoxModel):
 
     def __str__(self):
         return self.name
-
-    def get_absolute_url(self):
-        return reverse('plugins:sidekick:networkservicetype_detail', args=[self.pk])
 
 
 # NetworkService represents a network service for of a member.
@@ -193,9 +184,6 @@ class NetworkService(NetBoxModel):
 
         return v
 
-    def get_absolute_url(self):
-        return reverse('plugins:sidekick:networkservice_detail', args=[self.pk])
-
     def graphite_service_name(self):
         member_name = slugify(self.member.name)
         service_name = slugify(self.name)
@@ -271,9 +259,6 @@ class NetworkServiceDevice(NetBoxModel):
     def __str__(self):
         return f"{self.network_service} on {self.device.name} {self.interface}"
 
-    # def get_absolute_url(self):
-    #     return reverse('plugins:sidekick:networkservicedevice_detail', args=[self.pk])
-
     def get_interface_entry(self):
         try:
             return Interface.objects.get(device=self.device, name=self.interface)
@@ -320,9 +305,6 @@ class NetworkServiceL2(NetBoxModel):
 
     def __str__(self):
         return f"{self.network_service_device} L2 Service"
-
-    # def get_absolute_url(self):
-    #     return reverse('plugins:sidekick:networkservicel2_detail', args=[self.pk])
 
 
 # NetworkServiceL3 represents an L3 component of a member's
@@ -475,9 +457,6 @@ class NetworkServiceL3(NetBoxModel):
     def get_peeringconnection_url(self):
         return reverse('plugins:sidekick:peeringconnection_detail', args=[self.pk])
 
-    def get_absolute_url(self):
-        return reverse('plugins:sidekick:networkservicel3_detail', args=[self.pk])
-
 
 # NetworkServiceGroup represents a grouping of network services
 # that have a common theme. For example: K-12 Members
@@ -510,6 +489,3 @@ class NetworkServiceGroup(NetBoxModel):
 
     def __str__(self):
         return self.name
-
-    def get_absolute_url(self):
-        return reverse('plugins:sidekick:networkservicegroup_detail', args=[self.pk])

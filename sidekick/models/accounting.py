@@ -34,9 +34,6 @@ class AccountingSource(NetBoxModel):
     def __str__(self):
         return f"{self.device.name}: {self.name} -- {self.destination}"
 
-    def get_absolute_url(self):
-        return reverse('plugins:sidekick:accountingsource_detail', args=[self.pk])
-
     def graphite_name(self):
         return slugify(self.name)
 
@@ -102,7 +99,9 @@ class AccountingSourceCounter(NetBoxModel):
         return f"{self.accounting_source}: {self.scu}/{self.dcu}"
 
     def get_absolute_url(self):
-        return reverse('plugins:sidekick:accountingsourcecounter_detail', args=[self.pk])
+        # AccountingSourceCounter has no view of its own (it is poller-written
+        # telemetry); link to the parent AccountingSource instead.
+        return reverse('plugins:sidekick:accountingsource', args=[self.accounting_source_id])
 
     # If there are more than 5 entries for an AccountingSourceCounter,
     # delete older ones.
@@ -155,9 +154,6 @@ class AccountingProfile(NetBoxModel):
             return f"{self.member.name}: {self.name}"
         else:
             return f"{self.member.name}"
-
-    def get_absolute_url(self):
-        return reverse('plugins:sidekick:accountingprofile_detail', args=[self.pk])
 
     def get_current_bandwidth_profile(self):
         return self.bandwidthprofile_set.filter(
@@ -217,6 +213,3 @@ class BandwidthProfile(NetBoxModel):
 
     def __str__(self):
         return f"{self.accounting_profile}: {self.traffic_cap}"
-
-    def get_absolute_url(self):
-        return reverse('plugins:sidekick:bandwidthprofile_detail', args=[self.pk])

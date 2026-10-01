@@ -96,7 +96,9 @@ class NIC(NetBoxModel):
         return f"{self.interface.device.name} {self.interface.name}"
 
     def get_absolute_url(self):
-        return reverse('plugins:sidekick:nic_detail', args=[self.interface.id])
+        # NIC is an extension of dcim.Interface and has no detail page of its
+        # own; link to the interface instead (decision 2026-10-01, ADR-068).
+        return reverse('dcim:interface', args=[self.interface_id])
 
     def graphite_device_name(self):
         return self.interface.device.name.lower().replace(' ', '_').replace('.', '_').replace('(', '').replace(')', '')

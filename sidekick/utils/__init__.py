@@ -12,7 +12,7 @@ import asyncio
 
 from pysnmp.hlapi.v3arch.asyncio import (
     get_cmd as _get_cmd,
-    next_cmd as _next_cmd,
+    walk_cmd as _walk_cmd,
     CommunityData, ContextData,
     ObjectIdentity, ObjectType,
     SnmpEngine,
@@ -205,7 +205,7 @@ async def _snmpwalk(remote_ip, community, oid):
     _results = []
     pysnmp_udp_transport_target = await get_pysnmp_udp_transport_target(remote_ip)
 
-    async for (errorIndication, errorStatus, errorIndex, varBinds) in _next_cmd(
+    async for (errorIndication, errorStatus, errorIndex, varBinds) in _walk_cmd(
             SnmpEngine(),
             CommunityData(community),
             pysnmp_udp_transport_target,
@@ -246,23 +246,30 @@ async def _snmpwalk_bulk_accounting(remote_ip, community):
 
     pysnmp_udp_transport_target = await get_pysnmp_udp_transport_target(remote_ip)
 
-    async for (errorIndication, errorStatus, errorIndex, varBinds) in _next_cmd(
-            SnmpEngine(),
-            CommunityData(community),
-            pysnmp_udp_transport_target,
-            ContextData(),
-            lexicographicMode=False,
-            lookupMib=True,
-            *ACCOUNTING_OIDS):
+    snmp_engine = SnmpEngine()
 
-        if errorIndication:
-            raise Exception(f"Error performing snmpwalk: {errorIndication}")
-        if errorStatus:
-            _msg = '%s at %s' % (
-                errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
-            raise Exception(f"Error performing snmpget: {_msg}")
-        else:
-            data.append(varBinds)
+    # pysnmp 7 walk_cmd() walks ONE varbind per generator; the pysnmp 4
+    # nextCmd() this was ported from took *varBinds and walked them
+    # together. Walk each accounting OID in turn - the result consumer
+    # below already flattens rows.
+    for _oid in ACCOUNTING_OIDS:
+        async for (errorIndication, errorStatus, errorIndex, varBinds) in _walk_cmd(
+                snmp_engine,
+                CommunityData(community),
+                pysnmp_udp_transport_target,
+                ContextData(),
+                _oid,
+                lexicographicMode=False,
+                lookupMib=True):
+
+            if errorIndication:
+                raise Exception(f"Error performing snmpwalk: {errorIndication}")
+            if errorStatus:
+                _msg = '%s at %s' % (
+                    errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
+                raise Exception(f"Error performing snmpget: {_msg}")
+            else:
+                data.append(varBinds)
 
     for row in data:
         for r in row:
@@ -303,9 +310,19 @@ async def _snmpwalk_bulk_accounting(remote_ip, community):
     # Obtain the name for each ISP
     for isp in isps.keys():
         _oid = f".1.3.6.1.2.1.31.1.1.1.18.{isp}"
-        isp_name = await _snmpget(remote_ip, community, _oid)
-        if isp_name is not None:
-            isps[isp] = f"{isp_name[0][1]}"
+        # _snmpget() is the raw async helper and returns the whole
+        # (errorIndication, errorStatus, errorIndex, varBinds) tuple,
+        # unlike the sync snmpget() wrapper. Unpack it here.
+        errorIndication, errorStatus, errorIndex, varBinds = await _snmpget(
+            remote_ip, community, _oid)
+        if errorIndication:
+            raise Exception(f"Error performing snmpget: {errorIndication}")
+        if errorStatus:
+            _msg = '%s at %s' % (
+                errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
+            raise Exception(f"Error performing snmpget: {_msg}")
+        if varBinds:
+            isps[isp] = f"{varBinds[0][1]}"
 
     # Format and structure the results
     classes = {}
@@ -358,23 +375,30 @@ async def _snmpwalk_bulk(remote_ip, community):
 
     pysnmp_udp_transport_target = await get_pysnmp_udp_transport_target(remote_ip)
 
-    async for (errorIndication, errorStatus, errorIndex, varBinds) in _next_cmd(
-            SnmpEngine(),
-            CommunityData(community),
-            pysnmp_udp_transport_target,
-            ContextData(),
-            lexicographicMode=False,
-            lookupMib=True,
-            *OIDs):
+    snmp_engine = SnmpEngine()
 
-        if errorIndication:
-            raise Exception(f"Error performing snmpwalk: {errorIndication}")
-        if errorStatus:
-            _msg = '%s at %s' % (
-                errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
-            raise Exception(f"Error performing snmpget: {_msg}")
-        else:
-            data.append(varBinds)
+    # pysnmp 7 walk_cmd() walks ONE varbind per generator; the pysnmp 4
+    # nextCmd() this was ported from took *varBinds and walked them
+    # together. Walk each interface OID in turn - the result consumer
+    # below already flattens rows.
+    for _oid in OIDs:
+        async for (errorIndication, errorStatus, errorIndex, varBinds) in _walk_cmd(
+                snmp_engine,
+                CommunityData(community),
+                pysnmp_udp_transport_target,
+                ContextData(),
+                _oid,
+                lexicographicMode=False,
+                lookupMib=True):
+
+            if errorIndication:
+                raise Exception(f"Error performing snmpwalk: {errorIndication}")
+            if errorStatus:
+                _msg = '%s at %s' % (
+                    errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
+                raise Exception(f"Error performing snmpget: {_msg}")
+            else:
+                data.append(varBinds)
 
     for row in data:
         for r in row:

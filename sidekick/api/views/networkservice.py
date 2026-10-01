@@ -74,6 +74,9 @@ class NetworkServiceGroupViewSet(NetBoxModelViewSet):
 
 
 class NetworkServiceDuplicateInterfaces(APIView):
+    """
+    List interfaces used by more than one active network service.
+    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     renderer_class = JSONRenderer

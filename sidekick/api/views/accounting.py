@@ -49,6 +49,9 @@ class BandwidthProfileViewSet(NetBoxModelViewSet):
 
 
 class CurrentBandwidthView(APIView):
+    """
+    Return the current bandwidth for a single accounting profile.
+    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     renderer_class = JSONRenderer
@@ -84,6 +87,10 @@ class CurrentBandwidthView(APIView):
 
 
 class AllCurrentBandwidthView(APIView):
+    """
+    Return the current bandwidth for every accounting profile, including the
+    current rate of each accounting source.
+    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     renderer_class = JSONRenderer

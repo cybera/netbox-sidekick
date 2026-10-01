@@ -15,6 +15,13 @@ from sidekick.utils import decrypt_1pw_secret
 
 
 class DeviceCheckAccessView(APIView):
+    """
+    Check whether a device can be reached over NAPALM.
+
+    Resolves the device's management IP, platform (NAPALM driver) and
+    credentials from 1Password, opens a NAPALM connection and returns
+    ``{'connected': true}`` or ``{'connected': false}``.
+    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 

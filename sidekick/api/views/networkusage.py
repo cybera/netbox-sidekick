@@ -22,6 +22,9 @@ from tenancy.models import Tenant
 
 
 class NetworkUsageListGroupsView(APIView):
+    """
+    List all network service groups, as id/name pairs.
+    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     renderer_class = JSONRenderer
@@ -38,6 +41,9 @@ class NetworkUsageListGroupsView(APIView):
 
 
 class NetworkUsageListMembersView(APIView):
+    """
+    List all member tenants, as id/name pairs.
+    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     renderer_class = JSONRenderer
@@ -54,6 +60,9 @@ class NetworkUsageListMembersView(APIView):
 
 
 class NetworkUsageGroupView(APIView):
+    """
+    Return the network usage for a single network service group.
+    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     renderer_class = JSONRenderer
@@ -157,6 +166,9 @@ class NetworkUsageGroupView(APIView):
 
 
 class NetworkUsageMemberView(APIView):
+    """
+    Return the network usage for a single member tenant.
+    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     renderer_class = JSONRenderer

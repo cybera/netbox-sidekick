@@ -8,6 +8,12 @@ from sidekick.models import NIC
 
 
 class NICListView(ListAPIView):
+    """
+    List the NIC entries for a device, most recent entry per interface.
+
+    Supports an optional ``name`` query parameter to return the full history
+    of a single interface instead.
+    """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = NICSerializer

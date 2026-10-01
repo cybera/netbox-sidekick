@@ -1,107 +1,73 @@
-from django.urls import path
+from django.urls import include, path
+
+from utilities.urls import get_model_urls
 
 from . import views
 
 urlpatterns = [
-    # Accounting Profile
-    path('accounting_profiles/', views.AccountingProfileIndexView.as_view(), name='accountingprofile_list'),
-    path('accounting_profiles/add/', views.AccountingProfileEditView.as_view(), name='accountingprofile_add'),
-    path('accounting_profiles/<int:pk>/', views.AccountingProfileDetailView.as_view(), name='accountingprofile_detail'),
-    path('accounting_profiles/<int:pk>/edit/', views.AccountingProfileEditView.as_view(), name='accountingprofile_edit'),
-    path('accounting_profiles/<int:pk>/delete/', views.AccountingProfileDeleteView.as_view(), name='accountingprofile_delete'),
+    # Accounting profiles
+    path('accounting_profiles/', include(get_model_urls('sidekick', 'accountingprofile', detail=False))),
+    path('accounting_profiles/<int:pk>/', include(get_model_urls('sidekick', 'accountingprofile'))),
 
-    # Accounting Source
-    path('accounting_sources/', views.AccountingSourceIndexView.as_view(), name='accountingsource_list'),
-    path('accounting_sources/<int:pk>/', views.AccountingSourceDetailView.as_view(), name='accountingsource_detail'),
+    # Accounting sources
+    path('accounting_sources/', include(get_model_urls('sidekick', 'accountingsource', detail=False))),
+    path('accounting_sources/<int:pk>/', include(get_model_urls('sidekick', 'accountingsource'))),
 
-    # Bandwidth Profile
-    path('bandwidth_profiles/', views.BandwidthProfileIndexView.as_view(), name='bandwidthprofile_list'),
-    path('bandwidth_profiles/add/', views.BandwidthProfileEditView.as_view(), name='bandwidthprofile_add'),
-    path('bandwidth_profiles/<int:pk>/', views.BandwidthProfileDetailView.as_view(), name='bandwidthprofile_detail'),
-    path('bandwidth_profiles/<int:pk>/edit/', views.BandwidthProfileEditView.as_view(), name='bandwidthprofile_edit'),
-    path('bandwidth_profiles/<int:pk>/delete/', views.BandwidthProfileDeleteView.as_view(), name='bandwidthprofile_delete'),
+    # Bandwidth profiles
+    path('bandwidth_profiles/', include(get_model_urls('sidekick', 'bandwidthprofile', detail=False))),
+    path('bandwidth_profiles/<int:pk>/', include(get_model_urls('sidekick', 'bandwidthprofile'))),
 
-    # Logical System
-    path('logical_systems/', views.LogicalSystemIndexView.as_view(), name='logicalsystem_list'),
-    path('logical_systems/add/', views.LogicalSystemEditView.as_view(), name='logicalsystem_add'),
-    path('logical_systems/<int:pk>/', views.LogicalSystemDetailView.as_view(), name='logicalsystem_detail'),
-    path('logical_systems/<int:pk>/edit/', views.LogicalSystemEditView.as_view(), name='logicalsystem_edit'),
-    path('logical_systems/<int:pk>/delete/', views.LogicalSystemDeleteView.as_view(), name='logicalsystem_delete'),
+    # Logical systems
+    path('logical_systems/', include(get_model_urls('sidekick', 'logicalsystem', detail=False))),
+    path('logical_systems/<int:pk>/', include(get_model_urls('sidekick', 'logicalsystem'))),
 
-    # Member Bandwidth Report Index
+    # Routing types
+    path('routing_types/', include(get_model_urls('sidekick', 'routingtype', detail=False))),
+    path('routing_types/<int:pk>/', include(get_model_urls('sidekick', 'routingtype'))),
+
+    # Network service types
+    path('network_service_types/', include(get_model_urls('sidekick', 'networkservicetype', detail=False))),
+    path('network_service_types/<int:pk>/', include(get_model_urls('sidekick', 'networkservicetype'))),
+
+    # Network services
+    path('network_services/', include(get_model_urls('sidekick', 'networkservice', detail=False))),
+    path('network_services/<int:pk>/', include(get_model_urls('sidekick', 'networkservice'))),
+
+    # Network service devices
+    path('network_service_devices/', include(get_model_urls('sidekick', 'networkservicedevice', detail=False))),
+    path('network_service_devices/<int:pk>/', include(get_model_urls('sidekick', 'networkservicedevice'))),
+
+    # Network service L2
+    path('network_service_l2/', include(get_model_urls('sidekick', 'networkservicel2', detail=False))),
+    path('network_service_l2/<int:pk>/', include(get_model_urls('sidekick', 'networkservicel2'))),
+
+    # Network service L3
+    path('network_services_l3/', include(get_model_urls('sidekick', 'networkservicel3', detail=False))),
+    path('network_services_l3/<int:pk>/', include(get_model_urls('sidekick', 'networkservicel3'))),
+
+    # Network service groups
+    path('network_service_groups/', include(get_model_urls('sidekick', 'networkservicegroup', detail=False))),
+    path('network_service_groups/<int:pk>/', include(get_model_urls('sidekick', 'networkservicegroup'))),
+
+    # NICs
+    path('nics/', include(get_model_urls('sidekick', 'nic', detail=False))),
+    path('nics/<int:pk>/', include(get_model_urls('sidekick', 'nic'))),
+
+    # Peering connections (read-only filtered list of L3 services)
+    path('peering_connections/', views.PeeringConnectionListView.as_view(), name='peeringconnection_list'),
+
+    # Member bandwidth report
     path('member_bandwidth/', views.MemberBandwidthIndexView.as_view(), name='memberbandwidth_index'),
-
-    # Member Bandwidth Report Details
     path('member_bandwidth/<int:pk>/', views.MemberBandwidthDetailView.as_view(), name='memberbandwidth_detail'),
-
-    # Member Bandwidth Data
     path('member_bandwidth/graphite/<int:pk>', views.MemberBandwidthDataView.as_view(), name='memberbandwidth_data'),
 
-    # Member Contacts
+    # Member contacts
     path('member_contacts/', views.MemberContactsView.as_view(), name='membercontact_list'),
 
-    # Network Service Type
-    path('network_service_types/', views.NetworkServiceTypeIndexView.as_view(), name='networkservicetype_list'),
-    path('network_service_types/add/', views.NetworkServiceTypeEditView.as_view(), name='networkservicetype_add'),
-    path('network_service_types/<int:pk>/', views.NetworkServiceTypeDetailView.as_view(), name='networkservicetype_detail'),
-    path('network_service_types/<int:pk>/edit/', views.NetworkServiceTypeEditView.as_view(), name='networkservicetype_edit'),
-    path('network_service_types/<int:pk>/delete/', views.NetworkServiceTypeDeleteView.as_view(), name='networkservicetype_delete'),
-
-    # Network Service
-    path('network_services/', views.NetworkServiceIndexView.as_view(), name='networkservice_list'),
-    path('network_services/add/', views.NetworkServiceEditView.as_view(), name='networkservice_add'),
-    path('network_services/<int:pk>/', views.NetworkServiceDetailView.as_view(), name='networkservice_detail'),
-    path('network_services/<int:pk>/edit', views.NetworkServiceEditView.as_view(), name='networkservice_edit'),
-    path('network_services/<int:pk>/delete', views.NetworkServiceDeleteView.as_view(), name='networkservice_delete'),
-
-    # Network Service L3
-    path('network_services_l3/', views.NetworkServiceL3IndexView.as_view(), name='networkservicel3_list'),
-    path('network_services_l3/add/', views.NetworkServiceL3EditView.as_view(), name='networkservicel3_add'),
-    path('network_services_l3/<int:pk>/', views.NetworkServiceL3DetailView.as_view(), name='networkservicel3_detail'),
-    path('network_services_l3/<int:pk>/edit', views.NetworkServiceL3EditView.as_view(), name='networkservicel3_edit'),
-    path('network_services_l3/<int:pk>/delete', views.NetworkServiceL3DeleteView.as_view(), name='networkservicel3_delete'),
-
-    # Network Service Graphite data
-    path('network_service/graphite/<int:pk>', views.NetworkServiceGraphiteDataView.as_view(), name='network_service_graphite_data'),
-
-    # Network Service Device Index
-    path('network_service_devices/', views.NetworkServiceIndexView.as_view(), name='networkservicedevice_list'),
-
-    # Network Service Device Details
-    path('network_service_devices/<int:pk>/', views.NetworkServiceDetailView.as_view(), name='networkservicedevice_detail'),
-
-    # Network Service Group
-    path('network_service_groups/', views.NetworkServiceGroupIndexView.as_view(), name='networkservicegroup_list'),
-    path('network_service_groups/add/', views.NetworkServiceGroupEditView.as_view(), name='networkservicegroup_add'),
-    path('network_service_groups/<int:pk>/', views.NetworkServiceGroupDetailView.as_view(), name='networkservicegroup_detail'),
-    path('network_service_groups/<int:pk>/edit/', views.NetworkServiceGroupEditView.as_view(), name='networkservicegroup_edit'),
-    path('network_service_groups/<int:pk>/delete/', views.NetworkServiceGroupDeleteView.as_view(), name='networkservicegroup_delete'),
-
-    # Network Service Group Graphite Data
-    path('network_service_groups/graphite/<int:pk>', views.NetworkServiceGroupGraphiteDataView.as_view(), name='networkservicegroup_data'),
-
-    # NIC
-    path('nics/', views.NICIndexView.as_view(), name='nic_list'),
-    path('nics/add/', views.NICEditView.as_view(), name='nic_add'),
-    path('nics/<int:interface__id>/', views.NICDetailView.as_view(), name='nic_detail'),
-    path('nics/<int:pk>/edit/', views.NICEditView.as_view(), name='nic_edit'),
-    path('nics/<int:pk>/delete/', views.NICDeleteView.as_view(), name='nic_delete'),
-
-    # NIC Graphite data
+    # Graph data endpoints
+    path('network_service/graphite/<int:pk>', views.NetworkServiceGraphiteDataView.as_view(),
+         name='network_service_graphite_data'),
+    path('network_service_groups/graphite/<int:pk>', views.NetworkServiceGroupGraphiteDataView.as_view(),
+         name='networkservicegroup_data'),
     path('nics/graphite/<int:pk>', views.NICGraphiteDataView.as_view(), name='nic_graphite_data'),
-
-    # Peering Services
-    path('peering_connections/', views.PeeringConnectionIndexView.as_view(), name='peeringconnection_list'),
-    path('peering_connections/add/', views.PeeringConnectionEditView.as_view(), name='peeringconnection_add'),
-    path('peering_connections/<int:pk>/', views.PeeringConnectionDetailView.as_view(), name='peeringconnection_detail'),
-    path('peering_connections/<int:pk>/edit', views.PeeringConnectionEditView.as_view(), name='peeringconnection_edit'),
-    path('peering_connections/<int:pk>/delete', views.PeeringConnectionEditView.as_view(), name='peeringconnection_delete'),
-
-
-    # Routing Type
-    path('routing_types/', views.RoutingTypeIndexView.as_view(), name='routingtype_list'),
-    path('routing_types/add/', views.RoutingTypeEditView.as_view(), name='routingtype_add'),
-    path('routing_types/<int:pk>/', views.RoutingTypeDetailView.as_view(), name='routingtype_detail'),
-    path('routing_types/<int:pk>/edit/', views.RoutingTypeEditView.as_view(), name='routingtype_edit'),
-    path('routing_types/<int:pk>/delete/', views.RoutingTypeDeleteView.as_view(), name='routingtype_delete'),
 ]

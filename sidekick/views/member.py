@@ -1,18 +1,13 @@
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.contrib.auth.models import Group
-from django.views.generic.edit import FormView
 
 from django_tables2.views import SingleTableView
 
 from tenancy.models import Tenant
 from tenancy.models import ContactRole
+from users.models import Group
 
 from sidekick.tables import (
     MemberContactTable,
-)
-
-from sidekick.forms import (
-    MemberCreateForm,
 )
 
 from sidekick.models import (
@@ -20,18 +15,8 @@ from sidekick.models import (
 )
 
 
-class MemberCreateView(PermissionRequiredMixin, FormView):
-    permission_required = 'sidekick.create_member'
-    template_name = 'sidekick/member/member_create.html'
-    form_class = MemberCreateForm
-    success_url = 'create'
-
-    def form_valid(self, form):
-        return super().form_valid(form)
-
-
 class MemberContactsView(PermissionRequiredMixin, SingleTableView):
-    permission_required = 'sidekick.view_membercontacts'
+    permission_required = 'sidekick.view_networkservice'
     model = NetworkService
     template_name = 'sidekick/membercontact_list.html'
 
@@ -84,7 +69,7 @@ class MemberContactsView(PermissionRequiredMixin, SingleTableView):
                 groups = Group.objects.filter(name__iexact=member.name)
                 if len(groups) == 1:
                     group = groups[0]
-                    for user in group.user_set.all():
+                    for user in group.users.all():
                         if user.is_active:
                             if not any(v.get('contact', None) == user.username for v in contacts):
                                 contacts.append({'contact': user.username})

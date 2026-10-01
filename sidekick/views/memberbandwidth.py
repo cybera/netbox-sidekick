@@ -23,7 +23,7 @@ from tenancy.models import Tenant
 
 class MemberBandwidthIndexView(PermissionRequiredMixin, SingleTableView):
     model = NetworkService
-    permission_required = 'sidekick.view_memberbandwidth'
+    permission_required = 'sidekick.view_networkservice'
     table_class = MemberBandwidthTable
     table_pagination = False
     queryset = Tenant.objects.filter(group__name='Members')
@@ -31,7 +31,7 @@ class MemberBandwidthIndexView(PermissionRequiredMixin, SingleTableView):
 
 
 class MemberBandwidthDetailView(PermissionRequiredMixin, SingleTableView):
-    permission_required = 'sidekick.view_memberbandwidth'
+    permission_required = 'sidekick.view_networkservice'
     model = NetworkService
     template_name = 'sidekick/memberbandwidth.html'
 
@@ -49,7 +49,7 @@ class MemberBandwidthDetailView(PermissionRequiredMixin, SingleTableView):
 
 
 class MemberBandwidthDataView(PermissionRequiredMixin, View):
-    permission_required = 'sidekick.view_memberbandwidth'
+    permission_required = 'sidekick.view_networkservice'
     model = NetworkService
 
     def get(self, request, pk):

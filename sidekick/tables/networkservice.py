@@ -7,6 +7,7 @@ from netbox.tables import BaseTable, ToggleColumn
 from sidekick.models import (
     LogicalSystem, RoutingType,
     NetworkServiceType, NetworkService, NetworkServiceL3,
+    NetworkServiceDevice, NetworkServiceL2,
     NetworkServiceGroup,
 )
 
@@ -19,7 +20,7 @@ TENANT_LINK = """
 """
 
 PEERING_LINK = """
-    <a href="{{ record.get_peeringconnection_url }}">{{ record }}</a>
+    <a href="{{ record.get_absolute_url }}">{{ record }}</a>
 """
 
 
@@ -29,7 +30,7 @@ class LogicalSystemTable(BaseTable):
 
     class Meta(BaseTable.Meta):
         model = LogicalSystem
-        fields = ('pk', 'name', 'description')
+        fields = ('pk', 'name', 'slug')
 
 
 class RoutingTypeTable(BaseTable):
@@ -38,7 +39,7 @@ class RoutingTypeTable(BaseTable):
 
     class Meta(BaseTable.Meta):
         model = RoutingType
-        fields = ('pk', 'name', 'description')
+        fields = ('pk', 'name', 'slug')
 
 
 class NetworkServiceTypeTable(BaseTable):
@@ -59,7 +60,7 @@ class NetworkServiceTable(BaseTable):
     )
 
     network_service_type = tables.LinkColumn(
-        'plugins:sidekick:networkservicetype_detail',
+        'plugins:sidekick:networkservicetype',
         args=[Accessor('network_service_type.pk')])
 
     member = tables.TemplateColumn(
@@ -104,7 +105,7 @@ class NetworkServiceL3Table(BaseTable):
 
     class Meta(BaseTable.Meta):
         model = NetworkServiceL3
-        fields = ('pk', 'active', 'id', 'name', 'network_service',)
+        fields = ('pk', 'active', 'id', 'name', 'network_service_device',)
 
     def order_name(self, queryset, is_descending):
         member_field = 'member__name'
@@ -141,3 +142,34 @@ class PeeringConnectionTable(BaseTable):
             service_field = '-name'
         queryset = queryset.order_by(member_field, service_field)
         return (queryset, True)
+
+
+class NetworkServiceDeviceTable(BaseTable):
+    pk = ToggleColumn()
+
+    network_service = tables.LinkColumn(
+        'plugins:sidekick:networkservice',
+        args=[Accessor('network_service.pk')],
+    )
+
+    device = tables.LinkColumn(
+        'dcim:device',
+        args=[Accessor('device.pk')],
+    )
+
+    class Meta(BaseTable.Meta):
+        model = NetworkServiceDevice
+        fields = ('pk', 'network_service', 'device', 'interface', 'vlan')
+
+
+class NetworkServiceL2Table(BaseTable):
+    pk = ToggleColumn()
+
+    network_service_device = tables.LinkColumn(
+        'plugins:sidekick:networkservicedevice',
+        args=[Accessor('network_service_device.pk')],
+    )
+
+    class Meta(BaseTable.Meta):
+        model = NetworkServiceL2
+        fields = ('pk', 'network_service_device', 'vlan')

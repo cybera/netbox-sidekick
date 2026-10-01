@@ -1,69 +1,53 @@
-from netbox.views.generic import (
-    ObjectView, ObjectListView,
-    ObjectEditView, ObjectDeleteView,
-)
-
 from django.conf import settings
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.http import JsonResponse
 from django.views import View
 
-from dcim.models import Interface
+from netbox.views import generic
+from utilities.views import register_model_view
 
-from sidekick.filters import (
-    NICFilterSet,
-    NICFilterSetForm,
-)
-
-from sidekick.forms import (
-    NICForm
-)
-
-from sidekick.tables import (
-    NICTable,
-)
-
-from sidekick.models import (
-    NIC,
-)
-
+from sidekick import filtersets, forms, tables
+from sidekick.models import NIC
 from sidekick.utils import (
-    get_graphite_nic_graph,
-    get_clickhouse_nic_graph,
     _service_has_clickhouse_backend,
+    get_clickhouse_nic_graph,
+    get_graphite_nic_graph,
 )
 
 
-# NIC Index
-# Displays devices that have NICs being managed by Sidekick
-class NICIndexView(ObjectListView):
+#
+# NICs
+#
+# NIC detail is rendered on the associated dcim.Interface via a template
+# extension, so no dedicated detail view is registered.
+#
+
+@register_model_view(NIC, 'list', path='', detail=False)
+class NICListView(generic.ObjectListView):
     queryset = NIC.objects.order_by('interface__id').distinct('interface__id')
-    model = NIC
-    table = NICTable
-    filterset = NICFilterSet
-    filterset_form = NICFilterSetForm
+    table = tables.NICTable
+    filterset = filtersets.NICFilterSet
+    filterset_form = filtersets.NICFilterSetForm
 
 
-# NIC Details
-class NICDetailView(ObjectView):
+@register_model_view(NIC, 'add', detail=False)
+@register_model_view(NIC, 'edit')
+class NICEditView(generic.ObjectEditView):
+    queryset = NIC.objects.order_by('interface__id').distinct('interface__id')
+    form = forms.NICForm
+
+
+@register_model_view(NIC, 'delete')
+class NICDeleteView(generic.ObjectDeleteView):
     queryset = NIC.objects.order_by('interface__id').distinct('interface__id')
 
 
-# NIC Edit
-class NICEditView(ObjectEditView):
-    queryset = NIC.objects.order_by('interface__id').distinct('interface__id')
-    form = NICForm
-
-
-# NIC Delete
-class NICDeleteView(ObjectDeleteView):
-    queryset = NIC.objects.order_by('interface__id').distinct('interface__id')
-
-
+#
 # NIC graphite data
+#
+
 class NICGraphiteDataView(PermissionRequiredMixin, View):
     permission_required = 'sidekick.view_nic'
-    model = Interface
 
     def get(self, request, pk):
         config = settings.PLUGINS_CONFIG.get('sidekick', {})

@@ -20,7 +20,7 @@ from sidekick.api.serializers import (
     BandwidthProfileSerializer,
 )
 
-from sidekick.filters import (
+from sidekick.filtersets import (
     AccountingProfileFilterSet
 )
 

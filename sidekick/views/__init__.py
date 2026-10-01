@@ -1,13 +1,13 @@
 from .accounting import (  # noqa: F401
-    AccountingProfileIndexView, AccountingProfileDetailView,
+    AccountingSourceListView, AccountingSourceView,
+    AccountingSourceEditView, AccountingSourceDeleteView,
+    AccountingProfileListView, AccountingProfileView,
     AccountingProfileEditView, AccountingProfileDeleteView,
-    AccountingSourceIndexView, AccountingSourceDetailView,
-    BandwidthProfileIndexView, BandwidthProfileDetailView,
+    BandwidthProfileListView, BandwidthProfileView,
     BandwidthProfileEditView, BandwidthProfileDeleteView,
 )
 
 from .member import (  # noqa: F401
-    MemberCreateView,
     MemberContactsView,
 )
 
@@ -18,26 +18,28 @@ from .memberbandwidth import (  # noqa: F401
 )
 
 from .networkservice import (  # noqa: F401
-    LogicalSystemIndexView, LogicalSystemDetailView,
+    LogicalSystemListView, LogicalSystemView,
     LogicalSystemEditView, LogicalSystemDeleteView,
-    NetworkServiceTypeIndexView, NetworkServiceTypeDetailView,
-    NetworkServiceTypeEditView, NetworkServiceTypeDeleteView,
-    NetworkServiceIndexView, NetworkServiceDetailView,
-    NetworkServiceEditView, NetworkServiceDeleteView,
-    NetworkServiceGraphiteDataView,
-    NetworkServiceGroupIndexView, NetworkServiceGroupDetailView,
-    NetworkServiceGroupEditView, NetworkServiceGroupDeleteView,
-    NetworkServiceGroupGraphiteDataView,
-    NetworkServiceL3IndexView, NetworkServiceL3DetailView,
-    NetworkServiceL3EditView, NetworkServiceL3DeleteView,
-    PeeringConnectionIndexView, PeeringConnectionDetailView,
-    PeeringConnectionEditView, PeeringConnectionDeleteView,
-    RoutingTypeIndexView, RoutingTypeDetailView,
+    RoutingTypeListView, RoutingTypeView,
     RoutingTypeEditView, RoutingTypeDeleteView,
+    NetworkServiceTypeListView, NetworkServiceTypeView,
+    NetworkServiceTypeEditView, NetworkServiceTypeDeleteView,
+    NetworkServiceListView, NetworkServiceView,
+    NetworkServiceEditView, NetworkServiceDeleteView,
+    NetworkServiceDeviceListView, NetworkServiceDeviceView,
+    NetworkServiceDeviceEditView, NetworkServiceDeviceDeleteView,
+    NetworkServiceL2ListView, NetworkServiceL2View,
+    NetworkServiceL2EditView, NetworkServiceL2DeleteView,
+    NetworkServiceL3ListView, NetworkServiceL3View,
+    NetworkServiceL3EditView, NetworkServiceL3DeleteView,
+    NetworkServiceGroupListView, NetworkServiceGroupView,
+    NetworkServiceGroupEditView, NetworkServiceGroupDeleteView,
+    PeeringConnectionListView,
+    NetworkServiceGraphiteDataView,
+    NetworkServiceGroupGraphiteDataView,
 )
 
 from .nic import (  # noqa: F401
-    NICIndexView, NICDetailView,
-    NICEditView, NICDeleteView,
+    NICListView, NICEditView, NICDeleteView,
     NICGraphiteDataView,
 )

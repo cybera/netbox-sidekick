@@ -1,92 +1,102 @@
-from netbox.views.generic import (
-    ObjectView, ObjectListView,
-    ObjectEditView, ObjectDeleteView,
-)
+from netbox.views import generic
+from utilities.views import register_model_view
 
-from sidekick.forms import (
-    AccountingProfileForm,
-    BandwidthProfileForm
-)
-
-from sidekick.filters import (
-    BandwidthProfileFilterSet,
-    BandwidthProfileFilterSetForm,
-    AccountingProfileFilterSet,
-    AccountingProfileFilterSetForm,
-    AccountingSourceFilterSet,
-    AccountingSourceFilterSetForm,
-)
-
-from sidekick.tables import (
-    BandwidthProfileTable,
-    AccountingProfileTable,
-    AccountingSourceTable,
-)
-
+from sidekick import filtersets, forms, tables
 from sidekick.models import (
-    BandwidthProfile,
     AccountingProfile,
     AccountingSource,
+    BandwidthProfile,
 )
+from sidekick.ui import panels
+
+from .base import SidekickObjectView
 
 
-class AccountingSourceIndexView(ObjectListView):
+#
+# Accounting sources
+#
+
+@register_model_view(AccountingSource, 'list', path='', detail=False)
+class AccountingSourceListView(generic.ObjectListView):
     queryset = AccountingSource.objects.all()
-    model = AccountingSource
-    table = AccountingSourceTable
-    filterset = AccountingSourceFilterSet
-    filterset_form = AccountingSourceFilterSetForm
+    table = tables.AccountingSourceTable
+    filterset = filtersets.AccountingSourceFilterSet
+    filterset_form = filtersets.AccountingSourceFilterSetForm
 
 
-class AccountingSourceDetailView(ObjectView):
+@register_model_view(AccountingSource)
+class AccountingSourceView(SidekickObjectView):
+    queryset = AccountingSource.objects.all()
+    layout = panels.ACCOUNTING_SOURCE_LAYOUT
+
+
+@register_model_view(AccountingSource, 'add', detail=False)
+@register_model_view(AccountingSource, 'edit')
+class AccountingSourceEditView(generic.ObjectEditView):
+    queryset = AccountingSource.objects.all()
+    form = forms.AccountingSourceForm
+
+
+@register_model_view(AccountingSource, 'delete')
+class AccountingSourceDeleteView(generic.ObjectDeleteView):
     queryset = AccountingSource.objects.all()
 
-    def get_extra_context(self, request, instance):
-        table = AccountingProfileTable(AccountingProfile.objects.filter(
-            accounting_sources__id__in=[instance.id]))
 
-        return {
-            'accountingprofile_table': table,
-        }
+#
+# Accounting profiles
+#
 
-
-class AccountingProfileIndexView(ObjectListView):
+@register_model_view(AccountingProfile, 'list', path='', detail=False)
+class AccountingProfileListView(generic.ObjectListView):
     queryset = AccountingProfile.objects.all()
-    model = AccountingProfile
-    table = AccountingProfileTable
-    filterset = AccountingProfileFilterSet
-    filterset_form = AccountingProfileFilterSetForm
+    table = tables.AccountingProfileTable
+    filterset = filtersets.AccountingProfileFilterSet
+    filterset_form = filtersets.AccountingProfileFilterSetForm
 
 
-class AccountingProfileDetailView(ObjectView):
+@register_model_view(AccountingProfile)
+class AccountingProfileView(SidekickObjectView):
+    queryset = AccountingProfile.objects.all()
+    layout = panels.ACCOUNTING_PROFILE_LAYOUT
+
+
+@register_model_view(AccountingProfile, 'add', detail=False)
+@register_model_view(AccountingProfile, 'edit')
+class AccountingProfileEditView(generic.ObjectEditView):
+    queryset = AccountingProfile.objects.all()
+    form = forms.AccountingProfileForm
+
+
+@register_model_view(AccountingProfile, 'delete')
+class AccountingProfileDeleteView(generic.ObjectDeleteView):
     queryset = AccountingProfile.objects.all()
 
 
-class AccountingProfileEditView(ObjectEditView):
-    queryset = AccountingProfile.objects.all()
-    form = AccountingProfileForm
+#
+# Bandwidth profiles
+#
 
-
-class AccountingProfileDeleteView(ObjectDeleteView):
-    queryset = AccountingProfile.objects.all()
-
-
-class BandwidthProfileIndexView(ObjectListView):
+@register_model_view(BandwidthProfile, 'list', path='', detail=False)
+class BandwidthProfileListView(generic.ObjectListView):
     queryset = BandwidthProfile.objects.all()
-    model = BandwidthProfile
-    table = BandwidthProfileTable
-    filterset = BandwidthProfileFilterSet
-    filterset_form = BandwidthProfileFilterSetForm
+    table = tables.BandwidthProfileTable
+    filterset = filtersets.BandwidthProfileFilterSet
+    filterset_form = filtersets.BandwidthProfileFilterSetForm
 
 
-class BandwidthProfileDetailView(ObjectView):
+@register_model_view(BandwidthProfile)
+class BandwidthProfileView(SidekickObjectView):
     queryset = BandwidthProfile.objects.all()
+    layout = panels.BANDWIDTH_PROFILE_LAYOUT
 
 
-class BandwidthProfileEditView(ObjectEditView):
+@register_model_view(BandwidthProfile, 'add', detail=False)
+@register_model_view(BandwidthProfile, 'edit')
+class BandwidthProfileEditView(generic.ObjectEditView):
     queryset = BandwidthProfile.objects.all()
-    form = BandwidthProfileForm
+    form = forms.BandwidthProfileForm
 
 
-class BandwidthProfileDeleteView(ObjectDeleteView):
+@register_model_view(BandwidthProfile, 'delete')
+class BandwidthProfileDeleteView(generic.ObjectDeleteView):
     queryset = BandwidthProfile.objects.all()

@@ -1,248 +1,289 @@
-from netbox.views.generic import (
-    ObjectView, ObjectListView,
-    ObjectEditView, ObjectDeleteView,
-)
-
 from django.conf import settings
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.http import JsonResponse
 from django.views import View
 
-from sidekick.filters import (
-    LogicalSystemFilterSet,
-    LogicalSystemFilterSetForm,
-    RoutingTypeFilterSet,
-    RoutingTypeFilterSetForm,
-    NetworkServiceTypeFilterSet,
-    NetworkServiceTypeFilterSetForm,
-    NetworkServiceFilterSet,
-    NetworkServiceFilterSetForm,
-    NetworkServiceL3FilterSet,
-    NetworkServiceL3FilterSetForm,
-    NetworkServiceGroupFilterSet,
-    NetworkServiceGroupFilterSetForm,
-    PeeringConnectionFilterSet,
-    PeeringConnectionFilterSetForm,
-)
+from netbox.views import generic
+from utilities.views import register_model_view
 
-from sidekick.forms import (
-    RoutingTypeForm,
-    LogicalSystemForm,
-    NetworkServiceForm,
-    NetworkServiceL3Form,
-    NetworkServiceTypeForm,
-    NetworkServiceGroupForm,
-)
-
-from sidekick.tables import (
-    LogicalSystemTable,
-    NetworkServiceTypeTable,
-    NetworkServiceTable,
-    NetworkServiceL3Table,
-    NetworkServiceGroupTable,
-    PeeringConnectionTable,
-    RoutingTypeTable,
-)
-
+from sidekick import filtersets, forms, tables, utils
 from sidekick.models import (
     LogicalSystem,
     RoutingType,
     NetworkServiceType,
     NetworkService,
+    NetworkServiceDevice,
+    NetworkServiceL2,
     NetworkServiceL3,
     NetworkServiceGroup,
 )
-
-from sidekick import utils
+from sidekick.ui import panels
 from sidekick.utils import (
+    _service_has_clickhouse_backend,
     get_clickhouse_service_graph,
     get_clickhouse_service_group_bandwidth,
-    _service_has_clickhouse_backend,
 )
 
+from .base import SidekickObjectView
 
-# Logical System Index
-class LogicalSystemIndexView(ObjectListView):
+
+#
+# Logical systems
+#
+
+@register_model_view(LogicalSystem, 'list', path='', detail=False)
+class LogicalSystemListView(generic.ObjectListView):
     queryset = LogicalSystem.objects.all()
-    model = LogicalSystem
-    table = LogicalSystemTable
-    filterset = LogicalSystemFilterSet
-    filterset_form = LogicalSystemFilterSetForm
+    table = tables.LogicalSystemTable
+    filterset = filtersets.LogicalSystemFilterSet
+    filterset_form = filtersets.LogicalSystemFilterSetForm
 
 
-# Logical System Details
-class LogicalSystemDetailView(ObjectView):
+@register_model_view(LogicalSystem)
+class LogicalSystemView(SidekickObjectView):
     queryset = LogicalSystem.objects.all()
-
-    def get_extra_context(self, request, instance):
-        table = NetworkServiceTable(
-            NetworkService.objects.filter(
-                network_service_devices__network_service_l3__logical_system=instance.id))
-
-        return {'networkservice_table': table}
+    layout = panels.LOGICAL_SYSTEM_LAYOUT
 
 
-# Logical System Edit
-class LogicalSystemEditView(ObjectEditView):
+@register_model_view(LogicalSystem, 'add', detail=False)
+@register_model_view(LogicalSystem, 'edit')
+class LogicalSystemEditView(generic.ObjectEditView):
     queryset = LogicalSystem.objects.all()
-    form = LogicalSystemForm
+    form = forms.LogicalSystemForm
 
 
-# Logical System Delete
-class LogicalSystemDeleteView(ObjectDeleteView):
+@register_model_view(LogicalSystem, 'delete')
+class LogicalSystemDeleteView(generic.ObjectDeleteView):
     queryset = LogicalSystem.objects.all()
 
 
-# Routing Type Index
-class RoutingTypeIndexView(ObjectListView):
+#
+# Routing types
+#
+
+@register_model_view(RoutingType, 'list', path='', detail=False)
+class RoutingTypeListView(generic.ObjectListView):
     queryset = RoutingType.objects.all()
-    model = RoutingType
-    table = RoutingTypeTable
-    filterset = RoutingTypeFilterSet
-    filterset_form = RoutingTypeFilterSetForm
+    table = tables.RoutingTypeTable
+    filterset = filtersets.RoutingTypeFilterSet
+    filterset_form = filtersets.RoutingTypeFilterSetForm
 
 
-# Routing Type Details
-class RoutingTypeDetailView(ObjectView):
+@register_model_view(RoutingType)
+class RoutingTypeView(SidekickObjectView):
     queryset = RoutingType.objects.all()
-
-    def get_extra_context(self, request, instance):
-        table = NetworkServiceTable(
-            NetworkService.objects.filter(
-                network_service_devices__network_service_l3__routing_type=instance.id))
-
-        return {'networkservice_table': table}
+    layout = panels.ROUTING_TYPE_LAYOUT
 
 
-# Routing Type Edit
-class RoutingTypeEditView(ObjectEditView):
+@register_model_view(RoutingType, 'add', detail=False)
+@register_model_view(RoutingType, 'edit')
+class RoutingTypeEditView(generic.ObjectEditView):
     queryset = RoutingType.objects.all()
-    form = RoutingTypeForm
+    form = forms.RoutingTypeForm
 
 
-# Routing Type Delete
-class RoutingTypeDeleteView(ObjectDeleteView):
+@register_model_view(RoutingType, 'delete')
+class RoutingTypeDeleteView(generic.ObjectDeleteView):
     queryset = RoutingType.objects.all()
 
 
-# Network Service Type Index
-class NetworkServiceTypeIndexView(ObjectListView):
+#
+# Network service types
+#
+
+@register_model_view(NetworkServiceType, 'list', path='', detail=False)
+class NetworkServiceTypeListView(generic.ObjectListView):
     queryset = NetworkServiceType.objects.all()
-    model = NetworkServiceType
-    table = NetworkServiceTypeTable
-    filterset = NetworkServiceTypeFilterSet
-    filterset_form = NetworkServiceTypeFilterSetForm
+    table = tables.NetworkServiceTypeTable
+    filterset = filtersets.NetworkServiceTypeFilterSet
+    filterset_form = filtersets.NetworkServiceTypeFilterSetForm
 
 
-# Network Service Type Details
-class NetworkServiceTypeDetailView(ObjectView):
+@register_model_view(NetworkServiceType)
+class NetworkServiceTypeView(SidekickObjectView):
     queryset = NetworkServiceType.objects.all()
-
-    def get_extra_context(self, request, instance):
-        table = NetworkServiceTable(
-            NetworkService.objects.filter(
-                network_service_type=instance.id))
-
-        return {'networkservice_table': table}
+    layout = panels.NETWORK_SERVICE_TYPE_LAYOUT
 
 
-# Network Service Type Edit
-class NetworkServiceTypeEditView(ObjectEditView):
+@register_model_view(NetworkServiceType, 'add', detail=False)
+@register_model_view(NetworkServiceType, 'edit')
+class NetworkServiceTypeEditView(generic.ObjectEditView):
     queryset = NetworkServiceType.objects.all()
-    form = NetworkServiceTypeForm
+    form = forms.NetworkServiceTypeForm
 
 
-# Network Service Type Delete
-class NetworkServiceTypeDeleteView(ObjectDeleteView):
+@register_model_view(NetworkServiceType, 'delete')
+class NetworkServiceTypeDeleteView(generic.ObjectDeleteView):
     queryset = NetworkServiceType.objects.all()
 
 
-# Network Service Index
-class NetworkServiceIndexView(ObjectListView):
+#
+# Network services
+#
+
+@register_model_view(NetworkService, 'list', path='', detail=False)
+class NetworkServiceListView(generic.ObjectListView):
     queryset = NetworkService.objects.all()
-    model = NetworkService
-    table = NetworkServiceTable
-    filterset = NetworkServiceFilterSet
-    filterset_form = NetworkServiceFilterSetForm
+    table = tables.NetworkServiceTable
+    filterset = filtersets.NetworkServiceFilterSet
+    filterset_form = filtersets.NetworkServiceFilterSetForm
 
 
-# Network Service Details
-class NetworkServiceDetailView(ObjectView):
+@register_model_view(NetworkService)
+class NetworkServiceView(SidekickObjectView):
+    queryset = NetworkService.objects.all()
+    layout = panels.NETWORK_SERVICE_LAYOUT
+
+
+@register_model_view(NetworkService, 'add', detail=False)
+@register_model_view(NetworkService, 'edit')
+class NetworkServiceEditView(generic.ObjectEditView):
+    queryset = NetworkService.objects.all()
+    form = forms.NetworkServiceForm
+
+
+@register_model_view(NetworkService, 'delete')
+class NetworkServiceDeleteView(generic.ObjectDeleteView):
     queryset = NetworkService.objects.all()
 
 
-# Network Service Edit
-class NetworkServiceEditView(ObjectEditView):
-    queryset = NetworkService.objects.all()
-    form = NetworkServiceForm
+#
+# Network service devices
+#
+
+@register_model_view(NetworkServiceDevice, 'list', path='', detail=False)
+class NetworkServiceDeviceListView(generic.ObjectListView):
+    queryset = NetworkServiceDevice.objects.all()
+    table = tables.NetworkServiceDeviceTable
+    filterset = filtersets.NetworkServiceDeviceFilterSet
+    filterset_form = filtersets.NetworkServiceDeviceFilterSetForm
 
 
-# Network Service Delete
-class NetworkServiceDeleteView(ObjectDeleteView):
-    queryset = NetworkService.objects.all()
+@register_model_view(NetworkServiceDevice)
+class NetworkServiceDeviceView(SidekickObjectView):
+    queryset = NetworkServiceDevice.objects.all()
+    layout = panels.NETWORK_SERVICE_DEVICE_LAYOUT
 
 
-# Network Service L3 Index
-class NetworkServiceL3IndexView(ObjectListView):
+@register_model_view(NetworkServiceDevice, 'add', detail=False)
+@register_model_view(NetworkServiceDevice, 'edit')
+class NetworkServiceDeviceEditView(generic.ObjectEditView):
+    queryset = NetworkServiceDevice.objects.all()
+    form = forms.NetworkServiceDeviceForm
+
+
+@register_model_view(NetworkServiceDevice, 'delete')
+class NetworkServiceDeviceDeleteView(generic.ObjectDeleteView):
+    queryset = NetworkServiceDevice.objects.all()
+
+
+#
+# Network service L2
+#
+
+@register_model_view(NetworkServiceL2, 'list', path='', detail=False)
+class NetworkServiceL2ListView(generic.ObjectListView):
+    queryset = NetworkServiceL2.objects.all()
+    table = tables.NetworkServiceL2Table
+    filterset = filtersets.NetworkServiceL2FilterSet
+    filterset_form = filtersets.NetworkServiceL2FilterSetForm
+
+
+@register_model_view(NetworkServiceL2)
+class NetworkServiceL2View(SidekickObjectView):
+    queryset = NetworkServiceL2.objects.all()
+    layout = panels.NETWORK_SERVICE_L2_LAYOUT
+
+
+@register_model_view(NetworkServiceL2, 'add', detail=False)
+@register_model_view(NetworkServiceL2, 'edit')
+class NetworkServiceL2EditView(generic.ObjectEditView):
+    queryset = NetworkServiceL2.objects.all()
+    form = forms.NetworkServiceL2Form
+
+
+@register_model_view(NetworkServiceL2, 'delete')
+class NetworkServiceL2DeleteView(generic.ObjectDeleteView):
+    queryset = NetworkServiceL2.objects.all()
+
+
+#
+# Network service L3
+#
+
+@register_model_view(NetworkServiceL3, 'list', path='', detail=False)
+class NetworkServiceL3ListView(generic.ObjectListView):
     queryset = NetworkServiceL3.objects.all()
-    model = NetworkServiceL3
-    table = NetworkServiceL3Table
-    filterset = NetworkServiceL3FilterSet
-    filterset_form = NetworkServiceL3FilterSetForm
+    table = tables.NetworkServiceL3Table
+    filterset = filtersets.NetworkServiceL3FilterSet
+    filterset_form = filtersets.NetworkServiceL3FilterSetForm
 
 
-# Network Service L3 Details
-class NetworkServiceL3DetailView(ObjectView):
+@register_model_view(NetworkServiceL3)
+class NetworkServiceL3View(SidekickObjectView):
+    queryset = NetworkServiceL3.objects.all()
+    layout = panels.NETWORK_SERVICE_L3_LAYOUT
+
+
+@register_model_view(NetworkServiceL3, 'add', detail=False)
+@register_model_view(NetworkServiceL3, 'edit')
+class NetworkServiceL3EditView(generic.ObjectEditView):
+    queryset = NetworkServiceL3.objects.all()
+    form = forms.NetworkServiceL3Form
+
+
+@register_model_view(NetworkServiceL3, 'delete')
+class NetworkServiceL3DeleteView(generic.ObjectDeleteView):
     queryset = NetworkServiceL3.objects.all()
 
 
-# Network Service L3 Edit
-class NetworkServiceL3EditView(ObjectEditView):
-    queryset = NetworkServiceL3.objects.all()
-    form = NetworkServiceL3Form
+#
+# Network service groups
+#
 
-
-# Network Service L3 Delete
-class NetworkServiceL3DeleteView(ObjectDeleteView):
-    queryset = NetworkServiceL3.objects.all()
-
-
-# Network Service Group Index
-class NetworkServiceGroupIndexView(ObjectListView):
+@register_model_view(NetworkServiceGroup, 'list', path='', detail=False)
+class NetworkServiceGroupListView(generic.ObjectListView):
     queryset = NetworkServiceGroup.objects.all()
-    model = NetworkServiceGroup
-    table = NetworkServiceGroupTable
-    filterset = NetworkServiceGroupFilterSet
-    filterset_form = NetworkServiceGroupFilterSetForm
+    table = tables.NetworkServiceGroupTable
+    filterset = filtersets.NetworkServiceGroupFilterSet
+    filterset_form = filtersets.NetworkServiceGroupFilterSetForm
 
 
-# Network Service Group Details
-class NetworkServiceGroupDetailView(ObjectView):
+@register_model_view(NetworkServiceGroup)
+class NetworkServiceGroupView(SidekickObjectView):
     queryset = NetworkServiceGroup.objects.all()
-
-    def get_extra_context(self, request, instance):
-        table = NetworkServiceTable(
-            NetworkService.objects.filter(
-                pk__in=instance.network_services.all()))
-
-        return {'networkservice_table': table}
+    layout = panels.NETWORK_SERVICE_GROUP_LAYOUT
 
 
-# Network Service Group Edit
-class NetworkServiceGroupEditView(ObjectEditView):
+@register_model_view(NetworkServiceGroup, 'add', detail=False)
+@register_model_view(NetworkServiceGroup, 'edit')
+class NetworkServiceGroupEditView(generic.ObjectEditView):
     queryset = NetworkServiceGroup.objects.all()
-    form = NetworkServiceGroupForm
+    form = forms.NetworkServiceGroupForm
 
 
-# Network Service Group Delete
-class NetworkServiceGroupDeleteView(ObjectDeleteView):
+@register_model_view(NetworkServiceGroup, 'delete')
+class NetworkServiceGroupDeleteView(generic.ObjectDeleteView):
     queryset = NetworkServiceGroup.objects.all()
 
 
-# Network Service graphite data
+#
+# Peering connections (read-only list of L3 services assigned to a member)
+#
+
+class PeeringConnectionListView(generic.ObjectListView):
+    queryset = NetworkServiceL3.objects.filter(member__isnull=False)
+    table = tables.PeeringConnectionTable
+    filterset = filtersets.PeeringConnectionFilterSet
+    filterset_form = filtersets.PeeringConnectionFilterSetForm
+
+
+#
+# Graph data endpoints
+#
+
 class NetworkServiceGraphiteDataView(PermissionRequiredMixin, View):
-    permission_required = 'sidekick.view_service'
-    model = NetworkService
+    permission_required = 'sidekick.view_networkservice'
 
     def get(self, request, pk):
         config = settings.PLUGINS_CONFIG.get('sidekick', {})
@@ -270,10 +311,8 @@ class NetworkServiceGraphiteDataView(PermissionRequiredMixin, View):
         })
 
 
-# Network Service Group graphite data
 class NetworkServiceGroupGraphiteDataView(PermissionRequiredMixin, View):
-    permission_required = 'sidekick.view_service'
-    model = NetworkServiceGroup
+    permission_required = 'sidekick.view_networkservicegroup'
 
     def get(self, request, pk):
         config = settings.PLUGINS_CONFIG.get('sidekick', {})
@@ -365,33 +404,3 @@ class NetworkServiceGroupGraphiteDataView(PermissionRequiredMixin, View):
             'graph_data': graph_data,
             'queries': queries,
         })
-
-
-# Peering Service Index
-class PeeringConnectionIndexView(ObjectListView):
-    queryset = NetworkServiceL3.objects.filter(
-        member__isnull=False)
-    model = NetworkServiceL3
-    table = PeeringConnectionTable
-    filterset = PeeringConnectionFilterSet
-    filterset_form = PeeringConnectionFilterSetForm
-
-
-# Peering Service Details
-class PeeringConnectionDetailView(ObjectView):
-    template_name = 'sidekick/peeringconnection.html'
-    queryset = NetworkServiceL3.objects.filter(
-        member__isnull=False)
-
-
-# Peering Service Edit
-class PeeringConnectionEditView(ObjectEditView):
-    queryset = NetworkServiceL3.objects.filter(
-        member__isnull=False)
-    form = NetworkServiceL3Form
-
-
-# Peering Delete Edit
-class PeeringConnectionDeleteView(ObjectDeleteView):
-    queryset = NetworkServiceL3.objects.filter(
-        member__isnull=False)

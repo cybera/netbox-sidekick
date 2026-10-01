@@ -455,7 +455,7 @@ class NetworkServiceL3(NetBoxModel):
         return f"{self.network_service_device} L3 Service"
 
     def get_peeringconnection_url(self):
-        return reverse('plugins:sidekick:peeringconnection_detail', args=[self.pk])
+        return reverse('plugins:sidekick:networkservicel3', args=[self.pk])
 
 
 # NetworkServiceGroup represents a grouping of network services

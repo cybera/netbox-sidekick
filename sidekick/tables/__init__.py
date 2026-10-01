@@ -7,6 +7,8 @@ from .networkservice import LogicalSystemTable, RoutingTypeTable  # noqa: F401
 from .networkservice import NetworkServiceTypeTable               # noqa: F401
 from .networkservice import NetworkServiceTable                   # noqa: F401
 from .networkservice import NetworkServiceL3Table                 # noqa: F401
+from .networkservice import NetworkServiceDeviceTable             # noqa: F401
+from .networkservice import NetworkServiceL2Table                 # noqa: F401
 from .networkservice import NetworkServiceGroupTable              # noqa: F401
 from .networkservice import PeeringConnectionTable                # noqa: F401
 from .nic import NICTable                                         # noqa: F401

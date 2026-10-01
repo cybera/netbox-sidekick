@@ -69,3 +69,7 @@ class DetailRenderTest(BaseTest):
         v = NetworkService.objects.get(pk=1)
         resp = self.client.get(v.get_absolute_url())
         self.assertContains(resp, 'sidekick-service-graph')
+
+        # uPlot must be served from the plugin's own static files, not a CDN.
+        self.assertContains(resp, 'sidekick/uplot/uPlot.iife.min.js')
+        self.assertNotContains(resp, 'leeoniya.github.io')

@@ -1,5 +1,8 @@
-<script src="https://leeoniya.github.io/uPlot/dist/uPlot.iife.min.js"></script>
-<link rel="stylesheet" href="https://leeoniya.github.io/uPlot/dist/uPlot.min.css" />
+{% load static %}
+{# uPlot v1.6.32 (MIT), vendored under sidekick/static/sidekick/uplot/. #}
+{# Previously loaded from leeoniya.github.io; see sidekick/static/sidekick/uplot/README.md #}
+<script src="{% static 'sidekick/uplot/uPlot.iife.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'sidekick/uplot/uPlot.min.css' %}" />
 <script type="text/javascript">
   function sidekickBits(bits) {
     if (bits == 0) return '';

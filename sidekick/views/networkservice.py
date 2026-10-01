@@ -268,6 +268,208 @@ class NetworkServiceGroupDeleteView(generic.ObjectDeleteView):
 
 
 #
+# Bulk operations
+#
+
+@register_model_view(LogicalSystem, 'bulk_import', path='import', detail=False)
+class LogicalSystemBulkImportView(generic.BulkImportView):
+    queryset = LogicalSystem.objects.all()
+    model_form = forms.LogicalSystemImportForm
+
+
+@register_model_view(LogicalSystem, 'bulk_edit', path='edit', detail=False)
+class LogicalSystemBulkEditView(generic.BulkEditView):
+    queryset = LogicalSystem.objects.all()
+    filterset = filtersets.LogicalSystemFilterSet
+    table = tables.LogicalSystemTable
+    form = forms.LogicalSystemBulkEditForm
+
+
+@register_model_view(LogicalSystem, 'bulk_rename', path='rename', detail=False)
+class LogicalSystemBulkRenameView(generic.BulkRenameView):
+    queryset = LogicalSystem.objects.all()
+    filterset = filtersets.LogicalSystemFilterSet
+
+
+@register_model_view(LogicalSystem, 'bulk_delete', path='delete', detail=False)
+class LogicalSystemBulkDeleteView(generic.BulkDeleteView):
+    queryset = LogicalSystem.objects.all()
+    filterset = filtersets.LogicalSystemFilterSet
+    table = tables.LogicalSystemTable
+
+
+@register_model_view(RoutingType, 'bulk_import', path='import', detail=False)
+class RoutingTypeBulkImportView(generic.BulkImportView):
+    queryset = RoutingType.objects.all()
+    model_form = forms.RoutingTypeImportForm
+
+
+@register_model_view(RoutingType, 'bulk_edit', path='edit', detail=False)
+class RoutingTypeBulkEditView(generic.BulkEditView):
+    queryset = RoutingType.objects.all()
+    filterset = filtersets.RoutingTypeFilterSet
+    table = tables.RoutingTypeTable
+    form = forms.RoutingTypeBulkEditForm
+
+
+@register_model_view(RoutingType, 'bulk_rename', path='rename', detail=False)
+class RoutingTypeBulkRenameView(generic.BulkRenameView):
+    queryset = RoutingType.objects.all()
+    filterset = filtersets.RoutingTypeFilterSet
+
+
+@register_model_view(RoutingType, 'bulk_delete', path='delete', detail=False)
+class RoutingTypeBulkDeleteView(generic.BulkDeleteView):
+    queryset = RoutingType.objects.all()
+    filterset = filtersets.RoutingTypeFilterSet
+    table = tables.RoutingTypeTable
+
+
+@register_model_view(NetworkServiceType, 'bulk_import', path='import', detail=False)
+class NetworkServiceTypeBulkImportView(generic.BulkImportView):
+    queryset = NetworkServiceType.objects.all()
+    model_form = forms.NetworkServiceTypeImportForm
+
+
+@register_model_view(NetworkServiceType, 'bulk_edit', path='edit', detail=False)
+class NetworkServiceTypeBulkEditView(generic.BulkEditView):
+    queryset = NetworkServiceType.objects.all()
+    filterset = filtersets.NetworkServiceTypeFilterSet
+    table = tables.NetworkServiceTypeTable
+    form = forms.NetworkServiceTypeBulkEditForm
+
+
+@register_model_view(NetworkServiceType, 'bulk_rename', path='rename', detail=False)
+class NetworkServiceTypeBulkRenameView(generic.BulkRenameView):
+    queryset = NetworkServiceType.objects.all()
+    filterset = filtersets.NetworkServiceTypeFilterSet
+
+
+@register_model_view(NetworkServiceType, 'bulk_delete', path='delete', detail=False)
+class NetworkServiceTypeBulkDeleteView(generic.BulkDeleteView):
+    queryset = NetworkServiceType.objects.all()
+    filterset = filtersets.NetworkServiceTypeFilterSet
+    table = tables.NetworkServiceTypeTable
+
+
+@register_model_view(NetworkService, 'bulk_import', path='import', detail=False)
+class NetworkServiceBulkImportView(generic.BulkImportView):
+    queryset = NetworkService.objects.all()
+    model_form = forms.NetworkServiceImportForm
+
+
+@register_model_view(NetworkService, 'bulk_edit', path='edit', detail=False)
+class NetworkServiceBulkEditView(generic.BulkEditView):
+    queryset = NetworkService.objects.all()
+    filterset = filtersets.NetworkServiceFilterSet
+    table = tables.NetworkServiceTable
+    form = forms.NetworkServiceBulkEditForm
+
+
+@register_model_view(NetworkService, 'bulk_rename', path='rename', detail=False)
+class NetworkServiceBulkRenameView(generic.BulkRenameView):
+    queryset = NetworkService.objects.all()
+    filterset = filtersets.NetworkServiceFilterSet
+
+
+@register_model_view(NetworkService, 'bulk_delete', path='delete', detail=False)
+class NetworkServiceBulkDeleteView(generic.BulkDeleteView):
+    queryset = NetworkService.objects.all()
+    filterset = filtersets.NetworkServiceFilterSet
+    table = tables.NetworkServiceTable
+
+
+@register_model_view(NetworkServiceDevice, 'bulk_import', path='import', detail=False)
+class NetworkServiceDeviceBulkImportView(generic.BulkImportView):
+    queryset = NetworkServiceDevice.objects.all()
+    model_form = forms.NetworkServiceDeviceImportForm
+
+
+@register_model_view(NetworkServiceDevice, 'bulk_edit', path='edit', detail=False)
+class NetworkServiceDeviceBulkEditView(generic.BulkEditView):
+    queryset = NetworkServiceDevice.objects.all()
+    filterset = filtersets.NetworkServiceDeviceFilterSet
+    table = tables.NetworkServiceDeviceTable
+    form = forms.NetworkServiceDeviceBulkEditForm
+
+
+@register_model_view(NetworkServiceDevice, 'bulk_delete', path='delete', detail=False)
+class NetworkServiceDeviceBulkDeleteView(generic.BulkDeleteView):
+    queryset = NetworkServiceDevice.objects.all()
+    filterset = filtersets.NetworkServiceDeviceFilterSet
+    table = tables.NetworkServiceDeviceTable
+
+
+@register_model_view(NetworkServiceL2, 'bulk_import', path='import', detail=False)
+class NetworkServiceL2BulkImportView(generic.BulkImportView):
+    queryset = NetworkServiceL2.objects.all()
+    model_form = forms.NetworkServiceL2ImportForm
+
+
+@register_model_view(NetworkServiceL2, 'bulk_edit', path='edit', detail=False)
+class NetworkServiceL2BulkEditView(generic.BulkEditView):
+    queryset = NetworkServiceL2.objects.all()
+    filterset = filtersets.NetworkServiceL2FilterSet
+    table = tables.NetworkServiceL2Table
+    form = forms.NetworkServiceL2BulkEditForm
+
+
+@register_model_view(NetworkServiceL2, 'bulk_delete', path='delete', detail=False)
+class NetworkServiceL2BulkDeleteView(generic.BulkDeleteView):
+    queryset = NetworkServiceL2.objects.all()
+    filterset = filtersets.NetworkServiceL2FilterSet
+    table = tables.NetworkServiceL2Table
+
+
+@register_model_view(NetworkServiceL3, 'bulk_import', path='import', detail=False)
+class NetworkServiceL3BulkImportView(generic.BulkImportView):
+    queryset = NetworkServiceL3.objects.all()
+    model_form = forms.NetworkServiceL3ImportForm
+
+
+@register_model_view(NetworkServiceL3, 'bulk_edit', path='edit', detail=False)
+class NetworkServiceL3BulkEditView(generic.BulkEditView):
+    queryset = NetworkServiceL3.objects.all()
+    filterset = filtersets.NetworkServiceL3FilterSet
+    table = tables.NetworkServiceL3Table
+    form = forms.NetworkServiceL3BulkEditForm
+
+
+@register_model_view(NetworkServiceL3, 'bulk_delete', path='delete', detail=False)
+class NetworkServiceL3BulkDeleteView(generic.BulkDeleteView):
+    queryset = NetworkServiceL3.objects.all()
+    filterset = filtersets.NetworkServiceL3FilterSet
+    table = tables.NetworkServiceL3Table
+
+
+@register_model_view(NetworkServiceGroup, 'bulk_import', path='import', detail=False)
+class NetworkServiceGroupBulkImportView(generic.BulkImportView):
+    queryset = NetworkServiceGroup.objects.all()
+    model_form = forms.NetworkServiceGroupImportForm
+
+
+@register_model_view(NetworkServiceGroup, 'bulk_edit', path='edit', detail=False)
+class NetworkServiceGroupBulkEditView(generic.BulkEditView):
+    queryset = NetworkServiceGroup.objects.all()
+    filterset = filtersets.NetworkServiceGroupFilterSet
+    table = tables.NetworkServiceGroupTable
+    form = forms.NetworkServiceGroupBulkEditForm
+
+
+@register_model_view(NetworkServiceGroup, 'bulk_rename', path='rename', detail=False)
+class NetworkServiceGroupBulkRenameView(generic.BulkRenameView):
+    queryset = NetworkServiceGroup.objects.all()
+    filterset = filtersets.NetworkServiceGroupFilterSet
+
+
+@register_model_view(NetworkServiceGroup, 'bulk_delete', path='delete', detail=False)
+class NetworkServiceGroupBulkDeleteView(generic.BulkDeleteView):
+    queryset = NetworkServiceGroup.objects.all()
+    filterset = filtersets.NetworkServiceGroupFilterSet
+    table = tables.NetworkServiceGroupTable
+
+
+#
 # Peering connections (read-only list of L3 services assigned to a member)
 #
 

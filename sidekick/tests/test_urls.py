@@ -25,6 +25,14 @@ MODELS = (
 # NIC has no dedicated detail view (rendered on dcim.Interface).
 MODELS_WITHOUT_DETAIL = ('nic',)
 
+# Models with no ``name`` field cannot use the bulk rename view.
+MODELS_WITHOUT_RENAME = (
+    'networkservicedevice',
+    'networkservicel2',
+    'bandwidthprofile',
+    'nic',
+)
+
 
 class URLResolutionTest(SimpleTestCase):
     def test_list_and_edit_urls(self):
@@ -49,6 +57,22 @@ class URLResolutionTest(SimpleTestCase):
                 continue
             with self.subTest(name=name):
                 self.assertTrue(reverse(name, kwargs={'pk': 1}))
+
+    def test_bulk_urls(self):
+        for model in MODELS:
+            for suffix in ('_bulk_import', '_bulk_edit', '_bulk_delete'):
+                name = 'plugins:sidekick:' + model + suffix
+                with self.subTest(name=name):
+                    self.assertTrue(reverse(name))
+
+            name = 'plugins:sidekick:' + model + '_bulk_rename'
+            if model in MODELS_WITHOUT_RENAME:
+                with self.subTest(name=name):
+                    with self.assertRaises(NoReverseMatch):
+                        reverse(name)
+            else:
+                with self.subTest(name=name):
+                    self.assertTrue(reverse(name))
 
     def test_custom_urls(self):
         names = (

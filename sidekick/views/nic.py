@@ -76,3 +76,29 @@ class NICGraphiteDataView(PermissionRequiredMixin, View):
             return JsonResponse({
                 'graph_data': graph_data,
             })
+
+
+#
+# Bulk operations
+#
+# NIC has no name field, so no bulk rename view is registered.
+
+@register_model_view(NIC, 'bulk_import', path='import', detail=False)
+class NICBulkImportView(generic.BulkImportView):
+    queryset = NIC.objects.all()
+    model_form = forms.NICImportForm
+
+
+@register_model_view(NIC, 'bulk_edit', path='edit', detail=False)
+class NICBulkEditView(generic.BulkEditView):
+    queryset = NIC.objects.all()
+    filterset = filtersets.NICFilterSet
+    table = tables.NICTable
+    form = forms.NICBulkEditForm
+
+
+@register_model_view(NIC, 'bulk_delete', path='delete', detail=False)
+class NICBulkDeleteView(generic.BulkDeleteView):
+    queryset = NIC.objects.all()
+    filterset = filtersets.NICFilterSet
+    table = tables.NICTable

@@ -100,3 +100,82 @@ class BandwidthProfileEditView(generic.ObjectEditView):
 @register_model_view(BandwidthProfile, 'delete')
 class BandwidthProfileDeleteView(generic.ObjectDeleteView):
     queryset = BandwidthProfile.objects.all()
+
+
+#
+# Bulk operations
+#
+
+@register_model_view(AccountingSource, 'bulk_import', path='import', detail=False)
+class AccountingSourceBulkImportView(generic.BulkImportView):
+    queryset = AccountingSource.objects.all()
+    model_form = forms.AccountingSourceImportForm
+
+
+@register_model_view(AccountingSource, 'bulk_edit', path='edit', detail=False)
+class AccountingSourceBulkEditView(generic.BulkEditView):
+    queryset = AccountingSource.objects.all()
+    filterset = filtersets.AccountingSourceFilterSet
+    table = tables.AccountingSourceTable
+    form = forms.AccountingSourceBulkEditForm
+
+
+@register_model_view(AccountingSource, 'bulk_rename', path='rename', detail=False)
+class AccountingSourceBulkRenameView(generic.BulkRenameView):
+    queryset = AccountingSource.objects.all()
+    filterset = filtersets.AccountingSourceFilterSet
+
+
+@register_model_view(AccountingSource, 'bulk_delete', path='delete', detail=False)
+class AccountingSourceBulkDeleteView(generic.BulkDeleteView):
+    queryset = AccountingSource.objects.all()
+    filterset = filtersets.AccountingSourceFilterSet
+    table = tables.AccountingSourceTable
+
+
+@register_model_view(AccountingProfile, 'bulk_import', path='import', detail=False)
+class AccountingProfileBulkImportView(generic.BulkImportView):
+    queryset = AccountingProfile.objects.all()
+    model_form = forms.AccountingProfileImportForm
+
+
+@register_model_view(AccountingProfile, 'bulk_edit', path='edit', detail=False)
+class AccountingProfileBulkEditView(generic.BulkEditView):
+    queryset = AccountingProfile.objects.all()
+    filterset = filtersets.AccountingProfileFilterSet
+    table = tables.AccountingProfileTable
+    form = forms.AccountingProfileBulkEditForm
+
+
+@register_model_view(AccountingProfile, 'bulk_rename', path='rename', detail=False)
+class AccountingProfileBulkRenameView(generic.BulkRenameView):
+    queryset = AccountingProfile.objects.all()
+    filterset = filtersets.AccountingProfileFilterSet
+
+
+@register_model_view(AccountingProfile, 'bulk_delete', path='delete', detail=False)
+class AccountingProfileBulkDeleteView(generic.BulkDeleteView):
+    queryset = AccountingProfile.objects.all()
+    filterset = filtersets.AccountingProfileFilterSet
+    table = tables.AccountingProfileTable
+
+
+@register_model_view(BandwidthProfile, 'bulk_import', path='import', detail=False)
+class BandwidthProfileBulkImportView(generic.BulkImportView):
+    queryset = BandwidthProfile.objects.all()
+    model_form = forms.BandwidthProfileImportForm
+
+
+@register_model_view(BandwidthProfile, 'bulk_edit', path='edit', detail=False)
+class BandwidthProfileBulkEditView(generic.BulkEditView):
+    queryset = BandwidthProfile.objects.all()
+    filterset = filtersets.BandwidthProfileFilterSet
+    table = tables.BandwidthProfileTable
+    form = forms.BandwidthProfileBulkEditForm
+
+
+@register_model_view(BandwidthProfile, 'bulk_delete', path='delete', detail=False)
+class BandwidthProfileBulkDeleteView(generic.BulkDeleteView):
+    queryset = BandwidthProfile.objects.all()
+    filterset = filtersets.BandwidthProfileFilterSet
+    table = tables.BandwidthProfileTable

@@ -2,6 +2,8 @@ from .accounting import (  # noqa: F401
     AccountingProfileForm,
     AccountingSourceForm,
     BandwidthProfileForm,
+    BandwidthProfileFormSet,
+    BandwidthProfileInlineForm,
 )
 
 from .bulk_edit import (  # noqa: F401

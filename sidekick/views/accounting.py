@@ -65,6 +65,9 @@ class AccountingProfileView(SidekickObjectView):
 class AccountingProfileEditView(generic.ObjectEditView):
     queryset = AccountingProfile.objects.all()
     form = forms.AccountingProfileForm
+    # Renders the standard form plus the inline BandwidthProfile formset that
+    # AccountingProfileForm carries (see forms/accounting.py).
+    template_name = 'sidekick/accountingprofile_edit.html'
 
 
 @register_model_view(AccountingProfile, 'delete')

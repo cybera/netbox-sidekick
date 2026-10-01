@@ -1,0 +1,93 @@
+{% extends 'generic/object_edit.html' %}
+{% load form_helpers %}
+{% load i18n %}
+
+{% comment %}
+AccountingProfile edit page with the Bandwidth Profiles inline.
+
+Replaces the Django admin's BandwidthProfileInline, which went away with the
+admin in NetBox 4 (ADR-064). The generic edit template still supplies the
+title, tabs, buttons, sticky action bar and the wrapping <form>, so this only
+overrides the form body: the standard fields, then the inline table.
+{% endcomment %}
+
+{% block form %}
+  {% render_errors form %}
+
+  {% include 'htmx/form.html' %}
+
+  <div class="field-group mb-5">
+    <div class="row">
+      <h2 class="col-9 offset-3">{% trans "Bandwidth Profiles" %}</h2>
+    </div>
+    <div class="col-9 offset-3">
+      <p class="text-muted">
+        {% blocktrans trimmed %}
+          Each row is a bandwidth setting with the date it takes effect. The
+          current setting is the most recent row dated on or before today, so
+          changing a member's limit means adding a new row rather than editing
+          an old one. Leave the empty row blank if there is nothing to add.
+        {% endblocktrans %}
+      </p>
+    </div>
+
+    {{ form.formset.non_form_errors }}
+    {{ form.formset.management_form }}
+
+    <table class="table table-hover align-middle" id="bandwidth-profiles">
+      <thead>
+        <tr>
+          <th scope="col">{% trans "Effective Date" %}</th>
+          <th scope="col">{% trans "Traffic Cap (Mbps)" %}</th>
+          <th scope="col">{% trans "Burst Limit (Mbps)" %}</th>
+          <th scope="col">{% trans "Billable" %}</th>
+          <th scope="col">{% trans "Comments" %}</th>
+          <th scope="col">{% trans "Delete" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for subform in form.formset %}
+          <tr>
+            {% for field in subform.hidden_fields %}{{ field }}{% endfor %}
+            {{ subform.non_field_errors }}
+            <td>
+              {{ subform.effective_date }}
+              {% for error in subform.effective_date.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </td>
+            <td>
+              {{ subform.traffic_cap }}
+              {% for error in subform.traffic_cap.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </td>
+            <td>
+              {{ subform.burst_limit }}
+              {% for error in subform.burst_limit.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </td>
+            <td>
+              {{ subform.billable }}
+              {% for error in subform.billable.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </td>
+            <td>
+              {{ subform.comments }}
+              {% for error in subform.comments.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </td>
+            <td>
+              {% if subform.fields.DELETE %}
+                {{ subform.DELETE }}
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock form %}

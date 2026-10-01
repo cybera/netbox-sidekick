@@ -2,9 +2,7 @@ from django import forms
 
 from netbox.forms import NetBoxModelForm
 
-from utilities.forms import (
-    DatePicker,
-)
+from utilities.forms.widgets import DatePicker
 
 from sidekick.models import (
     LogicalSystem,

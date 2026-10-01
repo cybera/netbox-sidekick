@@ -1,4 +1,4 @@
-from extras.plugins import PluginConfig
+from netbox.plugins import PluginConfig
 
 
 class SidekickConfig(PluginConfig):
@@ -11,9 +11,6 @@ class SidekickConfig(PluginConfig):
     author_email = "network@cybera.ca"
     required_settings = []
     default_settings = {}
-    install_requires = [
-        'netbox_plugin_extensions',
-    ]
 
 
 config = SidekickConfig

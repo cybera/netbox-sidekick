@@ -4,12 +4,16 @@ import netaddr
 import onepasswordconnectsdk
 import re
 import requests
-import rrdtool
 import time
-import whisper
 
-from pysnmp.hlapi import (
-    getCmd, nextCmd,
+# pysnmp >= 7 (lextudio): asyncio-only API; the 4.4.x asyncore transport is
+# gone since Python 3.12 removed asyncore. Public sync wrappers below bridge
+# with asyncio.run().
+import asyncio
+
+from pysnmp.hlapi.v3arch.asyncio import (
+    get_cmd as _get_cmd,
+    walk_cmd as _walk_cmd,
     CommunityData, ContextData,
     ObjectIdentity, ObjectType,
     SnmpEngine,
@@ -162,25 +166,29 @@ def decrypt_1pw_secret(token_path, host, vault, device, field):
     return secret
 
 
-def get_pysnmp_udp_transport_target(ipaddress):
+async def get_pysnmp_udp_transport_target(ipaddress):
     ip = ip_address(ipaddress)
 
     if ip.version == 4:
-        return UdpTransportTarget((ipaddress, 161))
+        return await UdpTransportTarget.create((ipaddress, 161))
     else:
-        return Udp6TransportTarget((ipaddress, 161))
+        return await Udp6TransportTarget.create((ipaddress, 161))
 
 
-def snmpget(remote_ip, community, oid):
-    pysnmp_udp_transport_target = get_pysnmp_udp_transport_target(remote_ip)
+async def _snmpget(remote_ip, community, oid):
+    pysnmp_udp_transport_target = await get_pysnmp_udp_transport_target(remote_ip)
 
-    iterator = getCmd(
+    return await _get_cmd(
         SnmpEngine(),
         CommunityData(community),
         pysnmp_udp_transport_target,
         ContextData(),
         ObjectType(ObjectIdentity(oid)))
-    errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
+
+
+def snmpget(remote_ip, community, oid):
+    errorIndication, errorStatus, errorIndex, varBinds = asyncio.run(
+        _snmpget(remote_ip, community, oid))
 
     if errorIndication:
         raise Exception(f"Error performing snmpget: {errorIndication}")
@@ -194,11 +202,11 @@ def snmpget(remote_ip, community, oid):
         return None
 
 
-def snmpwalk(remote_ip, community, oid):
+async def _snmpwalk(remote_ip, community, oid):
     _results = []
-    pysnmp_udp_transport_target = get_pysnmp_udp_transport_target(remote_ip)
+    pysnmp_udp_transport_target = await get_pysnmp_udp_transport_target(remote_ip)
 
-    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
+    async for (errorIndication, errorStatus, errorIndex, varBinds) in _walk_cmd(
             SnmpEngine(),
             CommunityData(community),
             pysnmp_udp_transport_target,
@@ -221,7 +229,11 @@ def snmpwalk(remote_ip, community, oid):
     return None
 
 
-def snmpwalk_bulk_accounting(remote_ip, community):
+def snmpwalk(remote_ip, community, oid):
+    return asyncio.run(_snmpwalk(remote_ip, community, oid))
+
+
+async def _snmpwalk_bulk_accounting(remote_ip, community):
     data = []
     isps = {}
     class_names = {}
@@ -233,25 +245,32 @@ def snmpwalk_bulk_accounting(remote_ip, community):
     jnxScuStatsBytes_re = r'.*2636\.3\.16\.1\.1\.1\.5\.(\d+)\.1\.(\d+)\.(.+)'
     jnxDcuStatsBytes_re = r'.*2636\.3\.6\.2\.1\.5\.(\d+)\.1\.(\d+)\.(.+)'
 
-    pysnmp_udp_transport_target = get_pysnmp_udp_transport_target(remote_ip)
+    pysnmp_udp_transport_target = await get_pysnmp_udp_transport_target(remote_ip)
 
-    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
-            SnmpEngine(),
-            CommunityData(community),
-            pysnmp_udp_transport_target,
-            ContextData(),
-            lexicographicMode=False,
-            lookupMib=True,
-            *ACCOUNTING_OIDS):
+    snmp_engine = SnmpEngine()
 
-        if errorIndication:
-            raise Exception(f"Error performing snmpwalk: {errorIndication}")
-        if errorStatus:
-            _msg = '%s at %s' % (
-                errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
-            raise Exception(f"Error performing snmpget: {_msg}")
-        else:
-            data.append(varBinds)
+    # pysnmp 7 walk_cmd() walks ONE varbind per generator; the pysnmp 4
+    # nextCmd() this was ported from took *varBinds and walked them
+    # together. Walk each accounting OID in turn - the result consumer
+    # below already flattens rows.
+    for _oid in ACCOUNTING_OIDS:
+        async for (errorIndication, errorStatus, errorIndex, varBinds) in _walk_cmd(
+                snmp_engine,
+                CommunityData(community),
+                pysnmp_udp_transport_target,
+                ContextData(),
+                _oid,
+                lexicographicMode=False,
+                lookupMib=True):
+
+            if errorIndication:
+                raise Exception(f"Error performing snmpwalk: {errorIndication}")
+            if errorStatus:
+                _msg = '%s at %s' % (
+                    errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
+                raise Exception(f"Error performing snmpget: {_msg}")
+            else:
+                data.append(varBinds)
 
     for row in data:
         for r in row:
@@ -292,9 +311,19 @@ def snmpwalk_bulk_accounting(remote_ip, community):
     # Obtain the name for each ISP
     for isp in isps.keys():
         _oid = f".1.3.6.1.2.1.31.1.1.1.18.{isp}"
-        isp_name = snmpget(remote_ip, community, _oid)
-        if isp_name is not None:
-            isps[isp] = f"{isp_name[0][1]}"
+        # _snmpget() is the raw async helper and returns the whole
+        # (errorIndication, errorStatus, errorIndex, varBinds) tuple,
+        # unlike the sync snmpget() wrapper. Unpack it here.
+        errorIndication, errorStatus, errorIndex, varBinds = await _snmpget(
+            remote_ip, community, _oid)
+        if errorIndication:
+            raise Exception(f"Error performing snmpget: {errorIndication}")
+        if errorStatus:
+            _msg = '%s at %s' % (
+                errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
+            raise Exception(f"Error performing snmpget: {_msg}")
+        if varBinds:
+            isps[isp] = f"{varBinds[0][1]}"
 
     # Format and structure the results
     classes = {}
@@ -320,7 +349,11 @@ def snmpwalk_bulk_accounting(remote_ip, community):
     return classes
 
 
-def snmpwalk_bulk(remote_ip, community):
+def snmpwalk_bulk_accounting(remote_ip, community):
+    return asyncio.run(_snmpwalk_bulk_accounting(remote_ip, community))
+
+
+async def _snmpwalk_bulk(remote_ip, community):
     data = []
     results = {}
     ipv4_addresses = {}
@@ -341,25 +374,32 @@ def snmpwalk_bulk(remote_ip, community):
     jnxifHCIn1SecRate_re = r'.*2636\.3\.3\.1\.1\.7'
     jnxifHCOut1SecRate_re = r'.*2636\.3\.3\.1\.1\.8'
 
-    pysnmp_udp_transport_target = get_pysnmp_udp_transport_target(remote_ip)
+    pysnmp_udp_transport_target = await get_pysnmp_udp_transport_target(remote_ip)
 
-    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
-            SnmpEngine(),
-            CommunityData(community),
-            pysnmp_udp_transport_target,
-            ContextData(),
-            lexicographicMode=False,
-            lookupMib=True,
-            *OIDs):
+    snmp_engine = SnmpEngine()
 
-        if errorIndication:
-            raise Exception(f"Error performing snmpwalk: {errorIndication}")
-        if errorStatus:
-            _msg = '%s at %s' % (
-                errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
-            raise Exception(f"Error performing snmpget: {_msg}")
-        else:
-            data.append(varBinds)
+    # pysnmp 7 walk_cmd() walks ONE varbind per generator; the pysnmp 4
+    # nextCmd() this was ported from took *varBinds and walked them
+    # together. Walk each interface OID in turn - the result consumer
+    # below already flattens rows.
+    for _oid in OIDs:
+        async for (errorIndication, errorStatus, errorIndex, varBinds) in _walk_cmd(
+                snmp_engine,
+                CommunityData(community),
+                pysnmp_udp_transport_target,
+                ContextData(),
+                _oid,
+                lexicographicMode=False,
+                lookupMib=True):
+
+            if errorIndication:
+                raise Exception(f"Error performing snmpwalk: {errorIndication}")
+            if errorStatus:
+                _msg = '%s at %s' % (
+                    errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
+                raise Exception(f"Error performing snmpget: {_msg}")
+            else:
+                data.append(varBinds)
 
     for row in data:
         for r in row:
@@ -471,86 +511,8 @@ def snmpwalk_bulk(remote_ip, community):
     return results
 
 
-# Most of this was taken from
-# https://github.com/graphite-project/whisper/blob/master/bin/rrd2whisper.py
-# https://github.com/graphite-project/whisper/blob/master/bin/whisper-resize.py
-def convert_rrd(rrd_file, dest_dir):
-    datasource_map = {
-        'OUTOCTETS': 'out_octets',
-        'OUTUCASTPKTS': 'out_unicast_packets',
-        'OUTNUCASTPKTS': 'out_nunicast_packets',
-        'INNUCASTPKTS': 'in_nunicast_packets',
-        'INERRORS': 'in_errors',
-        'OUTERRORS': 'out_errors',
-        'INUCASTPKTS': 'in_unicast_packets',
-        'INOCTETS': 'in_octets',
-    }
-
-    rra_indices = []
-    rrd_info = rrdtool.info(rrd_file)
-    seconds_per_pdp = rrd_info['step']
-    for key in rrd_info:
-        if key.startswith('rra['):
-            index = int(key.split('[')[1].split(']')[0])
-            rra_indices.append(index)
-
-    rra_count = max(rra_indices) + 1
-    rras = []
-    for i in range(rra_count):
-        rra_info = {}
-        rra_info['pdp_per_row'] = rrd_info['rra[%d].pdp_per_row' % i]
-        rra_info['rows'] = rrd_info['rra[%d].rows' % i]
-        rra_info['cf'] = rrd_info['rra[%d].cf' % i]
-        if 'xff' in rrd_info:
-            rra_info['xff'] = rrd_info['rra[%d].xff' % i]
-        rras.append(rra_info)
-
-    datasources = []
-    if 'ds' in rrd_info:
-        datasources = rrd_info['ds'].keys()
-    else:
-        ds_keys = [key for key in rrd_info if key.startswith('ds[')]
-        datasources = list(set(key[3:].split(']')[0] for key in ds_keys))
-
-    relevant_rras = []
-    for rra in rras:
-        if rra['cf'] == 'MAX':
-            relevant_rras.append(rra)
-
-    archives = []
-    for rra in relevant_rras:
-        precision = rra['pdp_per_row'] * seconds_per_pdp
-        points = rra['rows']
-        archives.append((precision, points))
-
-    for datasource in datasources:
-        now = int(time.time())
-        d = datasource_map[datasource]
-        dest_path = f"{dest_dir}/{d}.wsp"
-        try:
-            whisper.create(dest_path, archives, xFilesFactor=0.5)
-        except whisper.InvalidConfiguration:
-            pass
-
-        datapoints = []
-        for precision, points in reversed(archives):
-            retention = precision * points
-            endTime = now - now % precision
-            startTime = endTime - retention
-            (time_info, columns, rows) = rrdtool.fetch(
-                rrd_file,
-                'MAX',
-                '-r', str(precision),
-                '-s', str(startTime),
-                '-e', str(endTime),
-                '-a')
-            column_index = list(columns).index(datasource)
-            rows.pop()
-            values = [row[column_index] for row in rows]
-            timestamps = list(range(*time_info))
-            datapoints = zip(timestamps, values)
-            datapoints = [datapoint for datapoint in datapoints if datapoint[1] is not None]
-            whisper.update_many(dest_path, datapoints)
+def snmpwalk_bulk(remote_ip, community):
+    return asyncio.run(_snmpwalk_bulk(remote_ip, community))
 
 
 def get_graphite_nic_graph(nic, graphite_render_host=None, period="-1Y"):

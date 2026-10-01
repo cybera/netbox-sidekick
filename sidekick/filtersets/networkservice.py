@@ -238,8 +238,9 @@ class NetworkServiceL3FilterSet(NetBoxModelFilterSet):
         if not value.strip():
             return queryset
         return queryset.filter(
-            Q(name__icontains=value) |
-            Q(member__name__icontains=value)
+            Q(legacy_id__icontains=value) |
+            Q(member__name__icontains=value) |
+            Q(network_service_device__network_service__name__icontains=value)
         )
 
 
@@ -280,7 +281,7 @@ class PeeringConnectionFilterSet(NetBoxModelFilterSet):
         if not value.strip():
             return queryset
         return queryset.filter(
-            Q(name__icontains=value) |
+            Q(legacy_id__icontains=value) |
             Q(member__name__icontains=value)
         )
 

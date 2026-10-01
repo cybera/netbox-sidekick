@@ -63,6 +63,13 @@
       - 3
       - 4
 
+- model: sidekick.NetworkServiceL2
+  pk: 1
+  fields:
+    network_service_device: 1
+    vlan: 300
+    legacy_id: 1
+
 - model: sidekick.NetworkServiceGroup
   pk: 1
   fields:

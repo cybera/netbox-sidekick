@@ -29,6 +29,7 @@ MODELS_WITHOUT_DETAIL = ('nic',)
 MODELS_WITHOUT_RENAME = (
     'networkservicedevice',
     'networkservicel2',
+    'networkservicel3',
     'bandwidthprofile',
     'nic',
 )

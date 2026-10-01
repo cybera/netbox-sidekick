@@ -26,6 +26,15 @@ class NetworkServiceTest(BaseTest):
         v = LogicalSystem.objects.get(id=1)
         resp = self.client.get(v.get_absolute_url())
         self.assertContains(resp, 'Peering')
+
+        # Related network services are rendered by an HTMX ObjectsTablePanel, so
+        # their rows are not part of the initial page response. Verify the panel
+        # is wired to the correctly filtered list endpoint instead.
+        self.assertContains(resp, 'logical_system_id=1')
+        resp = self.client.get(
+            reverse('plugins:sidekick:networkservice_list'),
+            {'embedded': 'True', 'logical_system_id': 1},
+        )
         self.assertContains(resp, "East University&#x27;s peering service")
 
     # Network Service Type
@@ -42,6 +51,13 @@ class NetworkServiceTest(BaseTest):
         v = NetworkServiceType.objects.get(id=1)
         resp = self.client.get(v.get_absolute_url())
         self.assertContains(resp, 'Peering')
+
+        # See test_view_logicalsystem_detail for the HTMX panel rationale.
+        self.assertContains(resp, 'network_service_type_id=1')
+        resp = self.client.get(
+            reverse('plugins:sidekick:networkservice_list'),
+            {'embedded': 'True', 'network_service_type_id': 1},
+        )
         self.assertContains(resp, "East University&#x27;s peering service")
 
     # Network Service
@@ -91,6 +107,13 @@ class NetworkServiceTest(BaseTest):
         v = RoutingType.objects.get(id=1)
         resp = self.client.get(v.get_absolute_url())
         self.assertContains(resp, 'BGP')
+
+        # See test_view_logicalsystem_detail for the HTMX panel rationale.
+        self.assertContains(resp, 'routing_type_id=1')
+        resp = self.client.get(
+            reverse('plugins:sidekick:networkservice_list'),
+            {'embedded': 'True', 'routing_type_id': 1},
+        )
         self.assertContains(resp, "East University&#x27;s peering service")
 
     # IP Prefixes

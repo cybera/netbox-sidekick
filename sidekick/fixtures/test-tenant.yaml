@@ -3,20 +3,12 @@
   fields:
     name: "Members"
     slug: "members"
-    level: 0
-    lft: 1
-    rght: 2
-    tree_id: 2
 
 - model: tenancy.TenantGroup
   pk: 2
   fields:
     name: "Peering Connections"
     slug: "peering_connections"
-    level: 0
-    lft: 1
-    rght: 2
-    tree_id: 2
 
 - model: tenancy.Tenant
   pk: 1

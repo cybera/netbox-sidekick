@@ -41,7 +41,17 @@ class AccountingTest(BaseTest):
     def test_view_accountingprofile_detail(self):
         v = AccountingProfile.objects.get(id=1)
         resp = self.client.get(v.get_absolute_url())
-        self.assertContains(resp, 'East University&#x27;s profile')
+        # Comments are rendered by the standard CommentsPanel (as markdown).
+        self.assertContains(resp, "East University's profile")
+
+        # The bandwidth history table is rendered by an HTMX ObjectsTablePanel,
+        # so its rows are not part of the initial page response. Verify the
+        # panel is wired to the correctly filtered list endpoint instead.
+        self.assertContains(resp, 'accounting_profile_id=1')
+        resp = self.client.get(
+            reverse('plugins:sidekick:bandwidthprofile_list'),
+            {'embedded': 'True', 'accounting_profile_id': 1},
+        )
         self.assertContains(resp, '200000000')
 
     # Bandwidth Profile

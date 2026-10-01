@@ -70,7 +70,6 @@ class NetworkServiceL2Index(SearchIndex):
 class NetworkServiceL3Index(SearchIndex):
     model = NetworkServiceL3
     fields = (
-        ('name', 100),
         ('legacy_id', 300),
     )
     display_attrs = ('member', 'network_service_device')

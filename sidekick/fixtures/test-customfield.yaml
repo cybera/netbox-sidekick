@@ -1,14 +1,22 @@
+- model: extras.CustomFieldChoiceSet
+  pk: 1
+  fields:
+    name: 'Member Type'
+    description: 'Cybera member classification'
+    extra_choices:
+      - ['Enterprise', 'Enterprise']
+      - ['Government/Not For Profit', 'Government/Not For Profit']
+      - ['K-12 School Districts', 'K-12 School Districts']
+      - ['Post-Secondary Institution', 'Post-Secondary Institution']
+    order_alphabetically: false
+
 - model: extras.CustomField
   pk: 1
   fields:
     name: 'member_type'
     type: 'select'
     required: false
-    choices:
-      - 'Enterprise'
-      - 'Government/Not For Profit'
-      - 'K-12 School Districts'
-      - 'Post-Secondary Institution'
+    choice_set: 1
 
 - model: extras.CustomField
   pk: 2
@@ -19,10 +27,9 @@
     default: ''
 
 - model: extras.CustomField
-  pk: 2
+  pk: 3
   fields:
     name: 'longitude'
     type: 'text'
     required: false
     default: ''
-

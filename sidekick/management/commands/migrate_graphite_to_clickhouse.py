@@ -289,10 +289,10 @@ class Command(BaseCommand):
                         remaining = (total_files - processed_files) / fps if fps > 0 else 0
                         self.stdout.write(
                             f"Progress: {processed_files}/{total_files} files "
-                            f"({(processed_files/total_files)*100:.1f}%) | "
+                            f"({(processed_files / total_files) * 100:.1f}%) | "
                             f"New Points: {total_points:,} | "
                             f"Speed: {fps:.1f} files/sec | "
-                            f"ETA: {remaining/60:.1f} min"
+                            f"ETA: {remaining / 60:.1f} min"
                         )
                 except Exception as exc:
                     self.stdout.write(self.style.ERROR(f"{filename} generated an exception: {exc}"))

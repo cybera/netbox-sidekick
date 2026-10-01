@@ -66,8 +66,8 @@ def down_poll_baseline(e1_in, e1_out, e2_in, e2_out):
     Returns True when a delta must NOT be emitted for this interval.
     """
     return bool(
-        e2_in == 0 and e2_out == 0
-        and ((e1_in or 0) > 0 or (e1_out or 0) > 0)
+        e2_in == 0 and e2_out == 0 and
+        ((e1_in or 0) > 0 or (e1_out or 0) > 0)
     )
 
 
@@ -101,9 +101,9 @@ class Command(BaseCommand):
             elif device.primary_ip6:
                 mgmt_ip = device.primary_ip6
             else:
-                raise Exception(f"No valid IPv4/IPv6 primary address found for { options['device_name'] }")
+                raise Exception(f"No valid IPv4/IPv6 primary address found for {options['device_name']}")
         except Exception as e:
-            self.stdout.write(f"{ e }")
+            self.stdout.write(f"{e}")
             return
 
         onepw_host = settings.PLUGINS_CONFIG['sidekick'].get('1pw_connect_host', None)

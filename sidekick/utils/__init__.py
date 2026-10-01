@@ -4,7 +4,6 @@ import netaddr
 import onepasswordconnectsdk
 import re
 import requests
-import time
 
 # pysnmp >= 7 (lextudio): asyncio-only API; the 4.4.x asyncore transport is
 # gone since Python 3.12 removed asyncore. Public sync wrappers below bridge

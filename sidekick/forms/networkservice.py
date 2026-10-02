@@ -54,6 +54,9 @@ class NetworkServiceDeviceRowForm(forms.ModelForm):
     class Meta:
         model = NetworkServiceDevice
         fields = ('device', 'interface', 'vlan', 'comments')
+        widgets = {
+            'comments': forms.Textarea(attrs={'rows': 2}),
+        }
 
 
 NetworkServiceDeviceFormSet = inlineformset_factory(
@@ -251,6 +254,9 @@ class NetworkServiceL2InlineForm(forms.ModelForm):
     class Meta:
         model = NetworkServiceL2
         fields = ('vlan', 'comments')
+        widgets = {
+            'comments': forms.Textarea(attrs={'rows': 2}),
+        }
 
 
 class NetworkServiceL3InlineForm(forms.ModelForm):
@@ -276,10 +282,11 @@ class NetworkServiceL3InlineForm(forms.ModelForm):
             'comments',
         )
         widgets = {
-            # A plain multi-select keeps the compact table layout; NetBox's
-            # Select2 would balloon every row.
+            # A compact multi-select; NetBox's Select2 would balloon every
+            # row.
             'ip_prefixes': forms.SelectMultiple(
-                attrs={'class': 'form-select form-select-sm', 'size': '5'}),
+                attrs={'class': 'form-select', 'size': '6'}),
+            'comments': forms.Textarea(attrs={'rows': 2}),
         }
 
 

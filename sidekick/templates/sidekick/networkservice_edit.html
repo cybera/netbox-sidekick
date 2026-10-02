@@ -129,31 +129,7 @@ the standard fields, then the device cards.
                 {% endfor %}
               </div>
               <div class="col-md-8">
-                <h6 class="border-bottom pb-1 mb-2">{% trans "L3 Service" %}</h6>
-                {{ subform.l3_form.non_field_errors }}
-                <div class="row g-3">
-                  {% for field in subform.l3_form.visible_fields %}
-                    {% if field.field.widget.input_type == 'checkbox' %}
-                      <div class="col-md-3">
-                        <div class="form-check mt-4">
-                          {{ field }}
-                          <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                        </div>
-                        {% for error in field.errors %}
-                          <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                      </div>
-                    {% else %}
-                      <div class="col-md-6">
-                        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                        {{ field }}
-                        {% for error in field.errors %}
-                          <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                      </div>
-                    {% endif %}
-                  {% endfor %}
-                </div>
+                {% include 'sidekick/inline_l3_row.html' with subform=subform.l3_form %}
               </div>
             </div>
           {% endif %}

@@ -1,0 +1,166 @@
+{% load i18n %}
+{% comment %}
+One L3 connection, rendered as a card.
+
+Used by both the L3 formset (device edit page, service edit page) and the
+single plain L3 form attached to a newly added device row on the service
+edit page. Expects `subform` in the include context. The caller renders
+the formset management form and heading; hidden fields and non-field
+errors are handled here.
+
+Layout: identity row (logical system / routing type / ASN), then side-by-
+side IPv4 and IPv6 groups (addresses + unicast/multicast checkboxes), a
+full-width IP Prefixes multi-select, and comments. A 14-column table was
+tried first; widgets were unreadably narrow, hence the card layout.
+{% endcomment %}
+<div class="card mb-3">
+  <div class="card-header py-2 d-flex justify-content-between align-items-center">
+    <span class="fw-bold">
+      {% if subform.instance.pk %}
+        {% blocktrans with rt=subform.instance.routing_type %}L3 connection — {{ rt }}{% endblocktrans %}
+      {% else %}
+        {% trans "New L3 connection" %}
+      {% endif %}
+    </span>
+    {% if subform.fields.DELETE %}
+      <span class="form-check">
+        {{ subform.DELETE }}
+        <label class="form-check-label" for="{{ subform.DELETE.id_for_label }}">
+          {% trans "Delete" %}
+        </label>
+      </span>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    {{ subform.non_field_errors }}
+    {% for field in subform.hidden_fields %}{{ field }}{% endfor %}
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label" for="{{ subform.logical_system.id_for_label }}">{% trans "Logical System" %}</label>
+        {{ subform.logical_system }}
+        {% for error in subform.logical_system.errors %}
+          <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="{{ subform.routing_type.id_for_label }}">{% trans "Routing Type" %}</label>
+        {{ subform.routing_type }}
+        {% for error in subform.routing_type.errors %}
+          <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="{{ subform.asn.id_for_label }}">{% trans "ASN" %}</label>
+        {{ subform.asn }}
+        {% for error in subform.asn.errors %}
+          <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+      <div class="col-md-6">
+        <div class="border rounded p-3 h-100">
+          <h6 class="mb-3">{% trans "IPv4" %}</h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ subform.provider_router_address_ipv4.id_for_label }}">
+                {{ subform.provider_router_address_ipv4.label }}
+              </label>
+              {{ subform.provider_router_address_ipv4 }}
+              {% for error in subform.provider_router_address_ipv4.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="{{ subform.member_router_address_ipv4.id_for_label }}">
+                {{ subform.member_router_address_ipv4.label }}
+              </label>
+              {{ subform.member_router_address_ipv4 }}
+              {% for error in subform.member_router_address_ipv4.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="col-12">
+              <div class="form-check form-check-inline">
+                {{ subform.ipv4_unicast }}
+                <label class="form-check-label" for="{{ subform.ipv4_unicast.id_for_label }}">
+                  {{ subform.ipv4_unicast.label }}
+                </label>
+              </div>
+              <div class="form-check form-check-inline">
+                {{ subform.ipv4_multicast }}
+                <label class="form-check-label" for="{{ subform.ipv4_multicast.id_for_label }}">
+                  {{ subform.ipv4_multicast.label }}
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="border rounded p-3 h-100">
+          <h6 class="mb-3">{% trans "IPv6" %}</h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ subform.provider_router_address_ipv6.id_for_label }}">
+                {{ subform.provider_router_address_ipv6.label }}
+              </label>
+              {{ subform.provider_router_address_ipv6 }}
+              {% for error in subform.provider_router_address_ipv6.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="{{ subform.member_router_address_ipv6.id_for_label }}">
+                {{ subform.member_router_address_ipv6.label }}
+              </label>
+              {{ subform.member_router_address_ipv6 }}
+              {% for error in subform.member_router_address_ipv6.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="col-12">
+              <div class="form-check form-check-inline">
+                {{ subform.ipv6_unicast }}
+                <label class="form-check-label" for="{{ subform.ipv6_unicast.id_for_label }}">
+                  {{ subform.ipv6_unicast.label }}
+                </label>
+              </div>
+              <div class="form-check form-check-inline">
+                {{ subform.ipv6_multicast }}
+                <label class="form-check-label" for="{{ subform.ipv6_multicast.id_for_label }}">
+                  {{ subform.ipv6_multicast.label }}
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+      <div class="col-12">
+        <label class="form-label" for="{{ subform.ip_prefixes.id_for_label }}">{% trans "IP Prefixes" %}</label>
+        {{ subform.ip_prefixes }}
+        <div class="text-muted small">
+          {% trans "Prefixes are created in IPAM; this list attaches them to the connection." %}
+        </div>
+        {% for error in subform.ip_prefixes.errors %}
+          <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+      <div class="col-12">
+        <label class="form-label" for="{{ subform.comments.id_for_label }}">{% trans "Comments" %}</label>
+        {{ subform.comments }}
+        {% for error in subform.comments.errors %}
+          <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>

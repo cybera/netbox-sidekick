@@ -42,7 +42,61 @@ class NetworkServiceTypeForm(NetBoxModelForm):
         fields = ('name', 'slug', 'description')
 
 
+class NetworkServiceDeviceRowForm(forms.ModelForm):
+    """
+    A single editable device row in the NetworkServiceDevice inline on the
+    NetworkService form. Plain ModelForm, like the other inline rows: the
+    compact table needs no per-row tags/custom-field widgets.
+
+    legacy_id is deliberately excluded -- fields a form does not declare are
+    left untouched by save(), so the legacy value survives inline edits.
+    """
+    class Meta:
+        model = NetworkServiceDevice
+        fields = ('device', 'interface', 'vlan', 'comments')
+
+
+NetworkServiceDeviceFormSet = inlineformset_factory(
+    NetworkService,
+    NetworkServiceDevice,
+    form=NetworkServiceDeviceRowForm,
+    extra=1,
+    can_delete=True,
+    can_delete_extra=False,
+)
+
+
 class NetworkServiceForm(NetBoxModelForm):
+    """
+    NetworkService form carrying the NetworkServiceDevice inline.
+
+    Extends the form-owned-formset pattern (ADR-073) one level further than
+    NetworkServiceDeviceForm: the device formset's existing rows each carry
+    their own L2 and L3 formsets (nested prefixes
+    ``network_service_device-<i>-network_service_l2/l3``), so a whole
+    service -- devices, VLANs and routed components -- is edited on one
+    page, like the old admin's device inlines but reachable from the
+    service itself.
+
+    Constraints that keep this tractable without nested-formset support:
+
+    * Existing device rows (with a pk) carry full L2/L3 formsets with
+      nested prefixes ``network_service_device-<i>-network_service_l2/l3``
+      -- add, edit and delete any number of rows.
+    * A newly added device row carries one L2 row and one L3 row (plain
+      forms, same nested prefix without a row index). They are created
+      right after the device in the same save. If the new device needs
+      more L2/L3 rows, they are added on the next save.
+    * A device row marked for deletion is validated but not saved, and its
+      sub-formsets are neither validated nor saved. Because
+      NetworkServiceL2/L3 use on_delete=PROTECT, a device row with existing
+      components is refused with an explicit error -- the user deletes the
+      L2/L3 rows first, then the device (mirroring the admin's blocked
+      delete).
+    * The device formset's existing rows are ordered by pk so the row
+      indexes -- and therefore the nested prefixes -- are identical
+      between GET and POST.
+    """
     start_date = forms.DateTimeField(
         required=True,
         label="Start Date",
@@ -54,6 +108,134 @@ class NetworkServiceForm(NetBoxModelForm):
         fields = ('name', 'network_service_type', 'member', 'member_site', 'legacy_id',
                   'start_date', 'end_date', 'description', 'comments', 'active',
                   'backup_for', 'accounting_profile',)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.device_formset = NetworkServiceDeviceFormSet(
+            data=self.data if self.is_bound else None,
+            files=self.files if self.files else None,
+            instance=self.instance,
+            prefix='network_service_device',
+            # Existing rows ordered by pk so row indexes (and the nested
+            # L2/L3 prefixes built below) are stable between GET and POST.
+            queryset=(
+                NetworkServiceDevice.objects.filter(network_service=self.instance)
+                .order_by('pk') if self.instance.pk else None),
+        )
+
+        # Attach an L2 and L3 formset to every existing device row, with the
+        # row's index baked into the nested prefix. New (extra) rows get a
+        # single L2 row and a single L3 row instead: a plain form, created
+        # after the device in the same save.
+        for i, row in enumerate(self.device_formset.forms):
+            if row.instance.pk:
+                row.l2_formset = NetworkServiceL2FormSet(
+                    data=self.data if self.is_bound else None,
+                    files=self.files if self.files else None,
+                    instance=row.instance,
+                    prefix=f'network_service_device-{i}-network_service_l2',
+                )
+                row.l3_formset = NetworkServiceL3FormSet(
+                    data=self.data if self.is_bound else None,
+                    files=self.files if self.files else None,
+                    instance=row.instance,
+                    prefix=f'network_service_device-{i}-network_service_l3',
+                )
+            else:
+                row.l2_form = NetworkServiceL2InlineForm(
+                    data=self.data if self.is_bound else None,
+                    files=self.files if self.files else None,
+                    instance=NetworkServiceL2(),
+                    prefix=f'network_service_device-{i}-network_service_l2',
+                )
+                row.l3_form = NetworkServiceL3InlineForm(
+                    data=self.data if self.is_bound else None,
+                    files=self.files if self.files else None,
+                    instance=NetworkServiceL3(),
+                    prefix=f'network_service_device-{i}-network_service_l3',
+                )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not self.is_bound:
+            return cleaned_data
+
+        errors = []
+        if not self.device_formset.is_valid():
+            errors.append(forms.ValidationError(
+                'Correct the errors in the network service devices below.'))
+
+        # Only existing rows carry sub-formsets; new rows carry single L2/L3
+        # forms. Rows marked for deletion are skipped: they are being
+        # removed, and their L2/L3 rows are deleted with the device.
+        for row in self.device_formset.forms:
+            if row.instance.pk:
+                if row.cleaned_data.get('DELETE'):
+                    # NetworkServiceL2/L3 protect their device, so a device
+                    # with components cannot be deleted from here -- mirror
+                    # the admin's blocked-delete behaviour with an explicit
+                    # error.
+                    has_components = (
+                        row.instance.network_service_l2.exists() or
+                        row.instance.network_service_l3.exists())
+                    if has_components:
+                        errors.append(forms.ValidationError(
+                            f'Device row {row.instance.pk} still has L2/L3 '
+                            f'services. Delete those rows first.'))
+                    continue
+                if not row.l2_formset.is_valid():
+                    errors.append(forms.ValidationError(
+                        f'Correct the errors in the L2 services of device '
+                        f'row {row.instance.pk}.'))
+                if not row.l3_formset.is_valid():
+                    errors.append(forms.ValidationError(
+                        f'Correct the errors in the L3 services of device '
+                        f'row {row.instance.pk}.'))
+            else:
+                # A new row's L2/L3 forms are only validated when the user
+                # actually typed something (has_changed); an untouched extra
+                # row stays out of the save entirely.
+                if row.l2_form.has_changed() and not row.l2_form.is_valid():
+                    errors.append(forms.ValidationError(
+                        'Correct the errors in the L2 service of the new '
+                        'device row.'))
+                if row.l3_form.has_changed() and not row.l3_form.is_valid():
+                    errors.append(forms.ValidationError(
+                        'Correct the errors in the L3 service of the new '
+                        'device row.'))
+
+        if errors:
+            raise forms.ValidationError(errors)
+        return cleaned_data
+
+    def save(self, commit=True):
+        obj = super().save(commit=commit)
+        if commit:
+            # The service must exist before its device rows can point at it,
+            # and each device row before its L2/L3 rows.
+            self.device_formset.instance = obj
+            self.device_formset.save()
+            for row in self.device_formset.forms:
+                if row.cleaned_data.get('DELETE'):
+                    # Being deleted by the formset above; its L2/L3 rows were
+                    # either deleted with it or blocked in clean().
+                    continue
+                if hasattr(row, 'l2_formset'):
+                    # Existing device row with its L2/L3 formsets.
+                    row.l3_formset.save()
+                    row.l2_formset.save()
+                else:
+                    # A newly created device row (the formset just saved it,
+                    # so it has a pk now): its single L2/L3 forms are only
+                    # saved when the user typed something.
+                    if row.l2_form.has_changed() and row.l2_form.is_valid():
+                        row.l2_form.instance.network_service_device = row.instance
+                        row.l2_form.save()
+                    if row.l3_form.has_changed() and row.l3_form.is_valid():
+                        row.l3_form.instance.network_service_device = row.instance
+                        row.l3_form.save()
+        return obj
 
 
 class NetworkServiceL2InlineForm(forms.ModelForm):

@@ -144,6 +144,9 @@ class NetworkServiceView(SidekickObjectView):
 class NetworkServiceEditView(generic.ObjectEditView):
     queryset = NetworkService.objects.all()
     form = forms.NetworkServiceForm
+    # Custom edit page: the NetworkServiceDevice inline (each device row
+    # carries its L2 and L3 components).
+    template_name = 'sidekick/networkservice_edit.html'
 
 
 @register_model_view(NetworkService, 'delete')

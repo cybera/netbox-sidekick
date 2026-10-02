@@ -510,3 +510,256 @@ class AdminParityTest(BaseTest):
         resp = self.client.get(url, {'active': 'false'})
         self.assertContains(resp, 'xe-3/3/3.400')
         self.assertNotContains(resp, 'xe-3/3/3.300')
+
+
+class NetworkServiceInlineTest(BaseTest):
+    """
+    The NetworkServiceDevice inline on the NetworkService edit page: CRUD of
+    devices and their L2/L3 components from the service itself.
+
+    A device row is a formset row; each existing device row carries its own
+    L2/L3 formsets (nested prefixes), and a new device row carries a single
+    L2 row and a single L3 row created in the same save.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.service = NetworkService.objects.get(pk=1)
+        self.device = NetworkServiceDevice.objects.get(pk=1)
+        self.url = reverse('plugins:sidekick:networkservice_edit',
+                           args=[self.service.pk])
+
+    def service_fields(self, **overrides):
+        data = {
+            'name': self.service.name,
+            'network_service_type': str(self.service.network_service_type_id),
+            'member': str(self.service.member_id),
+            'member_site': str(self.service.member_site_id),
+            'start_date': '2026-10-01 00:00:00',
+            'end_date': '',
+            'description': self.service.description or '',
+            'comments': self.service.comments or '',
+            'active': 'on',
+            'legacy_id': str(self.service.legacy_id) if self.service.legacy_id else '',
+            'backup_for': str(self.service.backup_for_id) if self.service.backup_for_id else '',
+            'accounting_profile': str(self.service.accounting_profile_id) if self.service.accounting_profile_id else '',
+        }
+        data.update(overrides)
+        return data
+
+    def device_row(self, index, existing_id, **overrides):
+        data = {
+            f'network_service_device-{index}-id': str(existing_id or ''),
+            f'network_service_device-{index}-device': str(self.device.device_id),
+            f'network_service_device-{index}-interface': self.device.interface or '',
+            f'network_service_device-{index}-vlan': str(self.device.vlan or ''),
+            f'network_service_device-{index}-comments': self.device.comments or '',
+        }
+        data.update({f'network_service_device-{index}-{k}': v
+                     for k, v in overrides.items()})
+        return data
+
+    def device_mgmt(self, total, initial):
+        return {
+            'network_service_device-TOTAL_FORMS': str(total),
+            'network_service_device-INITIAL_FORMS': str(initial),
+            'network_service_device-MIN_NUM_FORMS': '0',
+            'network_service_device-MAX_NUM_FORMS': '1000',
+        }
+
+    def l3_rows(self, index, rows):
+        data = {
+            f'network_service_device-{index}-network_service_l3-TOTAL_FORMS': str(len(rows)),
+            f'network_service_device-{index}-network_service_l3-INITIAL_FORMS': str(
+                len([r for r in rows if r.get('id')])),
+            f'network_service_device-{index}-network_service_l3-MIN_NUM_FORMS': '0',
+            f'network_service_device-{index}-network_service_l3-MAX_NUM_FORMS': '1000',
+        }
+        for i, row in enumerate(rows):
+            for key, value in row.items():
+                data[f'network_service_device-{index}-network_service_l3-{i}-{key}'] = value
+        return data
+
+    def l2_rows(self, index, rows):
+        data = {
+            f'network_service_device-{index}-network_service_l2-TOTAL_FORMS': str(len(rows)),
+            f'network_service_device-{index}-network_service_l2-INITIAL_FORMS': str(
+                len([r for r in rows if r.get('id')])),
+            f'network_service_device-{index}-network_service_l2-MIN_NUM_FORMS': '0',
+            f'network_service_device-{index}-network_service_l2-MAX_NUM_FORMS': '1000',
+        }
+        for i, row in enumerate(rows):
+            for key, value in row.items():
+                data[f'network_service_device-{index}-network_service_l2-{i}-{key}'] = value
+        return data
+
+    def test_edit_page_renders_device_inline(self):
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Network Service Devices')
+        # Device formset management data and the existing row.
+        self.assertContains(resp, 'network_service_device-TOTAL_FORMS')
+        self.assertContains(resp, 'network_service_device-0-id')
+        self.assertContains(resp, 'xe-3/3/3.300')
+        # The existing device row carries its L2/L3 formsets.
+        self.assertContains(resp,
+                            'network_service_device-0-network_service_l3-TOTAL_FORMS')
+        self.assertContains(resp, 'network_service_device-0-network_service_l3-0-asn')
+        self.assertContains(resp, 'network_service_device-0-network_service_l2-0-vlan')
+        # The extra (new) device row carries single L2/L3 forms.
+        self.assertContains(resp, 'network_service_device-1-network_service_l2-vlan')
+        self.assertContains(resp, 'network_service_device-1-network_service_l3-asn')
+        # Existing device rows can be deleted.
+        self.assertContains(resp, 'network_service_device-0-DELETE')
+
+    def test_edit_updates_existing_device_l2_l3(self):
+        data = self.service_fields()
+        data.update(self.device_row(0, self.device.pk))
+        data.update(self.l3_rows(0, [
+            {'id': '1', 'logical_system': '1', 'routing_type': '1',
+             'asn': '12399', 'ipv4_unicast': 'on', 'ipv4_multicast': '',
+             'provider_router_address_ipv4': '192.168.1.1/31',
+             'member_router_address_ipv4': '192.168.1.2/31',
+             'ipv6_unicast': 'on', 'ipv6_multicast': '',
+             'provider_router_address_ipv6': '', 'member_router_address_ipv6': '',
+             'comments': ''},
+        ]))
+        data.update(self.l2_rows(0, [
+            {'id': '1', 'vlan': '333', 'comments': 'updated'},
+        ]))
+        # An untouched extra device row.
+        data.update(self.device_row(1, None))
+        data.update(self.device_mgmt(2, 1))
+        resp = self.client.post(self.url, data)
+        try:
+            dbg = (dict(resp.context['form'].errors),
+                   [dict(f.errors) for f in resp.context['form'].device_formset],
+                   resp.context['form'].device_formset.non_form_errors())
+        except Exception as e:  # pragma: no cover
+            dbg = f'debug failed: {e}'
+        self.assertEqual(resp.status_code, 302, msg=dbg)
+        self.device.refresh_from_db()
+        l3 = NetworkServiceL3.objects.get(pk=1)
+        self.assertEqual(l3.asn, '12399')
+        l2 = NetworkServiceL2.objects.get(pk=1)
+        self.assertEqual(l2.vlan, 333)
+        self.assertEqual(l2.comments, 'updated')
+
+    def test_edit_adds_device_with_l2_and_l3(self):
+        data = self.service_fields()
+        data.update(self.device_row(0, self.device.pk))
+        data.update(self.l3_rows(0, [
+            {'id': '1', 'logical_system': '1', 'routing_type': '1',
+             'asn': '12345', 'ipv4_unicast': 'on', 'ipv4_multicast': '',
+             'provider_router_address_ipv4': '192.168.1.1/31',
+             'member_router_address_ipv4': '192.168.1.2/31',
+             'ipv6_unicast': 'on', 'ipv6_multicast': '',
+             'provider_router_address_ipv6': '', 'member_router_address_ipv6': '',
+             'comments': ''},
+        ]))
+        data.update(self.l2_rows(0, [
+            {'id': '1', 'vlan': '300', 'comments': ''},
+        ]))
+        # The new device row, with its single L2 and L3 rows.
+        data.update(self.device_row(1, None, interface='xe-3/3/3.400', vlan='400'))
+        data['network_service_device-1-network_service_l2-vlan'] = '400'
+        data['network_service_device-1-network_service_l2-comments'] = ''
+        data['network_service_device-1-network_service_l3-logical_system'] = '2'
+        data['network_service_device-1-network_service_l3-routing_type'] = '1'
+        data['network_service_device-1-network_service_l3-asn'] = '65001'
+        data['network_service_device-1-network_service_l3-ipv4_unicast'] = 'on'
+        data['network_service_device-1-network_service_l3-ipv4_multicast'] = ''
+        data['network_service_device-1-network_service_l3-provider_router_address_ipv4'] = ''
+        data['network_service_device-1-network_service_l3-member_router_address_ipv4'] = ''
+        data['network_service_device-1-network_service_l3-ipv6_unicast'] = ''
+        data['network_service_device-1-network_service_l3-ipv6_multicast'] = ''
+        data['network_service_device-1-network_service_l3-provider_router_address_ipv6'] = ''
+        data['network_service_device-1-network_service_l3-member_router_address_ipv6'] = ''
+        data['network_service_device-1-network_service_l3-comments'] = ''
+        data.update(self.device_mgmt(2, 1))
+
+        resp = self.client.post(self.url, data)
+        try:
+            dbg = (dict(resp.context['form'].errors),
+                   [dict(f.errors) for f in resp.context['form'].device_formset],
+                   resp.context['form'].device_formset.non_form_errors())
+        except Exception as e:  # pragma: no cover
+            dbg = f'debug failed: {e}'
+        self.assertEqual(resp.status_code, 302, msg=dbg)
+
+        new_device = NetworkServiceDevice.objects.get(
+            network_service=self.service, interface='xe-3/3/3.400')
+        self.assertEqual(new_device.vlan, 400)
+        l3 = NetworkServiceL3.objects.get(network_service_device=new_device)
+        self.assertEqual(l3.asn, '65001')
+        self.assertEqual(l3.logical_system_id, 2)
+        self.assertTrue(l3.active)
+        l2 = NetworkServiceL2.objects.get(network_service_device=new_device)
+        self.assertEqual(l2.vlan, 400)
+
+    def test_edit_cannot_delete_device_with_components(self):
+        data = self.service_fields()
+        data.update(self.device_row(0, self.device.pk, DELETE='on'))
+        data.update(self.l3_rows(0, [
+            {'id': '1', 'logical_system': '1', 'routing_type': '1',
+             'asn': '12345', 'ipv4_unicast': 'on', 'ipv4_multicast': '',
+             'provider_router_address_ipv4': '192.168.1.1/31',
+             'member_router_address_ipv4': '192.168.1.2/31',
+             'ipv6_unicast': 'on', 'ipv6_multicast': '',
+             'provider_router_address_ipv6': '', 'member_router_address_ipv6': '',
+             'comments': ''},
+        ]))
+        data.update(self.l2_rows(0, [
+            {'id': '1', 'vlan': '300', 'comments': ''},
+        ]))
+        data.update(self.device_row(1, None))
+        data.update(self.device_mgmt(2, 1))
+        resp = self.client.post(self.url, data)
+        self.assertEqual(resp.status_code, 200)  # re-render with the blocker
+        self.assertTrue(NetworkServiceDevice.objects.filter(pk=self.device.pk).exists())
+        self.assertTrue(NetworkServiceL3.objects.filter(pk=1).exists())
+
+    def test_edit_deletes_device_without_components(self):
+        extra = NetworkServiceDevice.objects.create(
+            network_service=self.service, device_id=1,
+            interface='xe-3/3/3.500', vlan=500)
+
+        data = self.service_fields()
+        data.update(self.device_row(0, self.device.pk))
+        data.update(self.l3_rows(0, [
+            {'id': '1', 'logical_system': '1', 'routing_type': '1',
+             'asn': '12345', 'ipv4_unicast': 'on', 'ipv4_multicast': '',
+             'provider_router_address_ipv4': '192.168.1.1/31',
+             'member_router_address_ipv4': '192.168.1.2/31',
+             'ipv6_unicast': 'on', 'ipv6_multicast': '',
+             'provider_router_address_ipv6': '', 'member_router_address_ipv6': '',
+             'comments': ''},
+        ]))
+        data.update(self.l2_rows(0, [
+            {'id': '1', 'vlan': '300', 'comments': ''},
+        ]))
+        # Two device rows now: index 0 existing-with-components, index 1 the
+        # bare device to delete, index 2 the untouched extra row.
+        data.update(self.device_row(1, extra.pk, DELETE='on',
+                                    interface='xe-3/3/3.500', vlan='500'))
+        data.update(self.device_row(2, None))
+        data.update(self.device_mgmt(3, 2))
+        resp = self.client.post(self.url, data)
+        try:
+            dbg = (dict(resp.context['form'].errors),
+                   [dict(f.errors) for f in resp.context['form'].device_formset],
+                   resp.context['form'].device_formset.non_form_errors())
+        except Exception as e:  # pragma: no cover
+            dbg = f'debug failed: {e}'
+        self.assertEqual(resp.status_code, 302, msg=dbg)
+        self.assertFalse(NetworkServiceDevice.objects.filter(pk=extra.pk).exists())
+        self.assertTrue(NetworkServiceDevice.objects.filter(pk=self.device.pk).exists())
+
+    def test_add_page_renders_inline(self):
+        url = reverse('plugins:sidekick:networkservice_add')
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Network Service Devices')
+        self.assertContains(resp, 'network_service_device-TOTAL_FORMS')
+        self.assertContains(resp, 'network_service_device-0-network_service_l2-vlan')
+        self.assertContains(resp, 'network_service_device-0-network_service_l3-asn')

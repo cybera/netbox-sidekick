@@ -1,0 +1,39 @@
+{% load i18n %}
+{% comment %}
+The L2 Services inline table. Expects `formset` in the include context; the
+caller renders the management form and heading.
+{% endcomment %}
+<table class="table table-hover align-middle" {% if table_id %}id="{{ table_id }}"{% endif %}>
+  <thead>
+    <tr>
+      <th scope="col">{% trans "VLAN" %}</th>
+      <th scope="col">{% trans "Comments" %}</th>
+      <th scope="col">{% trans "Delete" %}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for subform in formset %}
+      <tr>
+        {% for field in subform.hidden_fields %}{{ field }}{% endfor %}
+        {{ subform.non_field_errors }}
+        <td>
+          {{ subform.vlan }}
+          {% for error in subform.vlan.errors %}
+            <div class="text-danger">{{ error }}</div>
+          {% endfor %}
+        </td>
+        <td>
+          {{ subform.comments }}
+          {% for error in subform.comments.errors %}
+            <div class="text-danger">{{ error }}</div>
+          {% endfor %}
+        </td>
+        <td>
+          {% if subform.fields.DELETE %}
+            {{ subform.DELETE }}
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>

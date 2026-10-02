@@ -1,0 +1,141 @@
+{% extends 'generic/object_edit.html' %}
+{% load form_helpers %}
+{% load i18n %}
+
+{% comment %}
+NetworkService edit page with the NetworkServiceDevice inline.
+
+Every device of the service is rendered as a card: its device/interface/
+VLAN row, then its L2 and L3 components. Existing device rows carry full
+L2/L3 formsets (any number of rows can be added, edited or deleted); a
+newly added device row carries a single L2 row and a single L3 row, which
+are created along with the device in the same save.
+
+The generic edit template still supplies the title, tabs, buttons, sticky
+action bar and the wrapping <form>, so this only overrides the form body:
+the standard fields, then the device cards.
+{% endcomment %}
+
+{% block form %}
+  {% render_errors form %}
+
+  {% include 'htmx/form.html' %}
+
+  <div class="field-group mb-5">
+    <div class="row">
+      <h2 class="col-9 offset-3">{% trans "Network Service Devices" %}</h2>
+    </div>
+    <div class="col-9 offset-3">
+      <p class="text-muted">
+        {% blocktrans trimmed %}
+          Each card is one of the service's devices, with its L2 and L3
+          components. Leave the empty card blank if there is nothing to add;
+          a new device can carry one L2 row and one L3 row in the same save.
+          Deleting a device is only possible once its L2/L3 rows are gone.
+          L3 fields managed on the standalone L3 page (member, member site,
+          IP prefixes, active) are not shown here.
+        {% endblocktrans %}
+      </p>
+    </div>
+
+    {{ form.device_formset.non_form_errors }}
+    {{ form.device_formset.management_form }}
+
+    {% for subform in form.device_formset %}
+      <div class="card mb-4">
+        <div class="card-body">
+          {{ subform.non_field_errors }}
+          {% for field in subform.hidden_fields %}{{ field }}{% endfor %}
+
+          <div class="row align-items-end">
+            <div class="col-md-4 mb-1">
+              <label class="form-label">{% trans "Device" %}</label>
+              {{ subform.device }}
+              {% for error in subform.device.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="col-md-3 mb-1">
+              <label class="form-label">{% trans "Interface" %}</label>
+              {{ subform.interface }}
+              {% for error in subform.interface.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="col-md-2 mb-1">
+              <label class="form-label">{% trans "VLAN" %}</label>
+              {{ subform.vlan }}
+              {% for error in subform.vlan.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="col-md-2 mb-1">
+              <label class="form-label">{% trans "Comments" %}</label>
+              {{ subform.comments }}
+              {% for error in subform.comments.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="col-md-1 mb-1">
+              <label class="form-label">{% trans "Delete" %}</label>
+              {% if subform.fields.DELETE %}
+                {{ subform.DELETE }}
+              {% endif %}
+            </div>
+          </div>
+
+          {% if subform.instance.pk %}
+            <div class="row mt-4">
+              <div class="col">
+                <h6>{% trans "L2 Services" %}</h6>
+                {{ subform.l2_formset.non_form_errors }}
+                {{ subform.l2_formset.management_form }}
+                {% include 'sidekick/inline_l2_table.html' with formset=subform.l2_formset %}
+              </div>
+            </div>
+            <div class="row mt-4">
+              <div class="col">
+                <h6>{% trans "L3 Services" %}</h6>
+                {{ subform.l3_formset.non_form_errors }}
+                {{ subform.l3_formset.management_form }}
+                {% include 'sidekick/inline_l3_table.html' with formset=subform.l3_formset %}
+              </div>
+            </div>
+          {% else %}
+            <div class="row mt-4">
+              <div class="col-md-4">
+                <h6>{% trans "L2 Service (new device)" %}</h6>
+                {{ subform.l2_form.non_field_errors }}
+                <label class="form-label">{% trans "VLAN" %}</label>
+                {{ subform.l2_form.vlan }}
+                {% for error in subform.l2_form.vlan.errors %}
+                  <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+                <label class="form-label">{% trans "Comments" %}</label>
+                {{ subform.l2_form.comments }}
+                {% for error in subform.l2_form.comments.errors %}
+                  <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+              </div>
+              <div class="col-md-8">
+                <h6>{% trans "L3 Service (new device)" %}</h6>
+                {{ subform.l3_form.non_field_errors }}
+                <div class="row">
+                  {% for field in subform.l3_form.visible_fields %}
+                    <div class="col-md-3 mb-2">
+                      <label class="form-label">{{ field.label }}</label>
+                      {{ field }}
+                      {% for error in field.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                      {% endfor %}
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock form %}

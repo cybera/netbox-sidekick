@@ -10,17 +10,34 @@
  *     .sk-dual-remove   move selected options to -> from
  *     .sk-dual-to       multi-select named field holding the selected options
  *
- * The real <select> stays named, so a save without any JS still posts the
- * selected values. Double-clicking an option moves it. Idempotent init, so
- * duplicate script tags from multiple widget instances are harmless.
+ * Selection state invariant: an option's selected state always matches which
+ * box it is in. Anything in the named (selected) box is selected, anything
+ * in the available box is not. This is enforced at init, on every move, and
+ * on form submit, because a multi-select only posts its *selected* options:
+ * relying on DOM state left by clicks (a click on a selected option toggles
+ * it off) or browser form restoration would silently drop or remove values
+ * on save. Reported and fixed after production use: prefixes moved with
+ * Add/double-click were not saved, and unselected options were lost.
+ *
+ * Double-clicking an option moves it. Idempotent init, so duplicate script
+ * tags from multiple widget instances are harmless.
  */
 (function () {
     'use strict';
 
-    function move(from, to) {
+    function syncState(root) {
+        Array.prototype.forEach.call(
+            root.querySelectorAll('.sk-dual-from option'),
+            function (opt) { opt.selected = false; });
+        Array.prototype.forEach.call(
+            root.querySelectorAll('.sk-dual-to option'),
+            function (opt) { opt.selected = true; });
+    }
+
+    function move(from, to, selectOnArrival) {
         Array.prototype.slice.call(from.selectedOptions).forEach(function (opt) {
-            opt.selected = false;
             opt.hidden = false;
+            opt.selected = selectOnArrival;
             to.appendChild(opt);
         });
     }
@@ -38,10 +55,10 @@
             }
             root.dataset.ready = '1';
 
-            add.addEventListener('click', function () { move(fromSel, toSel); });
-            remove.addEventListener('click', function () { move(toSel, fromSel); });
-            fromSel.addEventListener('dblclick', function () { move(fromSel, toSel); });
-            toSel.addEventListener('dblclick', function () { move(toSel, fromSel); });
+            add.addEventListener('click', function () { move(fromSel, toSel, true); });
+            remove.addEventListener('click', function () { move(toSel, fromSel, false); });
+            fromSel.addEventListener('dblclick', function () { move(fromSel, toSel, true); });
+            toSel.addEventListener('dblclick', function () { move(toSel, fromSel, false); });
 
             if (search) {
                 search.addEventListener('input', function () {
@@ -50,6 +67,12 @@
                         opt.hidden = q !== '' && opt.text.toLowerCase().indexOf(q) === -1;
                     });
                 });
+            }
+
+            syncState(root);
+            var form = root.closest('form');
+            if (form) {
+                form.addEventListener('submit', function () { syncState(root); });
             }
         });
     }

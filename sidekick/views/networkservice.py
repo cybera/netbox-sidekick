@@ -131,7 +131,11 @@ class NetworkServiceListView(generic.ObjectListView):
 
 @register_model_view(NetworkService)
 class NetworkServiceView(SidekickObjectView):
-    queryset = NetworkService.objects.all()
+    queryset = NetworkService.objects.prefetch_related(
+        'network_service_devices__device',
+        'network_service_devices__network_service_l2',
+        'network_service_devices__network_service_l3__ip_prefixes',
+    )
     layout = panels.NETWORK_SERVICE_LAYOUT
 
 

@@ -4,6 +4,7 @@ from netbox.ui.panels import (
     CommentsPanel,
     ObjectsTablePanel,
     RelatedObjectsPanel,
+    TemplatePanel,
 )
 from extras.ui.panels import CustomFieldsPanel, TagsPanel
 
@@ -146,11 +147,16 @@ NETWORK_SERVICE_TYPE_LAYOUT = layout.SimpleLayout(
 )
 
 NETWORK_SERVICE_LAYOUT = layout.SimpleLayout(
-    left_panels=[NetworkServicePanel(), CommentsPanel(), TagsPanel(), CustomFieldsPanel()],
-    right_panels=[RelatedObjectsPanel()],
-    bottom_panels=[
-        ObjectsTablePanel('sidekick.NetworkServiceDevice', filters={'network_service_id': lambda ctx: ctx['object'].pk}),
+    left_panels=[
+        NetworkServicePanel(),
+        # Combined per-device service details (device, L2 and L3) — restores
+        # the pre-4.x sidekick network service page.
+        TemplatePanel('sidekick/panels/network_service_details.html', title='Service Details'),
+        CommentsPanel(),
+        TagsPanel(),
+        CustomFieldsPanel(),
     ],
+    right_panels=[RelatedObjectsPanel()],
 )
 
 NETWORK_SERVICE_DEVICE_LAYOUT = layout.SimpleLayout(

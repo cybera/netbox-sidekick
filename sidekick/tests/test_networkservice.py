@@ -72,6 +72,27 @@ class NetworkServiceTest(BaseTest):
             reverse('plugins:sidekick:networkservice_list'))
         self.assertContains(resp, "East University&#x27;s peering service")
 
+    def test_view_networkservice_detail(self):
+        # The detail page combines the network service with every device and
+        # its L2/L3 components (restored from the pre-4.x sidekick page).
+        v = NetworkService.objects.get(id=1)
+        resp = self.client.get(v.get_absolute_url())
+        self.assertContains(resp, "East University&#x27;s peering service")
+        # Device section
+        self.assertContains(resp, 'Router 1')
+        self.assertContains(resp, 'xe-3/3/3.300')
+        # L2 section
+        self.assertContains(resp, 'L2 Information')
+        # L3 section
+        self.assertContains(resp, 'L3 Information')
+        self.assertContains(resp, 'Peering')
+        self.assertContains(resp, 'BGP')
+        self.assertContains(resp, '12345')
+        self.assertContains(resp, '192.168.1.1/31')
+        self.assertContains(resp, '192.168.1.2/31')
+        self.assertContains(resp, '192.168.1.0/24')
+        self.assertContains(resp, 'dead:beef::/64')
+
     # Network Service Group
     def test_networkservicegroup_basic(self):
         ns = NetworkService.objects.get(

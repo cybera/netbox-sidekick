@@ -15,6 +15,7 @@ caller renders the management form and heading.
       <th scope="col">{% trans "Member Router (IPv4)" %}</th>
       <th scope="col">{% trans "IPv6 Unicast" %}</th>
       <th scope="col">{% trans "IPv6 Multicast" %}</th>
+      <th scope="col">{% trans "IP Prefixes" %}</th>
       <th scope="col">{% trans "Provider Router (IPv6)" %}</th>
       <th scope="col">{% trans "Member Router (IPv6)" %}</th>
       <th scope="col">{% trans "Comments" %}</th>
@@ -89,6 +90,12 @@ caller renders the management form and heading.
         <td>
           {{ subform.member_router_address_ipv6 }}
           {% for error in subform.member_router_address_ipv6.errors %}
+            <div class="text-danger">{{ error }}</div>
+          {% endfor %}
+        </td>
+        <td>
+          {{ subform.ip_prefixes }}
+          {% for error in subform.ip_prefixes.errors %}
             <div class="text-danger">{{ error }}</div>
           {% endfor %}
         </td>

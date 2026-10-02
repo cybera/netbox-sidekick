@@ -763,3 +763,27 @@ class NetworkServiceInlineTest(BaseTest):
         self.assertContains(resp, 'network_service_device-TOTAL_FORMS')
         self.assertContains(resp, 'network_service_device-0-network_service_l2-vlan')
         self.assertContains(resp, 'network_service_device-0-network_service_l3-asn')
+
+    def test_edit_updates_prefixes_from_inline(self):
+        data = self.service_fields()
+        data.update(self.device_row(0, self.device.pk))
+        data.update(self.l3_rows(0, [
+            {'id': '1', 'logical_system': '1', 'routing_type': '1',
+             'asn': '12345', 'ipv4_unicast': 'on', 'ipv4_multicast': '',
+             'provider_router_address_ipv4': '192.168.1.1/31',
+             'member_router_address_ipv4': '192.168.1.2/31',
+             'ipv6_unicast': 'on', 'ipv6_multicast': '',
+             'provider_router_address_ipv6': '', 'member_router_address_ipv6': '',
+             'ip_prefixes': ['1', '2'],
+             'comments': ''},
+        ]))
+        data.update(self.l2_rows(0, [
+            {'id': '1', 'vlan': '300', 'comments': ''},
+        ]))
+        data.update(self.device_row(1, None))
+        data.update(self.device_mgmt(2, 1))
+        resp = self.client.post(self.url, data)
+        self.assertEqual(resp.status_code, 302)
+        l3 = NetworkServiceL3.objects.get(pk=1)
+        self.assertEqual(
+            set(l3.ip_prefixes.values_list('pk', flat=True)), {1, 2})

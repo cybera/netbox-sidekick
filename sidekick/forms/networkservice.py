@@ -256,8 +256,13 @@ class NetworkServiceL2InlineForm(forms.ModelForm):
 class NetworkServiceL3InlineForm(forms.ModelForm):
     """
     A single editable row in the L3 Services inline on the NetworkServiceDevice
-    form. Field set mirrors the removed Django admin's NetworkServiceL3 inline:
-    member/member_site/ip_prefixes/active stay on the standalone L3 page.
+    form (and, with the same formset, on the NetworkService form).
+
+    Field set mirrors the removed Django admin's NetworkServiceL3 inline:
+    member/member_site/active stay on the standalone L3 page. IP prefixes are
+    included: they are selectable from the inline (associating existing IPAM
+    Prefix objects), so a service's announced prefixes can be managed without
+    leaving the page.
     """
     class Meta:
         model = NetworkServiceL3
@@ -267,8 +272,15 @@ class NetworkServiceL3InlineForm(forms.ModelForm):
             'provider_router_address_ipv4', 'member_router_address_ipv4',
             'ipv6_unicast', 'ipv6_multicast',
             'provider_router_address_ipv6', 'member_router_address_ipv6',
+            'ip_prefixes',
             'comments',
         )
+        widgets = {
+            # A plain multi-select keeps the compact table layout; NetBox's
+            # Select2 would balloon every row.
+            'ip_prefixes': forms.SelectMultiple(
+                attrs={'class': 'form-select form-select-sm', 'size': '5'}),
+        }
 
 
 # The inline formsets that replace the Django admin's NetworkServiceL2/L3

@@ -26,14 +26,14 @@ the standard fields, then the device cards.
       <h2 class="col-9 offset-3">{% trans "Network Service Devices" %}</h2>
     </div>
     <div class="col-9 offset-3">
-      <p class="text-muted">
+      <p class="text-muted small">
         {% blocktrans trimmed %}
           Each card is one of the service's devices, with its L2 and L3
           components. Leave the empty card blank if there is nothing to add;
           a new device can carry one L2 row and one L3 row in the same save.
           Deleting a device is only possible once its L2/L3 rows are gone.
-          L3 fields managed on the standalone L3 page (member, member site,
-          IP prefixes, active) are not shown here.
+          Member, member site and the active flag of an L3 connection are
+          managed on the standalone L3 page.
         {% endblocktrans %}
       </p>
     </div>
@@ -43,92 +43,115 @@ the standard fields, then the device cards.
 
     {% for subform in form.device_formset %}
       <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+          <span class="fw-bold">
+            {% if subform.instance.pk %}
+              {% blocktrans with iface=subform.instance.interface|default:_("new interface") %}Device — {{ iface }}{% endblocktrans %}
+            {% else %}
+              {% trans "New device" %}
+            {% endif %}
+          </span>
+          {% if subform.fields.DELETE %}
+            <span class="form-check">
+              {{ subform.DELETE }}
+              <label class="form-check-label" for="{{ subform.DELETE.id_for_label }}">
+                {% trans "Delete device" %}
+              </label>
+            </span>
+          {% endif %}
+        </div>
         <div class="card-body">
           {{ subform.non_field_errors }}
           {% for field in subform.hidden_fields %}{{ field }}{% endfor %}
 
-          <div class="row align-items-end">
-            <div class="col-md-4 mb-1">
-              <label class="form-label">{% trans "Device" %}</label>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="{{ subform.device.id_for_label }}">{% trans "Device" %}</label>
               {{ subform.device }}
               {% for error in subform.device.errors %}
-                <div class="text-danger">{{ error }}</div>
+                <div class="text-danger small">{{ error }}</div>
               {% endfor %}
             </div>
-            <div class="col-md-3 mb-1">
-              <label class="form-label">{% trans "Interface" %}</label>
+            <div class="col-md-3">
+              <label class="form-label" for="{{ subform.interface.id_for_label }}">{% trans "Interface" %}</label>
               {{ subform.interface }}
               {% for error in subform.interface.errors %}
-                <div class="text-danger">{{ error }}</div>
+                <div class="text-danger small">{{ error }}</div>
               {% endfor %}
             </div>
-            <div class="col-md-2 mb-1">
-              <label class="form-label">{% trans "VLAN" %}</label>
+            <div class="col-md-2">
+              <label class="form-label" for="{{ subform.vlan.id_for_label }}">{% trans "VLAN" %}</label>
               {{ subform.vlan }}
               {% for error in subform.vlan.errors %}
-                <div class="text-danger">{{ error }}</div>
+                <div class="text-danger small">{{ error }}</div>
               {% endfor %}
             </div>
-            <div class="col-md-2 mb-1">
-              <label class="form-label">{% trans "Comments" %}</label>
+            <div class="col-md-3">
+              <label class="form-label" for="{{ subform.comments.id_for_label }}">{% trans "Comments" %}</label>
               {{ subform.comments }}
               {% for error in subform.comments.errors %}
-                <div class="text-danger">{{ error }}</div>
+                <div class="text-danger small">{{ error }}</div>
               {% endfor %}
-            </div>
-            <div class="col-md-1 mb-1">
-              <label class="form-label">{% trans "Delete" %}</label>
-              {% if subform.fields.DELETE %}
-                {{ subform.DELETE }}
-              {% endif %}
             </div>
           </div>
 
           {% if subform.instance.pk %}
-            <div class="row mt-4">
-              <div class="col">
-                <h6>{% trans "L2 Services" %}</h6>
-                {{ subform.l2_formset.non_form_errors }}
-                {{ subform.l2_formset.management_form }}
+            <div class="mt-4">
+              <h6>{% trans "L2 Services" %}</h6>
+              {{ subform.l2_formset.non_form_errors }}
+              {{ subform.l2_formset.management_form }}
+              <div class="table-responsive">
                 {% include 'sidekick/inline_l2_table.html' with formset=subform.l2_formset %}
               </div>
             </div>
-            <div class="row mt-4">
-              <div class="col">
-                <h6>{% trans "L3 Services" %}</h6>
-                {{ subform.l3_formset.non_form_errors }}
-                {{ subform.l3_formset.management_form }}
+            <div class="mt-4">
+              <h6>{% trans "L3 Services" %}</h6>
+              {{ subform.l3_formset.non_form_errors }}
+              {{ subform.l3_formset.management_form }}
+              <div class="table-responsive">
                 {% include 'sidekick/inline_l3_table.html' with formset=subform.l3_formset %}
               </div>
             </div>
           {% else %}
-            <div class="row mt-4">
+            <div class="row g-3 mt-2">
               <div class="col-md-4">
-                <h6>{% trans "L2 Service (new device)" %}</h6>
+                <h6 class="border-bottom pb-1 mb-2">{% trans "L2 Service" %}</h6>
                 {{ subform.l2_form.non_field_errors }}
-                <label class="form-label">{% trans "VLAN" %}</label>
+                <label class="form-label" for="{{ subform.l2_form.vlan.id_for_label }}">{% trans "VLAN" %}</label>
                 {{ subform.l2_form.vlan }}
                 {% for error in subform.l2_form.vlan.errors %}
-                  <div class="text-danger">{{ error }}</div>
+                  <div class="text-danger small">{{ error }}</div>
                 {% endfor %}
-                <label class="form-label">{% trans "Comments" %}</label>
+                <label class="form-label mt-2" for="{{ subform.l2_form.comments.id_for_label }}">{% trans "Comments" %}</label>
                 {{ subform.l2_form.comments }}
                 {% for error in subform.l2_form.comments.errors %}
-                  <div class="text-danger">{{ error }}</div>
+                  <div class="text-danger small">{{ error }}</div>
                 {% endfor %}
               </div>
               <div class="col-md-8">
-                <h6>{% trans "L3 Service (new device)" %}</h6>
+                <h6 class="border-bottom pb-1 mb-2">{% trans "L3 Service" %}</h6>
                 {{ subform.l3_form.non_field_errors }}
-                <div class="row">
+                <div class="row g-3">
                   {% for field in subform.l3_form.visible_fields %}
-                    <div class="col-md-3 mb-2">
-                      <label class="form-label">{{ field.label }}</label>
-                      {{ field }}
-                      {% for error in field.errors %}
-                        <div class="text-danger">{{ error }}</div>
-                      {% endfor %}
-                    </div>
+                    {% if field.field.widget.input_type == 'checkbox' %}
+                      <div class="col-md-3">
+                        <div class="form-check mt-4">
+                          {{ field }}
+                          <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        </div>
+                        {% for error in field.errors %}
+                          <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                      </div>
+                    {% else %}
+                      <div class="col-md-6">
+                        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                          <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
                   {% endfor %}
                 </div>
               </div>

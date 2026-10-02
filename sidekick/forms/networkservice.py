@@ -1,8 +1,9 @@
 from django import forms
+from django.db.models import Q
 from django.forms import inlineformset_factory
 
 from netbox.forms import NetBoxModelForm
-
+from utilities.forms.fields import SlugField
 from utilities.forms.widgets import DatePicker
 
 from sidekick.models import (
@@ -18,21 +19,27 @@ from sidekick.models import (
 
 
 class LogicalSystemForm(NetBoxModelForm):
+    slug = SlugField()
+
     class Meta:
         model = LogicalSystem
-        fields = ('name',)
+        fields = ('name', 'slug')
 
 
 class RoutingTypeForm(NetBoxModelForm):
+    slug = SlugField()
+
     class Meta:
         model = RoutingType
-        fields = ('name',)
+        fields = ('name', 'slug')
 
 
 class NetworkServiceTypeForm(NetBoxModelForm):
+    slug = SlugField()
+
     class Meta:
         model = NetworkServiceType
-        fields = ('name',)
+        fields = ('name', 'slug', 'description')
 
 
 class NetworkServiceForm(NetBoxModelForm):
@@ -119,6 +126,17 @@ class NetworkServiceDeviceForm(NetBoxModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # The old Django admin filtered this dropdown to active services,
+        # ordered by member name (NetworkServiceDeviceAdmin.
+        # formfield_for_foreignkey). The instance's current service is kept
+        # selectable so an edit of a device attached to an inactive service
+        # still saves.
+        if 'network_service' in self.fields:
+            self.fields['network_service'].queryset = NetworkService.objects.filter(
+                Q(active=True) | Q(pk=self.instance.network_service_id),
+            ).order_by('member__name', 'name')
+
         self.l2_formset = NetworkServiceL2FormSet(
             data=self.data if self.is_bound else None,
             files=self.files if self.is_bound else None,
@@ -164,6 +182,17 @@ class NetworkServiceL2Form(NetBoxModelForm):
 
 
 class NetworkServiceL3Form(NetBoxModelForm):
+    # The old Django admin ordered this dropdown by member name
+    # (NetworkServiceL3Admin.formfield_for_foreignkey).
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'network_service_device' in self.fields:
+            self.fields['network_service_device'].queryset = (
+                NetworkServiceDevice.objects
+                .select_related('network_service__member', 'network_service', 'device')
+                .order_by('network_service__member__name', 'network_service__name')
+            )
+
     class Meta:
         model = NetworkServiceL3
         fields = ('member', 'member_site',
@@ -177,6 +206,10 @@ class NetworkServiceL3Form(NetBoxModelForm):
 
 
 class NetworkServiceGroupForm(NetBoxModelForm):
+    # Declared so the slug renders with NetBox's SlugWidget (auto-populate
+    # from name), matching the old admin's prepopulated_fields.
+    slug = SlugField()
+
     class Meta:
         model = NetworkServiceGroup
         fields = ('name', 'slug', 'description', 'network_services',)

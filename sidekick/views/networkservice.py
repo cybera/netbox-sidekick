@@ -157,7 +157,10 @@ class NetworkServiceDeleteView(generic.ObjectDeleteView):
 
 @register_model_view(NetworkServiceDevice, 'list', path='', detail=False)
 class NetworkServiceDeviceListView(generic.ObjectListView):
-    queryset = NetworkServiceDevice.objects.all()
+    # Ordered by member name so a member's services are grouped, matching the
+    # intent of the old Django admin's ordering (['network_service']).
+    queryset = NetworkServiceDevice.objects.order_by(
+        'network_service__member__name', 'network_service__name')
     table = tables.NetworkServiceDeviceTable
     filterset = filtersets.NetworkServiceDeviceFilterSet
     filterset_form = filtersets.NetworkServiceDeviceFilterSetForm

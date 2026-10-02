@@ -425,3 +425,88 @@ class NetworkServiceDeviceInlineTest(BaseTest):
         self.assertTrue(l3.active)  # inline rows default to active
         l2 = NetworkServiceL2.objects.get(network_service_device=new)
         self.assertEqual(l2.vlan, 301)
+
+
+class AdminParityTest(BaseTest):
+    """
+        Parity between the removed Django admin's edit pages (deleted with
+        NetBox 4.2, ADR-064) and the plugin's forms.
+
+        Every check here documents a behaviour the old admin had and the
+        first-class plugin forms initially lacked.
+
+        The slug fields: the admin exposed slug (and NetworkServiceType's
+        description) on its default edit pages. The rewritten forms omitted
+        them, so a UI-created LogicalSystem got an empty slug and a second
+        create failed with an IntegrityError. The forms now use NetBox's
+        SlugField (auto-populate from name), like core NetBox forms.
+    """
+
+    def test_logicalsystem_create_with_slug(self):
+        url = reverse('plugins:sidekick:logicalsystem_add')
+        resp = self.client.post(
+            url, {'name': 'West College', 'slug': 'west-college'})
+        try:
+            form_errors = dict(resp.context['form'].errors)
+        except (AttributeError, KeyError, TypeError):
+            form_errors = {}
+        self.assertEqual(resp.status_code, 302, msg=f'form errors: {form_errors}')
+        self.assertTrue(LogicalSystem.objects.filter(
+            name='West College', slug='west-college').exists())
+
+    def test_logicalsystem_create_without_slug_is_rejected(self):
+        # Regression: this used to save with an empty slug, and a second
+        # create blew up with an IntegrityError (slug is unique, NOT NULL).
+        url = reverse('plugins:sidekick:logicalsystem_add')
+        count = LogicalSystem.objects.count()
+        resp = self.client.post(url, {'name': 'Transit'})
+        self.assertEqual(resp.status_code, 200)  # re-render with errors
+        self.assertContains(resp, 'This field is required', status_code=200)
+        self.assertEqual(LogicalSystem.objects.count(), count)
+
+    def test_networkservicetype_create_with_description(self):
+        # The admin's NetworkServiceType page exposed the description field.
+        url = reverse('plugins:sidekick:networkservicetype_add')
+        resp = self.client.post(url, {
+            'name': 'Transit', 'slug': 'transit',
+            'description': 'Transit services',
+        })
+        self.assertEqual(resp.status_code, 302)
+        v = NetworkServiceType.objects.get(name='Transit')
+        self.assertEqual(v.description, 'Transit services')
+
+    def test_device_form_service_dropdown_excludes_inactive_services(self):
+        # The admin's NetworkServiceDevice page only offered active services
+        # (plus, here, the edited device's own service), ordered by member.
+        from sidekick.forms import NetworkServiceDeviceForm
+        inactive = NetworkService.objects.get(pk=4)
+        self.assertFalse(inactive.active)
+
+        # Add form: the inactive service is not offered.
+        form = NetworkServiceDeviceForm()
+        offered = set(form.fields['network_service'].queryset.values_list(
+            'pk', flat=True))
+        self.assertNotIn(inactive.pk, offered)
+        self.assertIn(NetworkService.objects.get(pk=1).pk, offered)
+
+        # Edit form of a device attached to the inactive service: the
+        # instance's current service stays selectable, or the edit could
+        # never be saved.
+        device = NetworkServiceDevice.objects.get(pk=4)
+        form = NetworkServiceDeviceForm(instance=device)
+        self.assertIn(
+            inactive.pk,
+            set(form.fields['network_service'].queryset.values_list(
+                'pk', flat=True)))
+
+    def test_device_list_active_filter_defaults_to_active(self):
+        # The admin's device list showed active services by default.
+        url = reverse('plugins:sidekick:networkservicedevice_list')
+        resp = self.client.get(url)
+        self.assertContains(resp, 'xe-3/3/3.300')
+        self.assertNotContains(resp, 'xe-3/3/3.400')
+
+        # An explicit No shows only the inactive ones.
+        resp = self.client.get(url, {'active': 'false'})
+        self.assertContains(resp, 'xe-3/3/3.400')
+        self.assertNotContains(resp, 'xe-3/3/3.300')

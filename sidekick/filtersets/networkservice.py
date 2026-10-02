@@ -291,6 +291,12 @@ class PeeringConnectionFilterSetForm(NetBoxModelFilterSetForm):
 
 
 class NetworkServiceDeviceFilterSet(NetBoxModelFilterSet):
+    # The old Django admin listed only active services by default, with an
+    # Active filter offering Yes / No / All (NetworkServiceDeviceAdminActiveFilter).
+    active = django_filters.BooleanFilter(
+        field_name='network_service__active',
+        label='Active?',
+    )
     network_service_id = django_filters.ModelMultipleChoiceFilter(
         field_name='network_service',
         queryset=NetworkService.objects.all(),
@@ -305,6 +311,12 @@ class NetworkServiceDeviceFilterSet(NetBoxModelFilterSet):
     class Meta:
         model = NetworkServiceDevice
         fields = ('network_service', 'device')
+
+    def __init__(self, data, *args, **kwargs):
+        if not data.get('active'):
+            data = data.copy()
+            data['active'] = True
+        super().__init__(data, *args, **kwargs)
 
     def search(self, queryset, name, value):
         if not value.strip():
@@ -329,6 +341,14 @@ class NetworkServiceDeviceFilterSetForm(NetBoxModelFilterSetForm):
         queryset=Device.objects.all(),
         required=False,
         label='Device',
+    )
+
+    active = forms.NullBooleanField(
+        required=False,
+        label='Active?',
+        widget=StaticSelect(
+            choices=BOOLEAN_WITH_BLANK_CHOICES,
+        )
     )
 
 

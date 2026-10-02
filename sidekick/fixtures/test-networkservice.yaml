@@ -175,3 +175,22 @@
       - 14
       - 15
       - 16
+
+# An inactive service, for the device form's active-only network_service
+# dropdown and the device list's Active filter (old admin parity).
+- model: sidekick.NetworkService
+  pk: 4
+  fields:
+    name: "East University's retired transit service"
+    description: "Inactive service"
+    active: False
+    network_service_type: 1
+    member: 1
+    member_site: 1
+
+- model: sidekick.NetworkServiceDevice
+  pk: 4
+  fields:
+    network_service: 4
+    device: 1
+    interface: 'xe-3/3/3.400'

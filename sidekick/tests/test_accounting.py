@@ -20,8 +20,10 @@ class _FormsetInputParser(HTMLParser):
 
     PREFIX = 'bandwidth_profiles-'
 
-    def __init__(self):
+    def __init__(self, prefix=None):
         super().__init__()
+        if prefix is not None:
+            self.PREFIX = prefix
         self.values = {}
         self._textarea = None
 

@@ -174,6 +174,7 @@ class NetworkServiceDeviceView(SidekickObjectView):
 class NetworkServiceDeviceEditView(generic.ObjectEditView):
     queryset = NetworkServiceDevice.objects.all()
     form = forms.NetworkServiceDeviceForm
+    template_name = 'sidekick/networkservicedevice_edit.html'
 
 
 @register_model_view(NetworkServiceDevice, 'delete')

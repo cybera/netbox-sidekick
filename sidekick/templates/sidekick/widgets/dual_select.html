@@ -1,0 +1,50 @@
+{% load static i18n %}
+{% comment %}
+Two-box widget for NetworkServiceL3.ip_prefixes: a filterable "available"
+list on the left and the named "selected" list on the right, with move
+buttons and double-click support (sidekick/js/dual_select.js). The left
+box has no name, so only the selected values post.
+
+Rendered for every L3 row on the device edit page and the service edit
+page, plus the standalone L3 form -- duplicates of the asset tags below
+are harmless (cached, idempotent init).
+{% endcomment %}
+<link rel="stylesheet" href="{% static 'sidekick/css/dual_select.css' %}">
+<script src="{% static 'sidekick/js/dual_select.js' %}" defer></script>
+<div class="sk-dual{% if widget.attrs.class %} {{ widget.attrs.class }}{% endif %}">
+  <div class="sk-dual-col">
+    <input type="search" class="form-control form-control-sm sk-dual-search"
+           placeholder="{% trans "Filter available prefixes" %}"
+           aria-label="{% trans "Filter available prefixes" %}">
+    <select multiple size="12" class="form-select sk-dual-from"
+            aria-label="{% trans "Available prefixes" %}">
+      {% for group_name, options, index in widget.optgroups %}
+        {% for option in options %}
+          {% if not option.selected %}
+            <option value="{{ option.value }}">{{ option.label }}</option>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </select>
+  </div>
+  <div class="sk-dual-btns">
+    <button type="button" class="btn btn-sm btn-outline-secondary sk-dual-add">
+      {% trans "Add" %} <i class="mdi mdi-arrow-right-bold"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-secondary sk-dual-remove">
+      <i class="mdi mdi-arrow-left-bold"></i> {% trans "Remove" %}
+    </button>
+  </div>
+  <div class="sk-dual-col">
+    <select multiple size="12" class="form-select sk-dual-to"
+            name="{{ widget.name }}" aria-label="{% trans "Selected prefixes" %}">
+      {% for group_name, options, index in widget.optgroups %}
+        {% for option in options %}
+          {% if option.selected %}
+            <option value="{{ option.value }}" selected>{{ option.label }}</option>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </select>
+  </div>
+</div>

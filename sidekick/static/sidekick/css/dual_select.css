@@ -1,0 +1,29 @@
+/*
+ * Two-box prefix selector. Paired with sidekick/static/sidekick/js/dual_select.js
+ * and sidekick/widgets/dual_select.html.
+ */
+.sk-dual {
+    display: flex;
+    gap: .5rem;
+    align-items: flex-start;
+}
+
+.sk-dual-col {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.sk-dual-col select {
+    width: 100%;
+}
+
+.sk-dual-search {
+    margin-bottom: .375rem;
+}
+
+.sk-dual-btns {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+    padding-top: 2rem;
+}

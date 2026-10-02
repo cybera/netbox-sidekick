@@ -259,6 +259,20 @@ class NetworkServiceL2InlineForm(forms.ModelForm):
         }
 
 
+class DualPrefixSelect(forms.SelectMultiple):
+    """
+    Two-box selector (filterable "available" list <-> "selected" list with
+    move buttons), replacing the Django admin's FilteredSelectMultiple whose
+    JS machinery left with the admin in NetBox 4. Markup in
+    sidekick/widgets/dual_select.html, behaviour in sidekick/js/dual_select.js.
+
+    The named "selected" <select> posts the same values as a plain
+    SelectMultiple, so server-side handling is unchanged. Widget assets are
+    loaded from the template itself because NetBox does not emit form.media.
+    """
+    template_name = 'sidekick/widgets/dual_select.html'
+
+
 class NetworkServiceL3InlineForm(forms.ModelForm):
     """
     A single editable row in the L3 Services inline on the NetworkServiceDevice
@@ -282,10 +296,7 @@ class NetworkServiceL3InlineForm(forms.ModelForm):
             'comments',
         )
         widgets = {
-            # A compact multi-select; NetBox's Select2 would balloon every
-            # row.
-            'ip_prefixes': forms.SelectMultiple(
-                attrs={'class': 'form-select', 'size': '6'}),
+            'ip_prefixes': DualPrefixSelect,
             'comments': forms.Textarea(attrs={'rows': 2}),
         }
 
@@ -404,6 +415,9 @@ class NetworkServiceL3Form(NetBoxModelForm):
                   'ipv6_unicast', 'ipv6_multicast',
                   'provider_router_address_ipv6', 'member_router_address_ipv6',
                   'comments', 'legacy_id', 'active',)
+        widgets = {
+            'ip_prefixes': DualPrefixSelect,
+        }
 
 
 class NetworkServiceGroupForm(NetBoxModelForm):

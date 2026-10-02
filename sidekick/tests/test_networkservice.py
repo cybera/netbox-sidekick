@@ -611,6 +611,10 @@ class NetworkServiceInlineTest(BaseTest):
         self.assertContains(resp, 'network_service_device-1-network_service_l3-asn')
         # Existing device rows can be deleted.
         self.assertContains(resp, 'network_service_device-0-DELETE')
+        # IP prefixes render with the two-box (dual select) widget.
+        self.assertContains(resp, 'sk-dual-from')
+        self.assertContains(resp, 'sk-dual-to')
+        self.assertContains(resp, 'dual_select.js')
 
     def test_edit_updates_existing_device_l2_l3(self):
         data = self.service_fields()

@@ -92,6 +92,11 @@ class AccountingSourceCounter(NetBoxModel):
     )
 
     class Meta:
+        # NetBox 4.x refuses to paginate an unordered queryset
+        # (netbox.api.pagination.QuerySetNotOrdered). AccountingSourceCounter
+        # has no REST viewset of its own, but it is queried through the
+        # accounting views, so give it a minimal ordering too.
+        ordering = ['pk']
         verbose_name = 'Accounting Source Counter'
         verbose_name_plural = 'Accounting Source Counters'
 

@@ -253,6 +253,10 @@ class NetworkServiceDevice(NetBoxModel):
     )
 
     class Meta:
+        # NetBox 4.x refuses to paginate an unordered queryset
+        # (netbox.api.pagination.QuerySetNotOrdered), so every model exposed
+        # through the plugin REST API must define a minimal ordering.
+        ordering = ['pk']
         verbose_name = 'Network Service Device'
         verbose_name_plural = 'Network Service Devices'
 
@@ -300,6 +304,7 @@ class NetworkServiceL2(NetBoxModel):
     )
 
     class Meta:
+        ordering = ['pk']
         verbose_name = "Network Service L2"
         verbose_name_plural = "Network Services L2"
 
@@ -446,6 +451,7 @@ class NetworkServiceL3(NetBoxModel):
     )
 
     class Meta:
+        ordering = ['pk']
         verbose_name = "Network Service L3"
         verbose_name_plural = "Network Services L3"
 

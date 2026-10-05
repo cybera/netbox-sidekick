@@ -24,6 +24,7 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # librrd is needed by the rrdtool/whisper dependencies in requirements.txt.
+# (kept after the whisper removal in case a future dependency needs it)
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         librrd-dev \

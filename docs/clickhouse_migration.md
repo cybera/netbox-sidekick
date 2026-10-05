@@ -34,16 +34,14 @@ Export interface metadata from NetBox to ClickHouse. This is required for matchi
 python manage.py export_clickhouse_interface_labels
 ```
 
-### 3. Migrate Whisper Data
-Use the migration script to load historical data from Whisper files into ClickHouse.
+### 3. Migrate Whisper Data (RETIRED — command removed)
+The `migrate_graphite_to_clickhouse` command was removed from sidekick
+(2026-10-05): Graphite is not deployed on the rebuilt netbox container and
+the one-time whisper→ClickHouse migration finished long ago. Historical
+note only — historical NIC data now lives in ClickHouse; the pull-based
+dims sync (ADR-018) replaced all Graphite-era flows.
 
-```bash
-python manage.py migrate_graphite_to_clickhouse --whisper-dir /var/lib/graphite/whisper
-```
-
-*Note: Ensure `CLICKHOUSE_URL`, `CLICKHOUSE_USER`, and `CLICKHOUSE_PASSWORD` environment variables are set.*
-
-The migration script supports:
+The migration script supported:
 - **Parallel Workers**: Use `--workers N` to speed up processing.
 - **Idempotency**: It checks ClickHouse for existing data and skips files/points that have already been migrated.
 - **Resumability**: You can stop and restart the script at any time.

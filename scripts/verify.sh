@@ -80,7 +80,6 @@ else
         ! -path 'sidekick/api/views/clickhousedims.py' \
         ! -path 'sidekick/management/commands/export_data_to_clickhouse.py' \
         ! -path 'sidekick/management/commands/member_contacts.py' \
-        ! -path 'sidekick/management/commands/migrate_graphite_to_clickhouse.py' \
         ! -path 'sidekick/management/commands/scrub_snmp_spikes.py' \
         ! -path 'sidekick/utils/clickhouse.py')
     "$STYLE" --ignore W504,E275,E501 $FILES \

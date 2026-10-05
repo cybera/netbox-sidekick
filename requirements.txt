@@ -13,6 +13,5 @@ python-dateutil
 napalm==5.2.0
 textfsm
 meraki==1.40.1
-whisper==1.1.8
 pyasn1==0.4.8
 pyasn1-modules==0.2.8

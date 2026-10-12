@@ -1,5 +1,6 @@
 import django
 import graphyte
+import logging
 import os
 import re
 
@@ -24,6 +25,8 @@ from sidekick.utils import (
 )
 from sidekick.utils.clickhouse import ClickHouseHTTP, now_utc_str
 
+
+logger = logging.getLogger(__name__)
 
 RE_ARISTA_VLAN = re.compile(r'^Vlan(\d+)$')
 
@@ -50,6 +53,35 @@ def to_int(v, default=0):
         return int(v)
     except (TypeError, ValueError):
         return default
+
+
+# Largest value a signed 64-bit bigint column can hold. PostgreSQL has no
+# unsigned bigint, so an SNMP Counter64 >= 2**63 cannot be stored.
+SIGNED_BIGINT_MAX = 2 ** 63 - 1
+
+
+def sanitize_counter(value, context=""):
+    """Return an SNMP counter as an int that fits a signed 64-bit bigint.
+
+    Counters are read from pysnmp as strings (Counter64 prettyPrint()). Some
+    devices report values >= 2**63 -- observed on Juniper irb interfaces, where
+    ifHCInUcastPkts comes back near 2**64 (a wrapped/negative value) -- which
+    PostgreSQL rejects with "bigint out of range". Such values are not
+    meaningful packet/octet counts, so map them (as well as the "No more
+    variables" sentinel and anything non-numeric) to 0 rather than aborting the
+    whole NIC row.
+    """
+    try:
+        n = int(value)
+    except (TypeError, ValueError):
+        return 0
+    if 0 <= n <= SIGNED_BIGINT_MAX:
+        return n
+    logger.warning(
+        "Discarding out-of-range SNMP counter value %r%s",
+        value, f" for {context}" if context else "",
+    )
+    return 0
 
 
 def down_poll_baseline(e1_in, e1_out, e2_in, e2_out):
@@ -497,37 +529,21 @@ class Command(BaseCommand):
                     if 'No more variables' in f"{oper_status}":
                         oper_status = 0
 
-                    out_octets = iface_details.get('ifHCOutOctets', 0)
-                    if 'No more variables' in f"{out_octets}":
-                        out_octets = 0
-
-                    in_octets = iface_details.get('ifHCInOctets', 0)
-                    if 'No more variables' in f"{in_octets}":
-                        in_octets = 0
-
-                    out_unicast_packets = iface_details.get('ifHCOutUcastPkts', 0)
-                    if 'No more variables' in f"{out_unicast_packets}":
-                        out_unicast_packets = 0
-
-                    in_unicast_packets = iface_details.get('ifHCInUcastPkts', 0)
-                    if 'No more variables' in f"{in_unicast_packets}":
-                        in_unicast_packets = 0
-
-                    out_nunicast_packets = iface_details.get('ifOutNUcastPkts', 0)
-                    if 'No more variables' in f"{out_nunicast_packets}":
-                        out_nunicast_packets = 0
-
-                    in_nunicast_packets = iface_details.get('ifInNUcastPkts', 0)
-                    if 'No more variables' in f"{in_nunicast_packets}":
-                        in_nunicast_packets = 0
-
-                    out_errors = iface_details.get('ifOutErrors', 0)
-                    if 'No more variables' in f"{out_errors}":
-                        out_errors = 0
-
-                    in_errors = iface_details.get('ifInErrors', 0)
-                    if 'No more variables' in f"{in_errors}":
-                        in_errors = 0
+                    # SNMP counters are raw Counter64 values. Some devices
+                    # report values >= 2**63 (observed on Juniper irb
+                    # interfaces, where ifHCInUcastPkts comes back near 2**64),
+                    # which a signed bigint column rejects with "bigint out of
+                    # range". sanitize_counter maps those, the "No more
+                    # variables" sentinel, and anything non-numeric to 0 so the
+                    # row is stored instead of skipped.
+                    out_octets = sanitize_counter(iface_details.get('ifHCOutOctets', 0), context=iface_name)
+                    in_octets = sanitize_counter(iface_details.get('ifHCInOctets', 0), context=iface_name)
+                    out_unicast_packets = sanitize_counter(iface_details.get('ifHCOutUcastPkts', 0), context=iface_name)
+                    in_unicast_packets = sanitize_counter(iface_details.get('ifHCInUcastPkts', 0), context=iface_name)
+                    out_nunicast_packets = sanitize_counter(iface_details.get('ifOutNUcastPkts', 0), context=iface_name)
+                    in_nunicast_packets = sanitize_counter(iface_details.get('ifInNUcastPkts', 0), context=iface_name)
+                    out_errors = sanitize_counter(iface_details.get('ifOutErrors', 0), context=iface_name)
+                    in_errors = sanitize_counter(iface_details.get('ifInErrors', 0), context=iface_name)
 
                     nic = NIC(
                         interface=existing_interface,

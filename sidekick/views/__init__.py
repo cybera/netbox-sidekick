@@ -47,5 +47,5 @@ from .nic import (  # noqa: F401
 from .billing import (  # noqa: F401
     TransitRateListView, TransitRateView,
     TransitRateEditView, TransitRateDeleteView,
-    TransitRateBulkImportView, TransitRateBulkEditView, TransitRateBulkDeleteView,
+    TransitRateBulkImportView, TransitRateBulkDeleteView,
 )

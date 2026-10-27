@@ -26,6 +26,10 @@ MODELS = (
 # NIC has no dedicated detail view (rendered on dcim.Interface).
 MODELS_WITHOUT_DETAIL = ('nic',)
 
+# Models whose rows record an agreed price and date: bulk edit would rewrite history,
+# so the view is deliberately not registered.
+MODELS_WITHOUT_BULK_EDIT = ('transitrate',)
+
 # Models with no ``name`` field cannot use the bulk rename view.
 MODELS_WITHOUT_RENAME = (
     'networkservicedevice',
@@ -63,8 +67,17 @@ class URLResolutionTest(SimpleTestCase):
 
     def test_bulk_urls(self):
         for model in MODELS:
-            for suffix in ('_bulk_import', '_bulk_edit', '_bulk_delete'):
+            for suffix in ('_bulk_import', '_bulk_delete'):
                 name = 'plugins:sidekick:' + model + suffix
+                with self.subTest(name=name):
+                    self.assertTrue(reverse(name))
+
+            name = 'plugins:sidekick:' + model + '_bulk_edit'
+            if model in MODELS_WITHOUT_BULK_EDIT:
+                with self.subTest(name=name):
+                    with self.assertRaises(NoReverseMatch):
+                        reverse(name)
+            else:
                 with self.subTest(name=name):
                     self.assertTrue(reverse(name))
 

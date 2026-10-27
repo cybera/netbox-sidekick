@@ -56,9 +56,12 @@ class NetworkServiceTypeSerializer(NetBoxModelSerializer):
 
 class NetworkServiceSerializer(NetBoxModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='plugins-api:sidekick-api:networkservice-detail')
-    network_service_type = NetworkServiceTypeSerializer(nested=True, required=False, allow_null=True)
-    member = TenantSerializer(nested=True, required=False, allow_null=True)
-    member_site = SiteSerializer(nested=True, required=False, allow_null=True)
+    # These three are NOT NULL on the model, so the serializer must not advertise
+    # them as nullable: `allow_null` here would make the API schema lie and turn a
+    # missing member into a 400 at the database instead of at validation.
+    network_service_type = NetworkServiceTypeSerializer(nested=True)
+    member = TenantSerializer(nested=True)
+    member_site = SiteSerializer(nested=True)
 
     class Meta:
         model = NetworkService

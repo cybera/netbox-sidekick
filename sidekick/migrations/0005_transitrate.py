@@ -70,7 +70,7 @@ class Migration(migrations.Migration):
                 ('rate_per_mbit', models.DecimalField(decimal_places=4, max_digits=8, verbose_name='Rate per Mbit')),
                 ('effective_date', models.DateField(default=django.utils.timezone.localdate, verbose_name='Effective Date')),
                 ('comments', models.TextField(blank=True, null=True)),
-                ('tenant', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='transit_rates', to='tenancy.tenant', verbose_name='Member')),
+                ('tenant', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='transit_rates', to='tenancy.tenant', verbose_name='Member')),
                 ('tags', taggit.managers.TaggableManager(through='extras.TaggedItem', to='extras.Tag')),
             ],
             options={

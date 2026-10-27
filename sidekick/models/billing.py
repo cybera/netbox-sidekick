@@ -24,7 +24,9 @@ class TransitRate(NetBoxModel):
     tenant = models.ForeignKey(
         'tenancy.Tenant',
         verbose_name='Member',
-        on_delete=models.CASCADE,
+        # PROTECT, like AccountingProfile.member: a tenant delete must not silently
+        # remove the record of what that member was billed.
+        on_delete=models.PROTECT,
         related_name='transit_rates',
         blank=True,
         null=True,

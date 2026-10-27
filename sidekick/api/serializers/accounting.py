@@ -16,7 +16,8 @@ class AccountingProfileSerializer(NetBoxModelSerializer):
 
     class Meta:
         model = AccountingProfile
-        fields = ('id', 'url', 'member', 'accounting_sources', 'name', 'enabled', 'comments',)
+        fields = ('id', 'url', 'display', 'member', 'accounting_sources', 'name', 'enabled', 'comments',)
+        brief_fields = ('id', 'url', 'display', 'name', 'enabled')
 
 
 class AccountingSourceSerializer(NetBoxModelSerializer):
@@ -24,7 +25,8 @@ class AccountingSourceSerializer(NetBoxModelSerializer):
 
     class Meta:
         model = AccountingSource
-        fields = ('id', 'url', 'device', 'name', 'destination',)
+        fields = ('id', 'url', 'display', 'device', 'name', 'destination',)
+        brief_fields = ('id', 'url', 'display', 'name', 'destination')
 
 
 class BandwidthProfileSerializer(NetBoxModelSerializer):
@@ -32,4 +34,5 @@ class BandwidthProfileSerializer(NetBoxModelSerializer):
 
     class Meta:
         model = BandwidthProfile
-        fields = ('id', 'url', 'effective_date', 'comments', 'traffic_cap', 'burst_limit',)
+        fields = ('id', 'url', 'display', 'effective_date', 'comments', 'traffic_cap', 'burst_limit',)
+        brief_fields = ('id', 'url', 'display', 'effective_date', 'traffic_cap', 'burst_limit')

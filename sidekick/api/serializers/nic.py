@@ -20,6 +20,7 @@ class NICSerializer(ModelSerializer):
     class Meta:
         model = NIC
         fields = (
+            'id',
             'interface',
             'interface_name',
             'description',

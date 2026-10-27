@@ -68,3 +68,6 @@ class APIPaginationTest(BaseTest):
 
     def test_networkservicegroup_list_paginates(self):
         self._assert_list_ok('networkservicegroup', '?limit=1000')
+
+    def test_transitrate_list_paginates(self):
+        self._assert_list_ok('transitrate', '?limit=1000')

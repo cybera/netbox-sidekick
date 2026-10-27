@@ -19,6 +19,7 @@ MODELS = (
     'accountingsource',
     'accountingprofile',
     'bandwidthprofile',
+    'transitrate',
     'nic',
 )
 
@@ -31,6 +32,7 @@ MODELS_WITHOUT_RENAME = (
     'networkservicel2',
     'networkservicel3',
     'bandwidthprofile',
+    'transitrate',
     'nic',
 )
 

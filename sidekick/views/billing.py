@@ -30,3 +30,24 @@ class TransitRateEditView(generic.ObjectEditView):
 @register_model_view(TransitRate, 'delete')
 class TransitRateDeleteView(generic.ObjectDeleteView):
     queryset = TransitRate.objects.all()
+
+
+@register_model_view(TransitRate, 'bulk_import', path='import', detail=False)
+class TransitRateBulkImportView(generic.BulkImportView):
+    queryset = TransitRate.objects.all()
+    model_form = forms.TransitRateImportForm
+
+
+@register_model_view(TransitRate, 'bulk_edit', path='edit', detail=False)
+class TransitRateBulkEditView(generic.BulkEditView):
+    queryset = TransitRate.objects.all()
+    filterset = filtersets.TransitRateFilterSet
+    table = tables.TransitRateTable
+    form = forms.TransitRateBulkEditForm
+
+
+@register_model_view(TransitRate, 'bulk_delete', path='delete', detail=False)
+class TransitRateBulkDeleteView(generic.BulkDeleteView):
+    queryset = TransitRate.objects.all()
+    filterset = filtersets.TransitRateFilterSet
+    table = tables.TransitRateTable

@@ -19,6 +19,7 @@ from .bulk_edit import (  # noqa: F401
     NetworkServiceTypeBulkEditForm,
     NICBulkEditForm,
     RoutingTypeBulkEditForm,
+    TransitRateBulkEditForm,
 )
 
 from .bulk_import import (  # noqa: F401
@@ -34,6 +35,7 @@ from .bulk_import import (  # noqa: F401
     NetworkServiceTypeImportForm,
     NICImportForm,
     RoutingTypeImportForm,
+    TransitRateImportForm,
 )
 
 from .networkservice import (  # noqa: F401

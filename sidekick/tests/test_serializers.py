@@ -77,11 +77,9 @@ def _serializers():
     for module in (accounting, networkservice):
         for name in dir(module):
             obj = getattr(module, name)
-            if (
-                isinstance(obj, type)
-                and issubclass(obj, serializers.ModelSerializer)
-                and obj.__module__ == module.__name__
-            ):
+            is_serializer = isinstance(obj, type) and issubclass(
+                obj, serializers.ModelSerializer)
+            if is_serializer and obj.__module__ == module.__name__:
                 found.append(obj)
     return found
 
@@ -128,7 +126,7 @@ class SerializerFieldContractTest(SimpleTestCase):
             extra = [field for field in meta.brief_fields if field not in meta.fields]
             if extra:
                 offenders.append(f"{serializer.__name__}: {extra}")
-        self.assertEqual(offenders, [], f"brief_fields not present in fields: {offenders}")
+        self.assertEqual(offenders, [], f"brief_fields absent from fields: {offenders}")
 
 
 class NestedRelationTest(SimpleTestCase):
@@ -140,7 +138,7 @@ class NestedRelationTest(SimpleTestCase):
                     self.assertIn(
                         name,
                         declared,
-                        f"{serializer.__name__} does not declare {name}; it would render "
+                        f"{serializer.__name__} does not declare {name}, so it would render "
                         "as a bare primary key",
                     )
                     self.assertIsInstance(
@@ -159,7 +157,7 @@ class NestedRelationTest(SimpleTestCase):
                     self.assertNotIsInstance(
                         declared[name],
                         serializers.BaseSerializer,
-                        f"{serializer.__name__}.{name} was nested; see INTENTIONAL_PKS "
+                        f"{serializer.__name__}.{name} was nested, see INTENTIONAL_PKS "
                         f"for why {name} is a primary key",
                     )
 

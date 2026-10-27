@@ -18,6 +18,7 @@ from sidekick.models import (
     NetworkServiceType,
     NIC,
     RoutingType,
+    TransitRate,
 )
 
 
@@ -201,6 +202,20 @@ class AccountingProfileImportForm(NetBoxModelImportForm):
     class Meta:
         model = AccountingProfile
         fields = ('member', 'name', 'enabled', 'accounting_sources', 'comments', 'tags')
+
+
+class TransitRateImportForm(NetBoxModelImportForm):
+    tenant = CSVModelChoiceField(
+        label=_('Member'),
+        queryset=Tenant.objects.filter(group__name='Members'),
+        to_field_name='name',
+        required=False,
+        help_text=_('Leave blank for the global default rate'),
+    )
+
+    class Meta:
+        model = TransitRate
+        fields = ('tenant', 'rate_per_mbit', 'effective_date', 'comments', 'tags')
 
 
 class BandwidthProfileImportForm(NetBoxModelImportForm):

@@ -21,6 +21,7 @@ from sidekick.models import (
     NetworkServiceType,
     NIC,
     RoutingType,
+    TransitRate,
 )
 
 
@@ -257,6 +258,32 @@ class BandwidthProfileBulkEditForm(NetBoxModelBulkEditForm):
 
     model = BandwidthProfile
     nullable_fields = ('accounting_profile', 'traffic_cap', 'burst_limit', 'comments')
+
+
+class TransitRateBulkEditForm(NetBoxModelBulkEditForm):
+    tenant = DynamicModelChoiceField(
+        label=_('Member'),
+        queryset=Tenant.objects.filter(group__name='Members'),
+        required=False,
+        help_text=_('Leave blank for the global default rate'),
+    )
+    rate_per_mbit = forms.DecimalField(
+        label=_('Rate per Mbit'),
+        max_digits=8,
+        decimal_places=4,
+        required=False,
+    )
+    effective_date = forms.DateField(
+        label=_('Effective date'),
+        required=False,
+    )
+    comments = forms.CharField(
+        label=_('Comments'),
+        required=False,
+    )
+
+    model = TransitRate
+    nullable_fields = ('tenant', 'comments')
 
 
 class NICBulkEditForm(NetBoxModelBulkEditForm):

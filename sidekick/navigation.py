@@ -42,6 +42,10 @@ menu = PluginMenu(
                 link='plugins:sidekick:bandwidthprofile_list',
                 link_text='Bandwidth Profiles',
             ),
+            PluginMenuItem(
+                link='plugins:sidekick:transitrate_list',
+                link_text='Transit Rates',
+            ),
         )),
         ('Interfaces', (
             PluginMenuItem(

@@ -34,6 +34,9 @@ NESTED_EXPECTATIONS = {
     networkservice.NetworkServiceL3Serializer: (
         'network_service_device', 'logical_system', 'routing_type'),
     networkservice.NetworkServiceGroupSerializer: ('network_services',),
+    accounting.AccountingProfileSerializer: ('member',),
+    accounting.BandwidthProfileSerializer: ('accounting_profile',),
+    accounting.AccountingSourceSerializer: ('device',),
 }
 
 # Fields deliberately left as primary keys, with the reason recorded here so a later
@@ -43,6 +46,29 @@ INTENTIONAL_PKS = {
     networkservice.NetworkServiceL3Serializer: ('ip_prefixes',),
     accounting.AccountingProfileSerializer: ('accounting_sources',),
 }
+
+
+class BandwidthProfileBillingFieldsTest(SimpleTestCase):
+    """Billing is cap times rate; the cap and its billability must be readable.
+
+    BandwidthProfile holds the per-member transit cap with an effective date and a
+    `billable` flag, reached through AccountingProfile.member. The serializer published
+    neither `accounting_profile` nor `billable` before 2026-10-27, so no API consumer
+    could compute a bill without hitting the database directly.
+    """
+
+    def test_billable_is_published(self):
+        self.assertIn('billable', accounting.BandwidthProfileSerializer.Meta.fields)
+
+    def test_accounting_profile_is_nested_and_carries_member(self):
+        field = accounting.BandwidthProfileSerializer().fields['accounting_profile']
+        self.assertIsInstance(field, serializers.BaseSerializer)
+        self.assertIn('member', field.Meta.brief_fields)
+
+    def test_traffic_cap_is_published(self):
+        fields = accounting.BandwidthProfileSerializer.Meta.fields
+        for name in ('traffic_cap', 'burst_limit', 'effective_date'):
+            self.assertIn(name, fields)
 
 
 def _serializers():

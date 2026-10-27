@@ -24,3 +24,5 @@ from .networkservice import PeeringConnectionFilterSet        # noqa: F401
 from .networkservice import PeeringConnectionFilterSetForm    # noqa: F401
 from .nic import NICFilterSet                                 # noqa: F401
 from .nic import NICFilterSetForm                             # noqa: F401
+from .billing import TransitRateFilterSet                    # noqa: F401
+from .billing import TransitRateFilterSetForm                # noqa: F401

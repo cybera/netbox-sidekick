@@ -10,3 +10,4 @@ from .networkservice import NetworkServiceL3              # noqa: F401
 from .networkservice import NetworkServiceL2              # noqa: F401
 from .networkservice import NetworkServiceGroup           # noqa: F401
 from .nic import NIC                                      # noqa: F401
+from .billing import TransitRate                          # noqa: F401

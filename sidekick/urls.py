@@ -17,6 +17,10 @@ urlpatterns = [
     path('bandwidth_profiles/', include(get_model_urls('sidekick', 'bandwidthprofile', detail=False))),
     path('bandwidth_profiles/<int:pk>/', include(get_model_urls('sidekick', 'bandwidthprofile'))),
 
+    # Transit rates
+    path('transit_rates/', include(get_model_urls('sidekick', 'transitrate', detail=False))),
+    path('transit_rates/<int:pk>/', include(get_model_urls('sidekick', 'transitrate'))),
+
     # Logical systems
     path('logical_systems/', include(get_model_urls('sidekick', 'logicalsystem', detail=False))),
     path('logical_systems/<int:pk>/', include(get_model_urls('sidekick', 'logicalsystem'))),

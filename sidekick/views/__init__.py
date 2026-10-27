@@ -43,3 +43,8 @@ from .nic import (  # noqa: F401
     NICListView, NICEditView, NICDeleteView,
     NICGraphiteDataView,
 )
+
+from .billing import (  # noqa: F401
+    TransitRateListView, TransitRateView,
+    TransitRateEditView, TransitRateDeleteView,
+)

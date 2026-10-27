@@ -50,3 +50,7 @@ from .networkservice import (  # noqa: F401
 from .nic import (  # noqa: F401
     NICForm,
 )
+
+from .billing import (  # noqa: F401
+    TransitRateForm,
+)

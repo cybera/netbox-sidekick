@@ -9,6 +9,7 @@ from .views import (
     CurrentBandwidthView,
     DeviceCheckAccessView,
     LogicalSystemViewSet,
+    MemberBillingView,
     NetworkServiceTypeViewSet,
     NetworkServiceViewSet,
     NetworkServiceDeviceViewSet,
@@ -24,6 +25,7 @@ from .views import (
     NetworkUsageMemberView,
     NICListView,
     RoutingTypeViewSet,
+    TransitRateViewSet,
 )
 
 router = routers.DefaultRouter()
@@ -38,6 +40,7 @@ router.register('networkservicedevice', NetworkServiceDeviceViewSet)
 router.register('networkservicel2', NetworkServiceL2ViewSet)
 router.register('networkservicel3', NetworkServiceL3ViewSet)
 router.register('networkservicegroup', NetworkServiceGroupViewSet)
+router.register('transitrate', TransitRateViewSet)
 urlpatterns = router.urls
 
 urlpatterns += [
@@ -57,4 +60,5 @@ urlpatterns += [
     path('advertised_prefixes/', NetworkServiceAdvertisedPrefixes.as_view(), name='networkservice_advertised_prefixes'),
     path('fastnetmon_data/', NetworkServiceFastNetMonData.as_view(), name='networkservice_fastnetmon_data'),
     path('clickhouse-dims/', ClickHouseDimsView.as_view(), name='clickhouse_dims'),
+    path('members/<int:member>/billing/', MemberBillingView.as_view(), name='member_billing'),
 ]

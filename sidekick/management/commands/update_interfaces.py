@@ -70,6 +70,14 @@ def sanitize_counter(value, context=""):
     meaningful packet/octet counts, so map them (as well as the "No more
     variables" sentinel and anything non-numeric) to 0 rather than aborting the
     whole NIC row.
+
+    Logged at DEBUG, deliberately. The condition is permanent hardware behaviour,
+    not an incident: the affected devices are known (ADR-084) and the discarded
+    values are visible in the data as a zero counter next to a non-zero octet
+    counter. At WARNING this line reached cron's stderr and mailed netbox 4,133
+    system emails between 2026-10-12 and 2026-10-27, two per five-minute poll,
+    which is 288 runs a day describing something that will never change.
+    Raise the `sidekick` logger to DEBUG to see it again.
     """
     try:
         n = int(value)
@@ -77,7 +85,7 @@ def sanitize_counter(value, context=""):
         return 0
     if 0 <= n <= SIGNED_BIGINT_MAX:
         return n
-    logger.warning(
+    logger.debug(
         "Discarding out-of-range SNMP counter value %r%s",
         value, f" for {context}" if context else "",
     )

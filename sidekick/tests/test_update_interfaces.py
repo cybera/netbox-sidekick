@@ -41,3 +41,29 @@ class SanitizeCounterTest(TestCase):
         self.assertEqual(sanitize_counter('No more variables left in this MIB View'), 0)
         self.assertEqual(sanitize_counter(None), 0)
         self.assertEqual(sanitize_counter(''), 0)
+
+
+class SanitizeCounterIsQuietTest(TestCase):
+    """The sanitiser must not write to WARNING or above.
+
+    Cron mails a job's stderr, and Django logs WARNING to stderr. This condition
+    is permanent hardware behaviour, so a warning here turned into two emails
+    every five minutes: 4,133 of them between 2026-10-12 and 2026-10-27.
+    Anything at WARNING or above in this code path reaches the operator's inbox
+    288 times a day.
+    """
+
+    def test_no_warning_is_logged_for_an_overflow_value(self):
+        with self.assertNoLogs('sidekick.management.commands.update_interfaces', level='WARNING'):
+            self.assertEqual(sanitize_counter('18446744073700172065', context='irb.27'), 0)
+
+    def test_the_value_is_still_discarded(self):
+        self.assertEqual(sanitize_counter('18446744073700172065'), 0)
+
+    def test_debug_still_records_it(self):
+        with self.assertLogs(
+            'sidekick.management.commands.update_interfaces', level='DEBUG'
+        ) as captured:
+            sanitize_counter('18446744073700172065', context='irb.27')
+        self.assertIn('out-of-range', '\n'.join(captured.output))
+        self.assertIn('irb.27', '\n'.join(captured.output))

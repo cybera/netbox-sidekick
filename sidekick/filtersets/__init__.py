@@ -26,3 +26,5 @@ from .nic import NICFilterSet                                 # noqa: F401
 from .nic import NICFilterSetForm                             # noqa: F401
 from .billing import TransitRateFilterSet                    # noqa: F401
 from .billing import TransitRateFilterSetForm                # noqa: F401
+from .membership import MemberTenantFilterSet                 # noqa: F401
+from .membership import MemberTenantFilterSetForm             # noqa: F401

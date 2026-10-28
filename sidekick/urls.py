@@ -21,6 +21,10 @@ urlpatterns = [
     path('transit_rates/', include(get_model_urls('sidekick', 'transitrate', detail=False))),
     path('transit_rates/<int:pk>/', include(get_model_urls('sidekick', 'transitrate'))),
 
+    # Member entitlements
+    path('member_entitlements/', include(get_model_urls('sidekick', 'membertenant', detail=False))),
+    path('member_entitlements/<int:pk>/', include(get_model_urls('sidekick', 'membertenant'))),
+
     # Logical systems
     path('logical_systems/', include(get_model_urls('sidekick', 'logicalsystem', detail=False))),
     path('logical_systems/<int:pk>/', include(get_model_urls('sidekick', 'logicalsystem'))),

@@ -49,3 +49,9 @@ from .billing import (  # noqa: F401
     TransitRateEditView, TransitRateDeleteView,
     TransitRateBulkImportView, TransitRateBulkDeleteView,
 )
+
+from .membership import (  # noqa: F401
+    MemberTenantListView, MemberTenantView,
+    MemberTenantEditView, MemberTenantDeleteView,
+    MemberTenantBulkImportView,
+)

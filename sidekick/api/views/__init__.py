@@ -23,6 +23,8 @@ from .accounting import CurrentBandwidthView                   # noqa: F401
 from .accounting import AllCurrentBandwidthView                # noqa: F401
 from .billing import TransitRateViewSet                        # noqa: F401
 from .billing import MemberBillingView                         # noqa: F401
+from .membership import MemberTenantViewSet                     # noqa: F401
+from .membership import EntitlementView                         # noqa: F401
 from .clickhousedims import ClickHouseDimsView                 # noqa: F401
 from .device import DeviceCheckAccessView                      # noqa: F401
 from .networkservice import LogicalSystemViewSet               # noqa: F401

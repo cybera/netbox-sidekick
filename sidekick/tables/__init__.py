@@ -13,3 +13,5 @@ from .networkservice import NetworkServiceGroupTable              # noqa: F401
 from .networkservice import PeeringConnectionTable                # noqa: F401
 from .nic import NICTable                                         # noqa: F401
 from .billing import TransitRateTable                          # noqa: F401
+from .membership import MemberTenantTable                      # noqa: F401
+from .membership import MemberTenantForUserTable               # noqa: F401

@@ -55,3 +55,8 @@ from .nic import (  # noqa: F401
 from .billing import (  # noqa: F401
     TransitRateForm,
 )
+
+from .membership import (  # noqa: F401
+    MemberTenantForm,
+    MemberTenantImportForm,
+)

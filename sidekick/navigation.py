@@ -59,6 +59,10 @@ menu = PluginMenu(
                 link_text='Bandwidth Usage Report',
             ),
             PluginMenuItem(
+                link='plugins:sidekick:membertenant_list',
+                link_text='Entitlements',
+            ),
+            PluginMenuItem(
                 link='plugins:sidekick:membercontact_list',
                 link_text='Contacts',
             ),

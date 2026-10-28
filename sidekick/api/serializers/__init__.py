@@ -11,3 +11,4 @@ from .networkservice import NetworkServiceL3Serializer      # noqa: F401
 from .networkservice import NetworkServiceGroupSerializer   # noqa: F401
 from .billing import TransitRateSerializer                  # noqa: F401
 from .nic import NICSerializer                              # noqa: F401
+from .membership import MemberTenantSerializer              # noqa: F401

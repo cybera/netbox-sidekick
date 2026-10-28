@@ -10,6 +10,8 @@ from .views import (
     DeviceCheckAccessView,
     LogicalSystemViewSet,
     MemberBillingView,
+    MemberTenantViewSet,
+    EntitlementView,
     NetworkServiceTypeViewSet,
     NetworkServiceViewSet,
     NetworkServiceDeviceViewSet,
@@ -41,6 +43,7 @@ router.register('networkservicel2', NetworkServiceL2ViewSet)
 router.register('networkservicel3', NetworkServiceL3ViewSet)
 router.register('networkservicegroup', NetworkServiceGroupViewSet)
 router.register('transitrate', TransitRateViewSet)
+router.register('membertenant', MemberTenantViewSet)
 urlpatterns = router.urls
 
 urlpatterns += [
@@ -61,4 +64,5 @@ urlpatterns += [
     path('fastnetmon_data/', NetworkServiceFastNetMonData.as_view(), name='networkservice_fastnetmon_data'),
     path('clickhouse-dims/', ClickHouseDimsView.as_view(), name='clickhouse_dims'),
     path('members/<int:member>/billing/', MemberBillingView.as_view(), name='member_billing'),
+    path('entitlement/', EntitlementView.as_view(), name='member_entitlement'),
 ]

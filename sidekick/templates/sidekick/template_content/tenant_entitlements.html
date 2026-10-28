@@ -1,0 +1,65 @@
+{% load helpers %}
+<div class="card">
+  <h5 class="card-header">
+    Entitled Accounts
+    <div class="card-actions">
+      {% if perms.sidekick.add_membertenant %}
+        <a href="{% url 'plugins:sidekick:membertenant_add' %}?tenant={{ tenant.pk }}" class="btn btn-sm btn-primary">
+          <i class="mdi mdi-plus-thick" aria-hidden="true"></i> Add an Entitlement
+        </a>
+      {% endif %}
+      <a href="{% url 'plugins:sidekick:membertenant_list' %}?tenant_id={{ tenant.pk }}" class="btn btn-sm btn-outline-secondary">
+        All Entitlements
+      </a>
+    </div>
+  </h5>
+  <div class="card-body">
+    {% if grants %}
+      <p class="text-muted">
+        An account listed here may act for this member. Access is decided by these rows and by nothing else,
+        and every addition and removal is recorded in the object changelog.
+      </p>
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th>Role</th>
+            <th>Note</th>
+            <th>Granted</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for grant in grants %}
+            <tr>
+              <td>
+                <a href="{% url 'users:user' pk=grant.user.pk %}">{{ grant.user.username }}</a>
+                {% if not grant.user.is_active %}<span class="badge text-bg-secondary">Inactive</span>{% endif %}
+              </td>
+              <td>{{ grant.get_role_display }}</td>
+              <td>{{ grant.note|placeholder }}</td>
+              <td>{{ grant.created|isodate }}</td>
+              <td class="text-end text-nowrap">
+                {% if perms.sidekick.change_membertenant %}
+                  <a href="{% url 'plugins:sidekick:membertenant_edit' pk=grant.pk %}" class="btn btn-sm btn-warning" title="Edit">
+                    <i class="mdi mdi-pencil" aria-hidden="true"></i>
+                  </a>
+                {% endif %}
+                {% if perms.sidekick.delete_membertenant %}
+                  <a href="{% url 'plugins:sidekick:membertenant_delete' pk=grant.pk %}" class="btn btn-sm btn-danger" title="Delete">
+                    <i class="mdi mdi-trash-can-outline" aria-hidden="true"></i>
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="text-muted mb-0">
+        No account is entitled to this member, so nobody can see its information in the portal or through
+        the MCP servers. Add an entitlement to allow someone.
+      </p>
+    {% endif %}
+  </div>
+</div>

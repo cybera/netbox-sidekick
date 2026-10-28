@@ -43,7 +43,7 @@ class TenantEntitlementsPanelTest(BaseTest):
 
     def test_panel_lists_the_entitled_account(self):
         html = self.render_panel(self.member)
-        self.assertIn('Entitled Accounts', html)
+        self.assertIn('Member Access', html)
         self.assertIn(self.account.username, html)
         self.assertIn('requested in a ticket', html)
 
@@ -51,15 +51,15 @@ class TenantEntitlementsPanelTest(BaseTest):
         # PermWrapper is what the template context processor supplies; the panel reads
         # perms.sidekick.add_membertenant, so a plain list of permissions would not do.
         html = self.render_panel(self.member, perms=PermWrapper(self.user))
-        add = f'/plugins/sidekick/member_entitlements/add/?tenant={self.member.pk}'
+        add = f'/plugins/sidekick/member_access/add/?tenant={self.member.pk}'
         self.assertIn(add, html)
-        self.assertIn(f'/plugins/sidekick/member_entitlements/{self.grant.pk}/edit/', html)
-        self.assertIn(f'/plugins/sidekick/member_entitlements/{self.grant.pk}/delete/', html)
+        self.assertIn(f'/plugins/sidekick/member_access/{self.grant.pk}/edit/', html)
+        self.assertIn(f'/plugins/sidekick/member_access/{self.grant.pk}/delete/', html)
 
     def test_member_with_no_grant_says_so(self):
         MemberTenant.objects.all().delete()
         html = self.render_panel(self.member)
-        self.assertIn('No account is entitled to this member', html)
+        self.assertIn('No account has access to this member', html)
 
     def test_non_member_tenant_with_no_grant_renders_nothing(self):
         not_a_member = Tenant.objects.get(name='Peering Partner')
@@ -69,7 +69,7 @@ class TenantEntitlementsPanelTest(BaseTest):
         # Proves the extension is registered, not just that the class works.
         response = self.client.get(self.member.get_absolute_url())
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Entitled Accounts')
+        self.assertContains(response, 'Member Access')
         self.assertContains(response, self.account.username)
 
 

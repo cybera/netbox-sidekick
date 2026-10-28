@@ -8,6 +8,7 @@ from netbox.filtersets import NetBoxModelFilterSet
 from netbox.forms import NetBoxModelFilterSetForm
 from tenancy.models import Tenant
 from utilities.forms.fields import DynamicModelMultipleChoiceField, TagFilterField
+from utilities.forms.rendering import FieldSet
 
 from sidekick.models import MemberTenant
 
@@ -43,9 +44,13 @@ class MemberTenantFilterSet(NetBoxModelFilterSet):
 class MemberTenantFilterSetForm(NetBoxModelFilterSetForm):
     model = MemberTenant
 
+    # FieldSet objects, not (name, fields) tuples: NetBox 4.7's render_fieldset iterates
+    # fieldset.items, so a tuple raised AttributeError and the list page returned 500 while
+    # the detail and edit pages worked. The model form already used FieldSet, which is why
+    # only the filtered list was broken.
     fieldsets = (
-        (None, ('q', 'filter_id', 'tag')),
-        ('Entitlement', ('user_id', 'tenant_id', 'role')),
+        FieldSet('q', 'filter_id', 'tag'),
+        FieldSet('user_id', 'tenant_id', 'role', name='Access'),
     )
 
     user_id = DynamicModelMultipleChoiceField(

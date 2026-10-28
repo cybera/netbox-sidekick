@@ -28,7 +28,7 @@ class MemberTenantForm(NetBoxModelForm):
     comments = CommentField()
 
     fieldsets = (
-        FieldSet('user', 'tenant', 'role', 'note', name='Entitlement'),
+        FieldSet('user', 'tenant', 'role', 'note', name='Access'),
     )
 
     class Meta:

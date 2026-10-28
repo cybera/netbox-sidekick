@@ -68,8 +68,10 @@ class MemberTenant(NetBoxModel):
         # NetBox 4.x paginates only ordered querysets; an unordered one raises
         # QuerySetNotOrdered and returns HTTP 500.
         ordering = ['tenant', 'user']
-        verbose_name = 'Member Entitlement'
-        verbose_name_plural = 'Member Entitlements'
+        # The visible name is Member Access. The model keeps its name because the table,
+        # the API path and the resolver all use it; only what a person reads changes.
+        verbose_name = 'Member Access'
+        verbose_name_plural = 'Member Access'
         constraints = (
             models.UniqueConstraint(
                 fields=('user', 'tenant'),

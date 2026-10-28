@@ -60,7 +60,7 @@ menu = PluginMenu(
             ),
             PluginMenuItem(
                 link='plugins:sidekick:membertenant_list',
-                link_text='Entitlements',
+                link_text='Member Access',
             ),
             PluginMenuItem(
                 link='plugins:sidekick:membercontact_list',

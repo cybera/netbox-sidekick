@@ -22,7 +22,7 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.urls import reverse
 
-from tenancy.models import Tenant
+from tenancy.models import ContactRole, Tenant
 from users.models import Group, User
 
 from sidekick.models import MemberTenant
@@ -226,3 +226,37 @@ class BackfillCommandTest(BaseTest):
         call_command('member_entitlements', '--recreate-groups', '--apply', stdout=StringIO())
         rebuilt = Group.objects.get(name=self.member.name)
         self.assertIn(rebuilt, self.account.groups.all())
+
+
+class MemberContactsViewTest(BaseTest):
+    """The contacts page lists portal accounts from the entitlement rows.
+
+    It used to derive them from a group whose name equalled the member's, so a member
+    whose group name had drifted lost its accounts from the page without any error.
+    """
+
+    def setUp(self):
+        super().setUp()
+        # The page filters portal accounts by the Network contact role, which it
+        # creates in production and which the fixtures do not provide.
+        ContactRole.objects.get_or_create(name='Network', slug='network')
+
+    def test_an_entitled_account_appears_for_its_member(self):
+        member = Tenant.objects.get(pk=1)
+        account = User.objects.create(username='listed@member.ca', email='listed@member.ca')
+        MemberTenant.objects.create(user=account, tenant=member)
+        response = self.client.get(
+            reverse('plugins:sidekick:membercontact_list'), {'member': member.pk})
+        self.assertEqual(response.status_code, 200)
+        listed = [row['contact'] for row in response.context['member_contacts'].data]
+        self.assertIn('listed@member.ca', listed)
+
+    def test_an_account_without_a_row_does_not_appear(self):
+        member = Tenant.objects.get(pk=1)
+        account = User.objects.create(username='absent@member.ca', email='absent@member.ca')
+        group = Group.objects.create(name=member.name)
+        account.groups.add(group)
+        response = self.client.get(
+            reverse('plugins:sidekick:membercontact_list'), {'member': member.pk})
+        listed = [row['contact'] for row in response.context['member_contacts'].data]
+        self.assertNotIn('absent@member.ca', listed)

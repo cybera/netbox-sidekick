@@ -4,7 +4,6 @@ from django_tables2.views import SingleTableView
 
 from tenancy.models import Tenant
 from tenancy.models import ContactRole
-from users.models import Group
 
 from sidekick.tables import (
     MemberContactTable,
@@ -37,12 +36,12 @@ class MemberContactsView(PermissionRequiredMixin, SingleTableView):
             contact_role_id = int(contact_role_id)
             contact_role = ContactRole.objects.get(pk=contact_role_id)
         else:
-            try:
-                v = ContactRole.objects.filter(name="Network")
-                contact_role = v.first()
+            # .first() does not raise DoesNotExist, so a database with no Network
+            # role used to crash here on `contact_role.id`. Fall back to the default
+            # role only when it exists.
+            contact_role = ContactRole.objects.filter(name="Network").first()
+            if contact_role is not None:
                 contact_role_id = contact_role.id
-            except ContactRole.DoesNotExist:
-                pass
 
         member_names = []
         if network_service_group_id != "":
@@ -62,17 +61,17 @@ class MemberContactsView(PermissionRequiredMixin, SingleTableView):
             if len(member_names) > 0 and member.name not in member_names:
                 continue
 
-            # Get the user accounts from the member's group
-            # But only if no contact role was specified
-            # or if the Network role is specified (which it is by default)
+            # Get the portal accounts entitled to this member, but only if no
+            # contact role was specified or if the Network role is specified (which
+            # it is by default). Entitlement is now an explicit row rather than a
+            # group whose name happens to equal the member's, so an account whose
+            # group name had drifted appears here instead of silently going missing.
             if contact_role is None or contact_role.name == "Network":
-                groups = Group.objects.filter(name__iexact=member.name)
-                if len(groups) == 1:
-                    group = groups[0]
-                    for user in group.users.all():
-                        if user.is_active:
-                            if not any(v.get('contact', None) == user.username for v in contacts):
-                                contacts.append({'contact': user.username})
+                for row in member.member_tenants.select_related('user').all():
+                    user = row.user
+                    if user.is_active:
+                        if not any(v.get('contact', None) == user.username for v in contacts):
+                            contacts.append({'contact': user.username})
 
             # Get the contact objects from the member's sites
             # And only of the "role" specified.

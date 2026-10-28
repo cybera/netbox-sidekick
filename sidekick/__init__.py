@@ -36,5 +36,10 @@ class SidekickConfig(PluginConfig):
         'mapping_primary_site': None,
     }
 
+    def ready(self):
+        super().ready()
+        # Stored addresses are lowercase; see sidekick/signals.py for why.
+        from . import signals  # noqa: F401
+
 
 config = SidekickConfig

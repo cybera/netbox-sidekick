@@ -260,3 +260,43 @@ class MemberContactsViewTest(BaseTest):
             reverse('plugins:sidekick:membercontact_list'), {'member': member.pk})
         listed = [row['contact'] for row in response.context['member_contacts'].data]
         self.assertNotIn('absent@member.ca', listed)
+
+
+class LowercaseAddressTest(BaseTest):
+    """An address is stored lowercase, and the resolver is lenient about what it is given.
+
+    A mixed-case username is a login that works only until the identity provider releases
+    the address in another case. Both halves are tested: the write is normalised, and a
+    row that predates the rule still resolves.
+    """
+
+    def test_a_saved_username_is_lowercased(self):
+        user = User.objects.create(username='Mixed.Case@Example.CA', email='Mixed.Case@Example.CA')
+        user.refresh_from_db()
+        self.assertEqual(user.username, 'mixed.case@example.ca')
+        self.assertEqual(user.email, 'mixed.case@example.ca')
+
+    def test_the_command_reports_and_repairs_a_pre_existing_row(self):
+        user = User.objects.create(username='someone@example.ca', email='someone@example.ca')
+        User.objects.filter(pk=user.pk).update(username='SomeOne@Example.ca')
+
+        out = StringIO()
+        call_command('normalise_usernames', stdout=out)
+        user.refresh_from_db()
+        self.assertEqual(user.username, 'SomeOne@Example.ca')
+        self.assertIn('Dry run', out.getvalue())
+
+        call_command('normalise_usernames', '--apply', stdout=StringIO())
+        user.refresh_from_db()
+        self.assertEqual(user.username, 'someone@example.ca')
+
+    def test_the_command_leaves_a_collision_for_a_person_to_resolve(self):
+        User.objects.create(username='dup@example.ca', email='dup@example.ca')
+        other = User.objects.create(username='other@example.ca', email='other@example.ca')
+        User.objects.filter(pk=other.pk).update(username='DUP@example.ca')
+
+        out = StringIO()
+        call_command('normalise_usernames', '--apply', stdout=out)
+        other.refresh_from_db()
+        self.assertEqual(other.username, 'DUP@example.ca')
+        self.assertIn('collides', out.getvalue())

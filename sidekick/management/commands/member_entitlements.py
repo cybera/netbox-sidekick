@@ -27,7 +27,11 @@ from users.models import Group
 from sidekick.models import MemberTenant
 from sidekick.utils.membership import normalise_member_name
 
-SEED_NOTE = "Seeded from group '{group}'"
+# The rows this command writes leave no note. The provenance ("came from group X") is
+# recorded in the run's output and, after 2026-10-28, in nothing else: the groups it refers
+# to have been deleted, so a note naming one is stale, and 223 rows carried it into the
+# member page where it read as a decision nobody made.
+SEED_NOTE = ""
 
 
 class Command(BaseCommand):
@@ -125,7 +129,7 @@ class Command(BaseCommand):
                 MemberTenant.objects.create(
                     user=user,
                     tenant=tenant,
-                    note=SEED_NOTE.format(group=group),
+                    note=SEED_NOTE,
                 )
                 created += 1
         self.stdout.write(f'\nCreated {created} entitlement rows.')

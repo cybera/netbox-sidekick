@@ -189,13 +189,16 @@ class BackfillCommandTest(BaseTest):
         self.assertIn('Dry run', out.getvalue())
         self.assertIn('to create: 1', out.getvalue())
 
-    def test_apply_creates_the_row_with_the_group_in_its_note(self):
+    def test_apply_creates_the_row_without_a_note(self):
+        # Provenance belongs in the run's output, not in the record: the group a seeded row
+        # came from is deleted, so a note naming it is stale, and 223 such notes read on the
+        # member page as decisions nobody made.
         out = StringIO()
         call_command('member_entitlements', '--apply', stdout=out)
         row = MemberTenant.objects.get()
         self.assertEqual(row.user, self.account)
         self.assertEqual(row.tenant, self.member)
-        self.assertIn(self.member.name, row.note)
+        self.assertEqual(row.note, '')
         self.assertEqual(row.role, MemberTenant.ROLE_VIEWER)
 
     def test_apply_twice_is_idempotent(self):

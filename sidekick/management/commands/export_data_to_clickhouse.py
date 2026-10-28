@@ -88,12 +88,16 @@ def ensure_members_table(ch: ClickHouseHTTP, full_name: str) -> None:
           member_name String,
           member_slug String,
           traffic_cap_mbps Nullable(UInt32),
+          active UInt8 DEFAULT 1,
           updated_at DateTime
         )
         ENGINE = ReplacingMergeTree(updated_at)
         ORDER BY (member_slug)
         """
     )
+    # A table created before the column existed keeps its old shape, and an insert with
+    # an extra key fails on it. Adding the column is additive and leaves the rows alone.
+    ch.execute(f"ALTER TABLE {full_name} ADD COLUMN IF NOT EXISTS active UInt8 DEFAULT 1")
 
 
 def ensure_member_prefixes_table(ch: ClickHouseHTTP, full_name: str) -> None:
@@ -103,11 +107,15 @@ def ensure_member_prefixes_table(ch: ClickHouseHTTP, full_name: str) -> None:
         (
           prefix String,
           member_slug String,
+          member_id UInt32 DEFAULT 0,
           updated_at DateTime
         )
         ENGINE = ReplacingMergeTree(updated_at)
         ORDER BY (prefix, member_slug)
         """
+    )
+    ch.execute(
+        f"ALTER TABLE {full_name} ADD COLUMN IF NOT EXISTS member_id UInt32 DEFAULT 0"
     )
 
 

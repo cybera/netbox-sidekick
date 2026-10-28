@@ -33,6 +33,7 @@ from dcim.models import Interface
 from sidekick.models import (
     AccountingProfile,
     AccountingSource,
+    MemberTenant,
     NetworkService,
     NetworkServiceDevice,
 )
@@ -210,25 +211,36 @@ def build_accounting_source_rows() -> Tuple[List[Dict[str, Any]], int]:
 def build_member_rows() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """Rows for pmacct.dim_members and pmacct.dim_member_prefixes.
 
-    Returns (member_rows, member_prefix_rows). Built from active
-    transit/c-all network services. This mirrors the /fastnetmon_data/
-    API endpoint's logic but uses Django slugify() for consistent slugs
-    across all dim_* tables.
+    Returns (member_rows, member_prefix_rows).
 
-    ``traffic_cap_mbps`` semantics: the SUM of the current traffic caps of
-    each of the tenant's accounting profiles that have a current bandwidth
-    profile — i.e. the member's total contracted (billed) capacity.
-    Billing matches exactly: fee = traffic_cap_mbps * rate * 12 for every
-    billable member (validated across the full base, 2026-09).
+    Two properties matter more than the contents of a row.
 
-    Resolution goes through AccountingProfile.member (the billing
-    relationship), NOT through network-service links:
-    - Multi-profile members bill the SUM of their profiles (Alberta
-      Health Services: Calgary 4000 + Edmonton 4000 + Guest 1000 = 9000).
-    - Billed profiles may have no active service linking them (Lakeland
-      College's campus transit profiles 500 + 500 are billed while only
-      its c-all services are active).
+    A member keeps a row when its services stop. The dimension is what gives old flow
+    records a name: drop the row the day a member's transit is switched off and every
+    query over last month silently loses them, which reads as "no traffic" rather than
+    "no longer a member". So the row survives and an `active` flag says whether any
+    transit or c-all service is still active.
+
+    The slug is a label, not an identity. It is generated from the member's name, so a
+    rename changes it and anything joining on it breaks quietly, which is why every
+    prefix row also carries `member_id`.
+
+    ``traffic_cap_mbps`` semantics: the SUM of the current traffic caps of each of the
+    tenant's accounting profiles that have a current bandwidth profile, i.e. the
+    member's total contracted (billed) capacity. Billing matches exactly: fee = traffic
+    cap x rate for every billable member.
+
+    Resolution goes through AccountingProfile.member (the billing relationship), NOT
+    through network-service links:
+    - Multi-profile members bill the SUM of their profiles (Alberta Health Services:
+      Calgary 4000 + Edmonton 4000 + Guest 1000 = 9000).
+    - Billed profiles may have no active service linking them (Lakeland College's campus
+      transit profiles 500 + 500 are billed while only its c-all services are active).
     - Profiles without a current bandwidth profile contribute nothing.
+
+    The set of members is every tenant that has ever had a transit or c-all service, plus
+    every tenant any account holds an entitlement for. A tenant that never had a service
+    and has no accounts has no traffic to attribute.
     """
     # member_id -> {accounting_profile_id -> current traffic_cap (or None)}
     profile_caps_by_member: Dict[int, Dict[int, Any]] = {}
@@ -238,51 +250,69 @@ def build_member_rows() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
             bp.traffic_cap if bp is not None else None
         )
 
-    members_map: Dict[str, Dict[str, Any]] = {}
+    members_map: Dict[int, Dict[str, Any]] = {}
 
+    def entry(member: Any) -> Dict[str, Any]:
+        row = members_map.get(member.id)
+        if row is None:
+            row = members_map[member.id] = {
+                'member_id': member.id,
+                'member_name': member.name,
+                'member_slug': slugify(member.name),
+                'prefixes': set(),
+                'active': 0,
+            }
+        return row
+
+    # Every service in these types, active or not, so a member who switched off last
+    # month keeps a row.
     services = NetworkService.objects.filter(
-        active=True,
         network_service_type__name__in=['transit', 'c-all'],
-    ).select_related('member', 'accounting_profile')
+    ).select_related('member', 'network_service_type')
 
     for ns in services:
         if ns.member is None:
             continue
-
-        member_name = ns.member.name
-        member_slug = slugify(member_name)
-
-        if member_slug not in members_map:
-            members_map[member_slug] = {
-                'member_id': ns.member.id,
-                'member_name': member_name,
-                'member_slug': member_slug,
-                'prefixes': set(),
-            }
-
+        row = entry(ns.member)
+        if ns.active:
+            row['active'] = 1
         for prefix in ns.get_prefixes(version=4):
-            members_map[member_slug]['prefixes'].add(str(prefix))
-
+            row['prefixes'].add(str(prefix))
         for prefix in ns.get_prefixes(version=6):
-            members_map[member_slug]['prefixes'].add(str(prefix))
+            row['prefixes'].add(str(prefix))
+
+    # A tenant can hold an entitlement without a service in the types above, for example a
+    # peering-only member. Give it a row so the dimension and the portal agree on who
+    # exists.
+    known = set(members_map)
+    entitled_only = set(
+        MemberTenant.objects.values_list('tenant_id', flat=True)
+    ) - known
+    if entitled_only:
+        from tenancy.models import Tenant
+
+        for tenant in Tenant.objects.filter(id__in=entitled_only):
+            entry(tenant)
 
     member_rows: List[Dict[str, Any]] = []
     member_prefix_rows: List[Dict[str, Any]] = []
-    for slug, data in sorted(members_map.items()):
+    for member_id, data in sorted(members_map.items()):
         caps = [
-            c for c in profile_caps_by_member.get(data['member_id'], {}).values()
+            c for c in profile_caps_by_member.get(member_id, {}).values()
             if c is not None
         ]
         member_rows.append({
-            'member_id': data['member_id'],
+            'member_id': member_id,
             'member_name': data['member_name'],
-            'member_slug': slug,
+            'member_slug': data['member_slug'],
             'traffic_cap_mbps': sum(caps) if caps else None,
+            'active': data['active'],
         })
         for prefix in sorted(data['prefixes']):
             member_prefix_rows.append({
                 'prefix': prefix,
-                'member_slug': slug,
+                'member_slug': data['member_slug'],
+                'member_id': member_id,
             })
 
     return member_rows, member_prefix_rows

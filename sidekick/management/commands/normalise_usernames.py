@@ -27,8 +27,8 @@ class Command(BaseCommand):
         User = get_user_model()
         offenders = [
             user for user in User.objects.all()
-            if (user.username or '') != (user.username or '').lower()
-            or (user.email or '') != (user.email or '').lower()
+            if (user.username or '') != (user.username or '').lower() or
+            (user.email or '') != (user.email or '').lower()
         ]
 
         if not offenders:

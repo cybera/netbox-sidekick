@@ -10,7 +10,6 @@ This is enforcement on write. The resolver also compares case-insensitively, so 
 that predates this hook still resolves; the two are deliberate belt and braces.
 """
 
-from django.contrib.auth import get_user_model
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 

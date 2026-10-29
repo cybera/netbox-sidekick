@@ -82,8 +82,8 @@ class Command(BaseCommand):
 
         ungrouped = [
             user.username for user in User.objects.filter(is_active=True).prefetch_related('groups')
-            if '@' in user.username and not user.groups.exists()
-            and not user.username.lower().endswith('cybera.ca')
+            if '@' in user.username and not user.groups.exists() and
+            not user.username.lower().endswith('cybera.ca')
         ]
         resolved_names = {normalise_member_name(name) for name in group_tenant}
         tenants_without_group = sorted(

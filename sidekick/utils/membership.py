@@ -39,8 +39,8 @@ def resolve_entitlement(address):
     # Username first because that is what RemoteUserBackend matches; email is the
     # fallback for an account whose username is not the address.
     user = (
-        User.objects.filter(username__iexact=address).first()
-        or User.objects.filter(email__iexact=address).first()
+        User.objects.filter(username__iexact=address).first() or
+        User.objects.filter(email__iexact=address).first()
     )
     if user is None:
         return {'tenants': [], 'roles': {}, 'reason': REASON_NO_ACCOUNT, 'user': None}

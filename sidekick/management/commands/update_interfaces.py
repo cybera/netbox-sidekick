@@ -35,6 +35,38 @@ IP_VERSIONS = {
     'ipv6': 6,
 }
 
+SPEED_TO_INTERFACE_TYPE = {
+    '1000': InterfaceTypeChoices.TYPE_1GE_FIXED,
+    '10000': InterfaceTypeChoices.TYPE_10GE_FIXED,
+    '100000': InterfaceTypeChoices.TYPE_100GE_QSFP28,
+    'ieee8023adLag': InterfaceTypeChoices.TYPE_LAG,
+}
+
+
+def interface_type_from_speed(speed):
+    """Return the NetBox interface type implied by an ``ifHighSpeed`` reading.
+
+    A truncated walk can leave ``ifHighSpeed`` absent for some interfaces, so
+    an unknown speed falls back to Virtual instead of raising (see
+    ``interface_enabled`` for the same reason).
+    """
+    return SPEED_TO_INTERFACE_TYPE.get(speed, InterfaceTypeChoices.TYPE_VIRTUAL)
+
+
+def interface_enabled(admin_status, oper_status):
+    """Return whether an interface is up, or None when the walk did not say.
+
+    ``None`` means one of the two statuses is missing from this poll, so the
+    caller must leave the stored value alone. Treating a missing status as
+    "down" would disable a working interface, and indexing it directly aborted
+    the whole device (the ``KeyError: 'ifHighSpeed'`` mails from the core-router
+    poller, 2026-11-11 to 2026-11-16).
+    """
+    if admin_status is None or oper_status is None:
+        return None
+    return f"{admin_status}" == "up" and oper_status == 1
+
+
 METRIC_CATEGORIES = [
     'in_octets', 'out_octets',
     'in_unicast_packets', 'out_unicast_packets',
@@ -248,15 +280,8 @@ class Command(BaseCommand):
                 # Collect the devices interface names for another loop below.
                 device_interface_names.append(iface_name)
 
-                iface_type = InterfaceTypeChoices.TYPE_VIRTUAL
-                if iface_details['ifHighSpeed'] == "1000":
-                    iface_type = InterfaceTypeChoices.TYPE_1GE_FIXED
-                if iface_details['ifHighSpeed'] == "10000":
-                    iface_type = InterfaceTypeChoices.TYPE_10GE_FIXED
-                if iface_details['ifHighSpeed'] == "100000":
-                    iface_type = InterfaceTypeChoices.TYPE_100GE_QSFP28
-                if iface_details['ifHighSpeed'] == 'ieee8023adLag':
-                    iface_type = InterfaceTypeChoices.TYPE_LAG
+                iface_type = interface_type_from_speed(
+                    iface_details.get('ifHighSpeed'))
 
                 # TODO: VLAN management is incomplete right now.
                 # _vlan = None
@@ -287,22 +312,20 @@ class Command(BaseCommand):
                     existing_interface = existing_interfaces[iface_name]
 
                     changed = False
-                    _descr = iface_details['ifAlias'].strip()
-                    if existing_interface.description != _descr:
-                        existing_interface.description = _descr
-                        changed = True
+                    # A field can be absent from one poll and present in the
+                    # next, because a walk may stop early. Absent means "not
+                    # measured this time": leave the stored value alone rather
+                    # than writing a blank description or disabling a live port.
+                    if 'ifAlias' in iface_details:
+                        _descr = iface_details['ifAlias'].strip()
+                        if existing_interface.description != _descr:
+                            existing_interface.description = _descr
+                            changed = True
 
-                    admin_status = f"{iface_details['ifAdminStatus']}"
-                    if admin_status == "up":
-                        admin_status = 1
-                    if admin_status == "down":
-                        admin_status = 0
-
-                    iface_status = False
-                    oper_status = iface_details['ifOperStatus']
-                    if admin_status == 1 and oper_status == 1:
-                        iface_status = True
-                    if existing_interface.enabled != iface_status:
+                    iface_status = interface_enabled(
+                        iface_details.get('ifAdminStatus'),
+                        iface_details.get('ifOperStatus'))
+                    if iface_status is not None and existing_interface.enabled != iface_status:
                         existing_interface.enabled = iface_status
                         changed = True
 
@@ -325,6 +348,11 @@ class Command(BaseCommand):
                             existing_interface.save()
 
                 if iface_name not in existing_interfaces.keys():
+                    # Without an admin status there is nothing to create the
+                    # interface with; the next poll will carry it.
+                    if 'ifAdminStatus' not in iface_details:
+                        continue
+
                     if options['dry_run']:
                         self.stdout.write(f"Would have added {iface_name}")
                     else:

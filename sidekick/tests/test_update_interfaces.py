@@ -14,8 +14,12 @@ row is stored instead of aborted.
 
 from django.test import TestCase
 
+from dcim.choices import InterfaceTypeChoices
+
 from sidekick.management.commands.update_interfaces import (
     SIGNED_BIGINT_MAX,
+    interface_enabled,
+    interface_type_from_speed,
     sanitize_counter,
 )
 
@@ -67,3 +71,43 @@ class SanitizeCounterIsQuietTest(TestCase):
             sanitize_counter('18446744073700172065', context='irb.27')
         self.assertIn('out-of-range', '\n'.join(captured.output))
         self.assertIn('irb.27', '\n'.join(captured.output))
+
+
+class MissingWalkFieldTest(TestCase):
+    """A truncated SNMP walk must not abort the poll for a whole device.
+
+    On 2026-11-11 to 2026-11-16 the core-router poller mailed
+    ``KeyError: 'ifHighSpeed'`` from ``update_interfaces``. ``results`` in
+    ``snmpwalk_bulk`` gets an entry for an interface as soon as *any* walked
+    OID returns a row for it, and a walk can stop before every OID has been
+    returned for every interface -- the module already notes that case for the
+    "No more variables left in this MIB View" replies. Indexing the missing
+    field killed the run, so every interface after it on that device went
+    unpollled and cron mailed the netbox account every five minutes.
+    """
+
+    def test_unknown_speed_falls_back_to_virtual(self):
+        self.assertEqual(
+            interface_type_from_speed(None), InterfaceTypeChoices.TYPE_VIRTUAL)
+        self.assertEqual(
+            interface_type_from_speed(''), InterfaceTypeChoices.TYPE_VIRTUAL)
+
+    def test_known_speeds_map_to_their_types(self):
+        self.assertEqual(
+            interface_type_from_speed('1000'), InterfaceTypeChoices.TYPE_1GE_FIXED)
+        self.assertEqual(
+            interface_type_from_speed('10000'), InterfaceTypeChoices.TYPE_10GE_FIXED)
+        self.assertEqual(
+            interface_type_from_speed('100000'), InterfaceTypeChoices.TYPE_100GE_QSFP28)
+        self.assertEqual(
+            interface_type_from_speed('ieee8023adLag'), InterfaceTypeChoices.TYPE_LAG)
+
+    def test_missing_status_leaves_the_stored_value_alone(self):
+        self.assertIsNone(interface_enabled(None, 1))
+        self.assertIsNone(interface_enabled('up', None))
+        self.assertIsNone(interface_enabled(None, None))
+
+    def test_present_statuses_still_decide(self):
+        self.assertTrue(interface_enabled('up', 1))
+        self.assertFalse(interface_enabled('down', 1))
+        self.assertFalse(interface_enabled('up', 2))

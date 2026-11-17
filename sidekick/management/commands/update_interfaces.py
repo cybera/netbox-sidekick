@@ -22,6 +22,8 @@ from sidekick.models import (
 from sidekick.utils import (
     VALID_INTERFACE_NAMES,
     decrypt_1pw_secret,
+    index_interfaces_by_mac,
+    interface_by_mac,
     snmpwalk_bulk,
 )
 from sidekick.utils.clickhouse import ClickHouseHTTP, now_utc_str
@@ -195,6 +197,38 @@ def down_poll_baseline(e1_in, e1_out, e2_in, e2_out):
     )
 
 
+def resolve_interface_name(iface_details, existing_interfaces, by_mac):
+    """Return the NetBox interface name to use for a polled interface.
+
+    Returns None when the interface is to be skipped.
+
+    A polled name is not always the port's name: an ASA reports the
+    interface's nameif (inside, outside) in both ifName and ifDescr, so
+    Ethernet1/2 arrives as "inside" and no name lookup finds it. A NetBox
+    interface carrying the same MAC is the operator's declaration for that
+    port, so its name wins.
+
+    VALID_INTERFACE_NAMES therefore gates *creation* only. A name that is not
+    a recognised interface name is skipped, as before, unless an interface
+    with that MAC already exists.
+    """
+    iface_name = iface_details.get('ifName', None)
+    if iface_name is None:
+        return None
+
+    if iface_name in existing_interfaces:
+        return iface_name
+
+    matched = interface_by_mac(iface_details, by_mac)
+    if matched is not None:
+        return matched.name
+
+    if not any(i in iface_name for i in VALID_INTERFACE_NAMES):
+        return None
+
+    return iface_name
+
+
 class Command(BaseCommand):
     help = "Update Interface/NIC data on a device"
 
@@ -297,6 +331,10 @@ class Command(BaseCommand):
                     'device').prefetch_related('ip_addresses'):
                 existing_interfaces[i.name] = i
 
+            # Interfaces by MAC, used when a polled interface's name is not its
+            # port name (see interface_by_mac).
+            by_mac = index_interfaces_by_mac(existing_interfaces.values())
+
             # One-time setup hoisted out of the per-interface loops.
             graphite_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_host', None)
             if graphite_host is not None:
@@ -320,13 +358,9 @@ class Command(BaseCommand):
             # add that interface to the device if it doesn't already exist.
             device_interface_names = []
             for iface_index, iface_details in device_info.items():
-                iface_name = iface_details.get('ifName', None)
+                iface_name = resolve_interface_name(
+                    iface_details, existing_interfaces, by_mac)
                 if iface_name is None:
-                    continue
-                # self.stdout.write(f"{iface_details['name']}: {iface_details['oper_status']}")
-                # continue
-
-                if not any(i in iface_details['ifName'] for i in VALID_INTERFACE_NAMES):
                     continue
 
                 # Collect the devices interface names for another loop below.
@@ -418,6 +452,7 @@ class Command(BaseCommand):
             for i in device.vc_interfaces().select_related(
                     'device').prefetch_related('ip_addresses'):
                 existing_interfaces[i.name] = i
+            by_mac = index_interfaces_by_mac(existing_interfaces.values())
 
             # Now check if there are interfaces in NetBox that no longer
             # exist on the device itself. This can happen if a card was
@@ -441,11 +476,9 @@ class Command(BaseCommand):
             # For each interface that is not supposed to be ignored,
             # add the IP address to the interface if it doesn't already exist.
             for iface_index, iface_details in device_info.items():
-                iface_name = iface_details.get('ifName', None)
+                iface_name = resolve_interface_name(
+                    iface_details, existing_interfaces, by_mac)
                 if iface_name is None:
-                    continue
-
-                if not any(i in iface_name for i in VALID_INTERFACE_NAMES):
                     continue
 
                 if iface_name not in existing_interfaces.keys():
@@ -576,14 +609,9 @@ class Command(BaseCommand):
             # For each interface that is not supposed to be ignored,
             # store the counters as a NIC object.
             for iface_index, iface_details in device_info.items():
-                iface_name = iface_details.get('ifName', None)
+                iface_name = resolve_interface_name(
+                    iface_details, existing_interfaces, by_mac)
                 if iface_name is None:
-                    continue
-
-                if not any(i in iface_name for i in VALID_INTERFACE_NAMES):
-                    continue
-
-                if iface_name not in existing_interfaces.keys():
                     continue
 
                 existing_interface = existing_interfaces[iface_name]

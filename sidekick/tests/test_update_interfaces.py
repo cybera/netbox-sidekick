@@ -15,15 +15,17 @@ row is stored instead of aborted.
 from django.test import TestCase
 
 from dcim.choices import InterfaceModeChoices, InterfaceTypeChoices
-from dcim.models import Device
+from dcim.models import Device, Interface
 
 from sidekick.management.commands.update_interfaces import (
     SIGNED_BIGINT_MAX,
     build_interface,
     interface_enabled,
     interface_type_from_speed,
+    resolve_interface_name,
     sanitize_counter,
 )
+from sidekick.utils import index_interfaces_by_mac
 from sidekick.tests.utils import BaseTest
 
 
@@ -191,3 +193,90 @@ class BuildInterfaceTest(BaseTest):
             InterfaceTypeChoices.TYPE_1GE_FIXED, InterfaceModeChoices.MODE_TAGGED)
 
         self.assertEqual(iface.mtu, 1500)
+
+
+class ResolveInterfaceNameTest(BaseTest):
+    """Matching a polled interface to a NetBox interface when the name is not the port's.
+
+    An ASA reports the interface's nameif in both ifName and ifDescr, so
+    Ethernet1/2 arrives as "inside" and no name lookup finds it (verified on
+    vpn2, 2026-11-17: ifIndex 6, ifName "inside", MAC f8:e5:7e:17:07:a5). The
+    port is recorded only when an operator creates the NetBox interface and
+    gives it the port's MAC, so the poller has to match on that MAC.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.device = Device.objects.get(pk=1)
+        self.port = Interface.objects.create(
+            device=self.device, name='Ethernet1/2',
+            type=InterfaceTypeChoices.TYPE_1GE_FIXED)
+        self.port.set_primary_mac_address_from_value('f8:e5:7e:17:07:a5')
+        self.port.save()
+
+    def _existing(self):
+        return {i.name: i for i in self.device.vc_interfaces()}
+
+    def _by_mac(self):
+        return index_interfaces_by_mac(self._existing().values())
+
+    def test_name_match_wins(self):
+        details = {'ifName': 'Ethernet1/2', 'ifPhysAddress': 'f8:e5:7e:17:07:a5'}
+        self.assertEqual(
+            resolve_interface_name(details, self._existing(), self._by_mac()),
+            'Ethernet1/2')
+
+    def test_nameif_is_resolved_through_the_mac(self):
+        details = {'ifName': 'inside', 'ifPhysAddress': 'f8:e5:7e:17:07:a5'}
+        self.assertEqual(
+            resolve_interface_name(details, self._existing(), self._by_mac()),
+            'Ethernet1/2')
+
+    def test_mac_comparison_ignores_case_and_separator(self):
+        # SNMP returns lower case; NetBox stores and displays upper case.
+        details = {'ifName': 'inside', 'ifPhysAddress': 'F8-E5-7E-17-07-A5'}
+        self.assertEqual(
+            resolve_interface_name(details, self._existing(), self._by_mac()),
+            'Ethernet1/2')
+
+    def test_unrecognised_name_without_a_mac_match_is_skipped(self):
+        details = {'ifName': 'nlp_int_tap', 'ifPhysAddress': '00:00:01:00:00:01'}
+        self.assertIsNone(
+            resolve_interface_name(details, self._existing(), self._by_mac()))
+
+    def test_unrecognised_name_without_a_mac_is_skipped(self):
+        self.assertIsNone(
+            resolve_interface_name({'ifName': 'outside'}, self._existing(), self._by_mac()))
+
+    def test_valid_name_not_yet_in_netbox_is_created(self):
+        details = {'ifName': 'Ethernet1/5', 'ifPhysAddress': 'f8:e5:7e:17:07:a8'}
+        self.assertEqual(
+            resolve_interface_name(details, self._existing(), self._by_mac()),
+            'Ethernet1/5')
+
+    def test_missing_if_name_is_skipped(self):
+        self.assertIsNone(
+            resolve_interface_name({'ifPhysAddress': 'f8:e5:7e:17:07:a5'},
+                                   self._existing(), self._by_mac()))
+
+    def test_ambiguous_mac_is_not_used(self):
+        # Subinterfaces share their parent's MAC on routers; picking one of
+        # several would silently update the wrong port.
+        shared = 'f8:e5:7e:17:07:a5'
+        sub = Interface.objects.create(
+            device=self.device, name='Ethernet1/2.100',
+            type=InterfaceTypeChoices.TYPE_VIRTUAL)
+        sub.set_primary_mac_address_from_value(shared)
+        sub.save()
+
+        self.assertNotIn(shared.upper(), index_interfaces_by_mac(self._existing().values()))
+        self.assertIsNone(
+            resolve_interface_name({'ifName': 'inside', 'ifPhysAddress': shared},
+                                   self._existing(), self._by_mac()))
+
+    def test_interface_without_a_mac_is_not_indexed(self):
+        Interface.objects.create(
+            device=self.device, name='Ethernet1/7',
+            type=InterfaceTypeChoices.TYPE_1GE_FIXED)
+        self.assertNotIn('ETH', index_interfaces_by_mac(self._existing().values()))
+        self.assertEqual(len(index_interfaces_by_mac(self._existing().values())), 1)

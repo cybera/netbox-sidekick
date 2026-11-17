@@ -144,6 +144,47 @@ VALID_INTERFACE_NAMES = [
 ]
 
 
+def normalize_mac(value):
+    """Reduce a MAC address to upper-case hex, so SNMP's f8:e5:.. matches NetBox's F8:E5:..
+
+    Some devices answer ifPhysAddress with a different separator, so the
+    comparison ignores separators as well as case.
+    """
+    return re.sub(r'[^0-9A-F]', '', str(value).upper())
+
+
+def index_interfaces_by_mac(interfaces):
+    """Map an upper-case MAC to the one interface carrying it on a device.
+
+    A MAC is usable as an identity only when exactly one interface on the
+    device has it. Subinterfaces share their parent's MAC on routers, and
+    matching one of several candidates would silently update the wrong port,
+    so ambiguous MACs are left out of the index and the caller falls back to
+    matching by name.
+    """
+    seen = {}
+    for iface in interfaces:
+        mac = getattr(iface.primary_mac_address, 'mac_address', None)
+        if not mac:
+            continue
+        seen.setdefault(normalize_mac(mac), []).append(iface)
+    return {mac: found[0] for mac, found in seen.items() if len(found) == 1}
+
+
+def interface_by_mac(iface_details, by_mac):
+    """Return the NetBox interface a polled interface's MAC belongs to.
+
+    Some devices report a name that is not the port's name: an ASA returns
+    the interface's nameif (inside, outside) in both ifName and ifDescr, so
+    Ethernet1/2 arrives as "inside" and no name lookup can find it. A NetBox
+    interface whose MAC matches is the operator's declaration for that port.
+    """
+    mac = iface_details.get('ifPhysAddress')
+    if not mac or not by_mac:
+        return None
+    return by_mac.get(normalize_mac(mac))
+
+
 def decrypt_1pw_secret(token_path, host, vault, device, field):
     token = None
     with open(token_path) as f:

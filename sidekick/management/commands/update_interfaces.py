@@ -202,15 +202,20 @@ def resolve_interface_name(iface_details, existing_interfaces, by_mac):
 
     Returns None when the interface is to be skipped.
 
-    A polled name is not always the port's name: an ASA reports the
-    interface's nameif (inside, outside) in both ifName and ifDescr, so
-    Ethernet1/2 arrives as "inside" and no name lookup finds it. A NetBox
-    interface carrying the same MAC is the operator's declaration for that
-    port, so its name wins.
+    An interface whose polled name is a recognised interface name is handled
+    exactly as before: matched by name, or created under that name.
 
-    VALID_INTERFACE_NAMES therefore gates *creation* only. A name that is not
-    a recognised interface name is skipped, as before, unless an interface
-    with that MAC already exists.
+    The MAC is consulted only when the polled name is *not* a recognised
+    interface name, which is the case where the device is not reporting a port
+    name at all: an ASA returns the interface's nameif (inside, outside) in
+    both ifName and ifDescr, so Ethernet1/2 arrives as "inside" and no name
+    lookup can find it. A NetBox interface carrying that MAC is the operator's
+    declaration for the port, so its name is used.
+
+    Confining the MAC lookup to unrecognised names matters: a MAC that has
+    moved to a different port on a device with usable names (a card reseated
+    into another slot) would otherwise have its counters written to the old
+    interface's row.
     """
     iface_name = iface_details.get('ifName', None)
     if iface_name is None:
@@ -219,14 +224,14 @@ def resolve_interface_name(iface_details, existing_interfaces, by_mac):
     if iface_name in existing_interfaces:
         return iface_name
 
+    if any(i in iface_name for i in VALID_INTERFACE_NAMES):
+        return iface_name
+
     matched = interface_by_mac(iface_details, by_mac)
     if matched is not None:
         return matched.name
 
-    if not any(i in iface_name for i in VALID_INTERFACE_NAMES):
-        return None
-
-    return iface_name
+    return None
 
 
 class Command(BaseCommand):

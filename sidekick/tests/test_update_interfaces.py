@@ -274,6 +274,15 @@ class ResolveInterfaceNameTest(BaseTest):
             resolve_interface_name({'ifName': 'inside', 'ifPhysAddress': shared},
                                    self._existing(), self._by_mac()))
 
+    def test_a_moved_mac_does_not_reclaim_a_recognised_name(self):
+        # A card reseated into another slot keeps its MAC. The polled name is a
+        # recognised interface name, so it must be created under that name
+        # rather than have its counters written to the old interface's row.
+        details = {'ifName': 'Ethernet1/9', 'ifPhysAddress': 'f8:e5:7e:17:07:a5'}
+        self.assertEqual(
+            resolve_interface_name(details, self._existing(), self._by_mac()),
+            'Ethernet1/9')
+
     def test_interface_without_a_mac_is_not_indexed(self):
         Interface.objects.create(
             device=self.device, name='Ethernet1/7',

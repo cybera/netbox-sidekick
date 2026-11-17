@@ -9,6 +9,7 @@ from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 
 from dcim.choices import InterfaceModeChoices, InterfaceTypeChoices
+from dcim.constants import INTERFACE_MTU_MIN
 from dcim.models import Device, Interface
 
 from ipam.models import IPAddress
@@ -65,6 +66,57 @@ def interface_enabled(admin_status, oper_status):
     if admin_status is None or oper_status is None:
         return None
     return f"{admin_status}" == "up" and oper_status == 1
+
+
+def build_interface(device, iface_name, iface_details, iface_type, iface_mode,
+                    untagged_vlan=None):
+    """Create the NetBox Interface for a walk entry that NetBox does not have.
+
+    NetBox 4 removed the ``mac_address`` field from Interface; it is now a
+    ``primary_mac_address`` foreign key to a MACAddress row
+    (``dcim/models/device_components.py``). Passing ``mac_address=`` to the
+    constructor raises ``TypeError: Interface() got unexpected keyword
+    arguments: 'mac_address'``, which aborted the device poll and left every
+    interface that appeared after the 4.7 cutover unrecorded -- mailed every
+    five minutes from ``update_devices_all_else.sh`` from 2026-11-17 18:59 UTC.
+    The setter find-or-creates the MACAddress on this interface and saves it, so
+    the interface needs its primary key first.
+    """
+    admin_status = f"{iface_details['ifAdminStatus']}"
+    if admin_status == "down":
+        admin_status = False
+    if admin_status == "up":
+        admin_status = True
+
+    # ifMtu arrives as a string. NetBox validates the field with
+    # MinValueValidator(INTERFACE_MTU_MIN) on the MAC-address setter's
+    # full_clean(), so a string -- or the 0 the old code stored when the OID
+    # did not answer -- fails validation. Unknown means NULL.
+    mtu = iface_details.get('ifMtu', None)
+    try:
+        mtu = int(mtu)
+    except (TypeError, ValueError):
+        mtu = None
+    else:
+        if mtu < INTERFACE_MTU_MIN:
+            mtu = None
+
+    iface = Interface(
+        device=device,
+        description=iface_details.get('ifDescr', None),
+        name=iface_name,
+        type=iface_type,
+        enabled=admin_status,
+        mtu=mtu,
+        mode=iface_mode,
+        untagged_vlan=untagged_vlan,
+    )
+    iface.save()
+
+    mac = iface_details.get('ifPhysAddress', None)
+    if mac:
+        iface.set_primary_mac_address_from_value(mac)
+    return iface
 
 
 METRIC_CATEGORIES = [
@@ -356,28 +408,9 @@ class Command(BaseCommand):
                     if options['dry_run']:
                         self.stdout.write(f"Would have added {iface_name}")
                     else:
-                        admin_status = f"{iface_details['ifAdminStatus']}"
-                        if admin_status == "down":
-                            admin_status = False
-                        if admin_status == "up":
-                            admin_status = True
-
-                        mtu = iface_details.get('ifMtu', 0)
-                        if 'No more variables' in f"{mtu}":
-                            mtu = 0
-
-                        iface = Interface(
-                            device=device,
-                            description=iface_details.get('ifDescr', None),
-                            name=iface_name,
-                            type=iface_type,
-                            enabled=admin_status,
-                            mac_address=iface_details.get('ifPhysAddress', None),
-                            mtu=mtu,
-                            mode=iface_mode,
-                            untagged_vlan=iface_untagged_vlan,
-                        )
-                        iface.save()
+                        build_interface(
+                            device, iface_name, iface_details, iface_type,
+                            iface_mode, iface_untagged_vlan)
 
             # To account for one or more new interfaces being added above,
             # rebuild the list of interface names already on the device.

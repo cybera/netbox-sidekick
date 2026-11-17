@@ -14,14 +14,17 @@ row is stored instead of aborted.
 
 from django.test import TestCase
 
-from dcim.choices import InterfaceTypeChoices
+from dcim.choices import InterfaceModeChoices, InterfaceTypeChoices
+from dcim.models import Device
 
 from sidekick.management.commands.update_interfaces import (
     SIGNED_BIGINT_MAX,
+    build_interface,
     interface_enabled,
     interface_type_from_speed,
     sanitize_counter,
 )
+from sidekick.tests.utils import BaseTest
 
 
 class SanitizeCounterTest(TestCase):
@@ -111,3 +114,80 @@ class MissingWalkFieldTest(TestCase):
         self.assertTrue(interface_enabled('up', 1))
         self.assertFalse(interface_enabled('down', 1))
         self.assertFalse(interface_enabled('up', 2))
+
+
+class BuildInterfaceTest(BaseTest):
+    """Creating an Interface from a walk entry must work on NetBox 4.
+
+    NetBox 4 removed ``Interface.mac_address``. The poller still passed it to
+    the constructor, so every interface that appeared on a device after the 4.7
+    cutover failed to be created and the device poll aborted:
+    ``TypeError: Interface() got unexpected keyword arguments: 'mac_address'``
+    (mails from ``update_devices_all_else.sh`` every five minutes from
+    2026-11-17 18:59 UTC).
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.device = Device.objects.get(pk=1)
+
+    def _details(self, **extra):
+        details = {
+            'ifName': 'ge-0/0/9',
+            'ifDescr': 'Test uplink',
+            'ifAdminStatus': 'up',
+            'ifOperStatus': 1,
+            'ifMtu': '1500',
+            'ifPhysAddress': 'ec:f4:bb:c1:79:b8',
+        }
+        details.update(extra)
+        return details
+
+    def test_interface_is_created_with_its_mac(self):
+        iface = build_interface(
+            self.device, 'ge-0/0/9', self._details(),
+            InterfaceTypeChoices.TYPE_1GE_FIXED, InterfaceModeChoices.MODE_TAGGED)
+
+        self.assertEqual(iface.name, 'ge-0/0/9')
+        self.assertEqual(iface.description, 'Test uplink')
+        self.assertTrue(iface.enabled)
+        self.assertEqual(iface.mtu, 1500)
+        self.assertIsNotNone(iface.primary_mac_address)
+        self.assertEqual(f"{iface.primary_mac_address}", 'EC:F4:BB:C1:79:B8')
+
+    def test_missing_mac_leaves_it_unset(self):
+        details = self._details(**{'ifPhysAddress': None})
+        iface = build_interface(
+            self.device, 'ge-0/0/10', details,
+            InterfaceTypeChoices.TYPE_1GE_FIXED, InterfaceModeChoices.MODE_TAGGED)
+
+        self.assertIsNone(iface.primary_mac_address)
+
+    def test_admin_down_creates_a_disabled_interface(self):
+        details = self._details(**{'ifAdminStatus': 'down'})
+        iface = build_interface(
+            self.device, 'ge-0/0/11', details,
+            InterfaceTypeChoices.TYPE_1GE_FIXED, InterfaceModeChoices.MODE_TAGGED)
+
+        self.assertFalse(iface.enabled)
+
+    def test_unparsed_mtu_does_not_break_creation(self):
+        # ifMtu is a string from the walk, and NetBox's full_clean (run by the
+        # MAC setter) rejects a string or a below-minimum value. Unknown means
+        # NULL; the old code passed 0, which validation rejects as well.
+        details = self._details(**{
+            'ifMtu': 'No more variables left in this MIB View',
+            'ifPhysAddress': 'ec:f4:bb:c1:79:b9',
+        })
+        iface = build_interface(
+            self.device, 'ge-0/0/12', details,
+            InterfaceTypeChoices.TYPE_1GE_FIXED, InterfaceModeChoices.MODE_TAGGED)
+
+        self.assertIsNone(iface.mtu)
+
+    def test_mtu_is_stored_as_an_integer(self):
+        iface = build_interface(
+            self.device, 'ge-0/0/13', self._details(),
+            InterfaceTypeChoices.TYPE_1GE_FIXED, InterfaceModeChoices.MODE_TAGGED)
+
+        self.assertEqual(iface.mtu, 1500)

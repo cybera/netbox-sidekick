@@ -24,6 +24,7 @@ from sidekick.utils import (
     decrypt_1pw_secret,
     index_interfaces_by_mac,
     interface_by_mac,
+    shared_macs,
     snmpwalk_bulk,
 )
 from sidekick.utils.clickhouse import ClickHouseHTTP, now_utc_str
@@ -197,7 +198,7 @@ def down_poll_baseline(e1_in, e1_out, e2_in, e2_out):
     )
 
 
-def resolve_interface_name(iface_details, existing_interfaces, by_mac):
+def resolve_interface_name(iface_details, existing_interfaces, by_mac, ambiguous_macs=None):
     """Return the NetBox interface name to use for a polled interface.
 
     Returns None when the interface is to be skipped.
@@ -216,6 +217,10 @@ def resolve_interface_name(iface_details, existing_interfaces, by_mac):
     moved to a different port on a device with usable names (a card reseated
     into another slot) would otherwise have its counters written to the old
     interface's row.
+
+    ambiguous_macs are the MACs the device reported for more than one
+    interface (Junos irb and jsrv.1 on the rsoc switches share one). Such a
+    MAC identifies nothing, so it is not matched.
     """
     iface_name = iface_details.get('ifName', None)
     if iface_name is None:
@@ -227,7 +232,7 @@ def resolve_interface_name(iface_details, existing_interfaces, by_mac):
     if any(i in iface_name for i in VALID_INTERFACE_NAMES):
         return iface_name
 
-    matched = interface_by_mac(iface_details, by_mac)
+    matched = interface_by_mac(iface_details, by_mac, ambiguous_macs)
     if matched is not None:
         return matched.name
 
@@ -337,8 +342,10 @@ class Command(BaseCommand):
                 existing_interfaces[i.name] = i
 
             # Interfaces by MAC, used when a polled interface's name is not its
-            # port name (see interface_by_mac).
+            # port name (see interface_by_mac). A MAC only identifies an
+            # interface when neither side uses it twice.
             by_mac = index_interfaces_by_mac(existing_interfaces.values())
+            ambiguous_macs = shared_macs(device_info)
 
             # One-time setup hoisted out of the per-interface loops.
             graphite_host = settings.PLUGINS_CONFIG['sidekick'].get('graphite_host', None)
@@ -364,7 +371,7 @@ class Command(BaseCommand):
             device_interface_names = []
             for iface_index, iface_details in device_info.items():
                 iface_name = resolve_interface_name(
-                    iface_details, existing_interfaces, by_mac)
+                    iface_details, existing_interfaces, by_mac, ambiguous_macs)
                 if iface_name is None:
                     continue
 
@@ -482,7 +489,7 @@ class Command(BaseCommand):
             # add the IP address to the interface if it doesn't already exist.
             for iface_index, iface_details in device_info.items():
                 iface_name = resolve_interface_name(
-                    iface_details, existing_interfaces, by_mac)
+                    iface_details, existing_interfaces, by_mac, ambiguous_macs)
                 if iface_name is None:
                     continue
 
@@ -615,7 +622,7 @@ class Command(BaseCommand):
             # store the counters as a NIC object.
             for iface_index, iface_details in device_info.items():
                 iface_name = resolve_interface_name(
-                    iface_details, existing_interfaces, by_mac)
+                    iface_details, existing_interfaces, by_mac, ambiguous_macs)
                 if iface_name is None:
                     continue
 

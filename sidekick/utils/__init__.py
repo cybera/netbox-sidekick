@@ -154,13 +154,19 @@ def normalize_mac(value):
 
 
 def index_interfaces_by_mac(interfaces):
-    """Map an upper-case MAC to the one interface carrying it on a device.
+    """Map an upper-case MAC to the one NetBox interface carrying it.
 
     A MAC is usable as an identity only when exactly one interface on the
     device has it. Subinterfaces share their parent's MAC on routers, and
     matching one of several candidates would silently update the wrong port,
     so ambiguous MACs are left out of the index and the caller falls back to
     matching by name.
+
+    This is one half of the check. The other half is on the device side (see
+    shared_macs): the MAC must also be unique among the interfaces the device
+    reported, or a row can be matched by an interface that is not the one it
+    describes. Junos reports irb and jsrv.1 with the same MAC on the rsoc
+    switches, which is exactly that case.
     """
     seen = {}
     for iface in interfaces:
@@ -171,18 +177,41 @@ def index_interfaces_by_mac(interfaces):
     return {mac: found[0] for mac, found in seen.items() if len(found) == 1}
 
 
-def interface_by_mac(iface_details, by_mac):
+def shared_macs(walk_result):
+    """Return the MACs that more than one polled interface reported.
+
+    A MAC is only an identity when the device itself uses it once. Junos on
+    the rsoc switches answers the same MAC for irb and jsrv.1, so matching by
+    that MAC would let jsrv.1's addresses and counters land on the irb row.
+    """
+    counts = {}
+    for details in walk_result.values():
+        mac = details.get('ifPhysAddress') if isinstance(details, dict) else None
+        if not mac:
+            continue
+        key = normalize_mac(mac)
+        counts[key] = counts.get(key, 0) + 1
+    return {mac for mac, count in counts.items() if count > 1}
+
+
+def interface_by_mac(iface_details, by_mac, ambiguous_macs=None):
     """Return the NetBox interface a polled interface's MAC belongs to.
 
     Some devices report a name that is not the port's name: an ASA returns
     the interface's nameif (inside, outside) in both ifName and ifDescr, so
     Ethernet1/2 arrives as "inside" and no name lookup can find it. A NetBox
     interface whose MAC matches is the operator's declaration for that port.
+
+    ambiguous_macs are the MACs the device reported for more than one
+    interface; those carry no identity and are never matched.
     """
     mac = iface_details.get('ifPhysAddress')
     if not mac or not by_mac:
         return None
-    return by_mac.get(normalize_mac(mac))
+    key = normalize_mac(mac)
+    if ambiguous_macs and key in ambiguous_macs:
+        return None
+    return by_mac.get(key)
 
 
 def decrypt_1pw_secret(token_path, host, vault, device, field):

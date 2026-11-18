@@ -25,7 +25,7 @@ from sidekick.management.commands.update_interfaces import (
     resolve_interface_name,
     sanitize_counter,
 )
-from sidekick.utils import index_interfaces_by_mac
+from sidekick.utils import index_interfaces_by_mac, shared_macs
 from sidekick.tests.utils import BaseTest
 
 
@@ -282,6 +282,29 @@ class ResolveInterfaceNameTest(BaseTest):
         self.assertEqual(
             resolve_interface_name(details, self._existing(), self._by_mac()),
             'Ethernet1/9')
+
+    def test_a_mac_the_device_reports_twice_identifies_nothing(self):
+        # Junos on the rsoc switches answers e4:f2:7c:fb:2e:80 for both irb and
+        # jsrv.1. jsrv.1's address (128.0.0.127/2) then landed on the irb row,
+        # which detached the irb row's own address on sw-mgmt1-net-yeg1.rsoc
+        # (2026-11-18 14:40:58).
+        walk = {
+            '505': {'ifName': 'irb', 'ifPhysAddress': 'e4:f2:7c:fb:2e:80'},
+            '507': {'ifName': 'jsrv.1', 'ifPhysAddress': 'e4:f2:7c:fb:2e:80'},
+            '16': {'ifName': 'lo0.0', 'ifPhysAddress': 'e4:f2:7c:fb:2e:81'},
+        }
+        ambiguous = shared_macs(walk)
+        self.assertEqual(ambiguous, {'E4F27CFB2E80'})
+
+        details = {'ifName': 'jsrv.1', 'ifPhysAddress': 'e4:f2:7c:fb:2e:80'}
+        self.assertIsNone(resolve_interface_name(
+            details, self._existing(), self._by_mac(), ambiguous))
+        # The same lookup without the ambiguity still resolves, so the guard is
+        # what rejected it and not a broken index.
+        unique = {'ifName': 'jsrv.1', 'ifPhysAddress': 'f8:e5:7e:17:07:a5'}
+        self.assertEqual(
+            resolve_interface_name(unique, self._existing(), self._by_mac(), set()),
+            'Ethernet1/2')
 
     def test_interface_without_a_mac_is_not_indexed(self):
         Interface.objects.create(

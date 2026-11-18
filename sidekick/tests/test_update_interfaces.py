@@ -25,7 +25,11 @@ from sidekick.management.commands.update_interfaces import (
     resolve_interface_name,
     sanitize_counter,
 )
-from sidekick.utils import index_interfaces_by_mac, shared_macs
+from sidekick.utils import (
+    index_interfaces_by_mac,
+    ipv6_from_ip_address_table,
+    shared_macs,
+)
 from sidekick.tests.utils import BaseTest
 
 
@@ -312,3 +316,52 @@ class ResolveInterfaceNameTest(BaseTest):
             type=InterfaceTypeChoices.TYPE_1GE_FIXED)
         self.assertNotIn('ETH', index_interfaces_by_mac(self._existing().values()))
         self.assertEqual(len(index_interfaces_by_mac(self._existing().values())), 1)
+
+
+class IPv6FromIPAddressTableTest(TestCase):
+    """IPv6 addresses from IP-MIB ipAddressTable, for devices with no IPV6-MIB.
+
+    A Cisco ASA answers nothing for ipv6AddrTable and ipv6IfTable, so vpn2's
+    ``ipv6 address 2605:fd00:0:8::4/64`` never reached NetBox (2026-11-18). It
+    does publish the address in IP-MIB ipAddressTable. The index below is the
+    real one, from the device.
+    """
+
+    PREFIX = '1.3.6.1.2.1.4.32.1.5'
+
+    def _row(self, octets, ifindex, prefixlen):
+        suffix = '2.' + '.'.join(str(o) for o in octets)
+        pointer = f"{self.PREFIX}.{ifindex}.2.{'.'.join(str(o) for o in octets)}"
+        if prefixlen is not None:
+            pointer = f"{pointer}.{prefixlen}"
+        else:
+            pointer = '0.0'
+        return suffix, {'ipAddressIfIndex': str(ifindex), 'ipAddressPrefix': pointer}
+
+    def test_global_address_is_read_with_its_prefix_length(self):
+        octets = [0x26, 0x05, 0xfd, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4]
+        suffix, row = self._row(octets, 6, 64)
+        self.assertEqual(
+            ipv6_from_ip_address_table({suffix: row}),
+            {'6': ['2605:fd00:0:8::4/64']})
+
+    def test_ipv4_rows_are_left_to_ipAddrTable(self):
+        suffix, row = self._row([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 6, 64)
+        self.assertEqual(ipv6_from_ip_address_table({suffix.replace('2.', '1.', 1): row}), {})
+
+    def test_ipv6z_rows_are_skipped_so_link_local_is_not_duplicated(self):
+        # addrType 4 is the same address with a scope zone; a fe80:: row comes
+        # back under it and its prefix pointer is 0.0.
+        suffix, row = self._row([0xfe, 0x80] + [0] * 13 + [1], 6, None)
+        self.assertEqual(ipv6_from_ip_address_table({suffix.replace('2.', '4.', 1): row}), {})
+
+    def test_an_address_without_a_usable_prefix_is_dropped(self):
+        octets = [0x26, 0x05, 0xfd, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 9]
+        suffix, row = self._row(octets, 6, None)
+        self.assertEqual(ipv6_from_ip_address_table({suffix: row}), {})
+
+    def test_rows_without_an_interface_are_dropped(self):
+        octets = [0x26, 0x05, 0xfd, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 10]
+        suffix, row = self._row(octets, 6, 64)
+        row['ipAddressIfIndex'] = ''
+        self.assertEqual(ipv6_from_ip_address_table({suffix: row}), {})

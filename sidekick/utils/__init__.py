@@ -113,6 +113,15 @@ OIDs = [
     ObjectType(ObjectIdentity('IP-MIB', 'ipAdEntIfIndex')),
     ObjectType(ObjectIdentity('IPV6-MIB', 'ipv6AddrPfxLength')),
 
+    # IP-MIB ipAddressTable. Devices exist whose IPV6-MIB tables are empty and
+    # which publish their IPv6 addresses only here: a Cisco ASA answers nothing
+    # for ipv6AddrTable/ipv6IfTable, so its IPv6 addresses were invisible to
+    # the poller (vpn2, 2026-11-18).
+    # Walked numerically: ipAddressTable does not resolve to MIB names on every
+    # agent, and the name-based parsing below needs the symbol.
+    ObjectType(ObjectIdentity('.1.3.6.1.2.1.4.34.1.3')),   # ipAddressIfIndex
+    ObjectType(ObjectIdentity('.1.3.6.1.2.1.4.34.1.5')),   # ipAddressPrefix
+
     # jnx ifHCIn1SecRate
     ObjectType(ObjectIdentity('.1.3.6.1.4.1.2636.3.3.1.1.7')),
 
@@ -175,6 +184,48 @@ def index_interfaces_by_mac(interfaces):
             continue
         seen.setdefault(normalize_mac(mac), []).append(iface)
     return {mac: found[0] for mac, found in seen.items() if len(found) == 1}
+
+
+def ipv6_from_ip_address_table(rows):
+    """Return {ifIndex: ["<address>/<prefixlen>", ...]} from IP-MIB ipAddressTable rows.
+
+    `rows` maps a table index ("<addrType>.<address bytes>") to the columns
+    collected for that row: `ipAddressIfIndex` and `ipAddressPrefix`.
+
+    Only addrType 2 (IPv6) is used. addrType 4 is ipv6z — the same address with
+    a scope zone — which is how an agent reports link-local addresses, so
+    including it would add a second copy of every fe80:: address. addrType 1 is
+    IPv4, already collected from ipAddrTable with its netmask.
+
+    The prefix length comes from the ipAddressPrefix pointer: an OID whose last
+    sub-identifier is the length (…4.32.1.5.<ifIndex>.<type>.<prefix>.<len>).
+    The value 0.0 means the agent does not implement that table, and an address
+    whose mask is unknown is dropped rather than guessed.
+    """
+    addresses = {}
+    for suffix, row in rows.items():
+        parts = suffix.split('.')
+        if not parts or parts[0] != '2':
+            continue
+        ifindex = row.get('ipAddressIfIndex')
+        octets = parts[1:]
+        if not ifindex or len(octets) != 16:
+            continue
+
+        prefix = row.get('ipAddressPrefix') or ''
+        prefixlen = prefix.split('.')[-1]
+        if prefix in ('', '0.0') or not prefixlen.isdigit():
+            continue
+
+        try:
+            value = int(''.join(f"{int(octet):02x}" for octet in octets), 16)
+            address = netaddr.IPAddress(value, 6)
+        except (ValueError, TypeError):
+            continue
+
+        addresses.setdefault(ifindex, []).append(f"{address}/{prefixlen}")
+
+    return addresses
 
 
 def shared_macs(walk_result):
@@ -426,6 +477,7 @@ async def _snmpwalk_bulk(remote_ip, community):
     data = []
     results = {}
     ipv4_addresses = {}
+    ip_address_rows = {}
 
     special = [
         'ifAdminStatus',
@@ -439,6 +491,7 @@ async def _snmpwalk_bulk(remote_ip, community):
     ipv6_re = r'^1\.3\.6\.1\.2\.1\.55\.1\.8\.1\.2\.(\d+)\.((\d+\.){15}(\d+))'
     ipv4_re = r'^1\.3\.6\.1\.2\.1\.4\.20\.1\.2\.(\d+\.\d+\.\d+\.\d+)'
     ipv4_mask_re = r'^1\.3\.6\.1\.2\.1\.4\.20\.1\.3\.(\d+\.\d+\.\d+\.\d+)'
+    ip_address_table_re = r'^1\.3\.6\.1\.2\.1\.4\.34\.1\.(\d+)\.([\d.]+)$'
 
     jnxifHCIn1SecRate_re = r'.*2636\.3\.3\.1\.1\.7'
     jnxifHCOut1SecRate_re = r'.*2636\.3\.3\.1\.1\.8'
@@ -492,6 +545,18 @@ async def _snmpwalk_bulk(remote_ip, community):
                 out_rate = r[1].prettyPrint()
                 if out_rate != "No more variables left in this MIB View":
                     results[index]['out_rate'] = int(out_rate) // 8
+                continue
+
+            # IP-MIB ipAddressTable, collected by row and resolved after the
+            # walk: its index is <addrType>.<address bytes> and spans two
+            # columns, which the single-index parsing below cannot place. Matched
+            # numerically because these OIDs do not resolve to MIB names here.
+            match = re.match(ip_address_table_re, f"{r[0]}")
+            if match:
+                if match[1] == '3':
+                    ip_address_rows.setdefault(match[2], {})['ipAddressIfIndex'] = f"{r[1]}"
+                elif match[1] == '5':
+                    ip_address_rows.setdefault(match[2], {})['ipAddressPrefix'] = f"{r[1]}"
                 continue
 
             # Match the format IF-MIB::FOO
@@ -576,6 +641,14 @@ async def _snmpwalk_bulk(remote_ip, community):
             for ipv4 in v['ipAdEntIfIndex']:
                 if ipv4 in ipv4_addresses.keys():
                     results[k]['ipv4'].append(f"{ipv4}/{ipv4_addresses[ipv4]}")
+
+    # IPv6 from IP-MIB ipAddressTable, added to whatever IPV6-MIB reported.
+    for ifindex, addresses in ipv6_from_ip_address_table(ip_address_rows).items():
+        entry = results.setdefault(ifindex, {})
+        known = entry.setdefault('ipv6', [])
+        for address in addresses:
+            if address not in known:
+                known.append(address)
 
     return results
 
